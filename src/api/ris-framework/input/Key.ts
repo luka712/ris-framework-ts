@@ -1,0 +1,35 @@
+/**
+ * The keys on the keyboard.
+ */
+export enum Key {
+  NONE = 0,
+  A = 1,
+  D = 2,
+  S = 3,
+  W = 4,
+  L = 5,
+  LEFTARROW = 6,
+  RIGHTARROW = 7,
+  UPARROW = 8,
+  DOWNARROW = 9,
+  NUMPAD0 = 10,
+  NUMPAD1 = 11,
+  NUMPAD2 = 12,
+  NUMPAD3 = 13,
+  NUMPAD4 = 14,
+  NUMPAD5 = 15,
+  NUMPAD6 = 16,
+  NUMPAD7 = 17,
+  NUMPAD8 = 18,
+  NUMPAD9 = 19,
+  SPACE = 20,
+  CONTROLLEFT = 21,
+  CONTROLRIGHT = 22,
+  SHIFTLEFT = 23,
+  SHIFTRIGHT = 24,
+  NUMPADSUBTRACT = 25,
+  NUMPADADD = 26,
+  MINUS = 27,
+  EQUAL = 28,
+  DELETE = 29
+}
