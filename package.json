@@ -1,0 +1,33 @@
+{
+  "name": "ris-framework",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vite": "^7.2.4"
+  },
+  "dependencies": {
+    "gl-matrix": "^3.4.4",
+    "reflect-metadata": "^0.2.2",
+    "ris-framework-api": "0.1.0-dev.5",
+    "ris-ktx2": "^0.1.0-dev.2",
+    "tsyringe": "^4.10.0"
+  },
+  "files": [
+    "dist",
+    "src",
+    "shaders",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
