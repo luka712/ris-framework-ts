@@ -1,6 +1,7 @@
 export * from "./IInputManager"
 export * from "./MouseState"
 export * from "./GamePadState"
+export * from "./GamePadThumbSticks"
 export * from "./KeyboardState"
 export * from "./Key"
 export * from "./Button"

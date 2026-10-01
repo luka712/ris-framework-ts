@@ -4,12 +4,12 @@ import {
     BufferUsage,
     GeometryFormat,
     Mesh,
+    QuadMesh,
     Rect,
     State,
     type IFramework,
     type IGeometry,
 } from "../src/index.ts";
-import { QuadMesh } from "../src/ris-framework/meshes/QuadMesh.ts";
 
 class InspectableQuad extends QuadMesh {
     public constructor(framework: IFramework, isUpdatable: boolean, scale?: vec2) {

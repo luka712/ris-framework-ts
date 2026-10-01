@@ -5,11 +5,11 @@ import {
     MouseButton,
     MouseState,
     OrbitCamera,
+    OrthographicCamera,
+    PerspectiveCamera,
     type IFramework,
     type IInputManager,
 } from "../src/index.ts";
-import { OrthographicCamera } from "../src/ris-framework/camera/OrthographicCamera.ts";
-import { PerspectiveCamera } from "../src/ris-framework/camera/PerspectiveCamera.ts";
 
 const framework = {} as IFramework;
 
