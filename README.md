@@ -38,6 +38,8 @@ npm ci
 
 Construct `FrameworkConfig`, then pass it to `Framework`. The constructor is `constructor(options: FrameworkConfig | null = null)`. Omitting the argument, or passing `null`, uses `new FrameworkConfig()`.
 
+Another project imports that public entry by package name: `import { Framework, FrameworkConfig, TextureSamplerFilteringPreset } from "ris-framework"`.
+
 No config field is required. Each field has a default.
 
 | Field | Default | What the code does with it |
