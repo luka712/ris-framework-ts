@@ -1,6 +1,10 @@
 {
   "name": "ris-framework",
   "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/luka712/ris-framework-ts"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
