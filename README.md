@@ -1,8 +1,8 @@
 # ris-framework
 
-`ris-framework` is a Vite TypeScript application that renders with WebGL2 in the browser. Version 0.1.0.
+`ris-framework` is a browser WebGL2 framework, published as an ES module. Version 0.1.0. An application imports the compiled package. This repository also contains a sample page that runs the framework.
 
-Open `index.html`. The module script is `src/main.ts`. That file builds the page, constructs a `Framework`, and starts the frame loop. Shared interfaces and value types (`IFramework`, `Color`, `Rect`, `TextureDescriptor`, and the rest) come from the `ris-framework-api` package. This repository is the application that implements them.
+Open `index.html`. The module script is `src/main.ts`. That file builds the page, constructs a `Framework`, and starts the frame loop. Shared interfaces and value types (`IFramework`, `Color`, `Rect`, `TextureDescriptor`, and the rest) come from the `ris-framework-api` package. This repository implements them.
 
 ## Layout
 
@@ -16,7 +16,7 @@ Open `index.html`. The module script is `src/main.ts`. That file builds the page
 | `src/content` | Built-in shader modules. GLSL is imported from `shaders/glsl`. |
 | `shaders/glsl` | Vertex and fragment shaders used by those built-in modules. |
 
-Runtime dependencies are `ris-framework-api`, `ris-ktx2`, `gl-matrix`, `tsyringe`, and `reflect-metadata`. TypeScript and Vite are dev dependencies.
+Runtime dependencies are `ris-framework-api`, `ris-ktx2-api`, `gl-matrix`, `tsyringe`, and `reflect-metadata`. The library build also includes the browser portion of `ris-ktx2`, with its Node loader replaced by a stub, so the published entry does not import Node built-ins. TypeScript, Vite, and `ris-ktx2` are dev dependencies. Notices for the bundled KTX loader are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Prerequisites
 
@@ -26,13 +26,27 @@ Runtime dependencies are `ris-framework-api`, `ris-ktx2`, `gl-matrix`, `tsyringe
 
 ## Install
 
-From the repository root:
+Install the package in an application:
+
+```sh
+npm install ris-framework
+```
+
+The published entry is compiled JavaScript and TypeScript declarations (`dist/index.js` and `dist/index.d.ts`). Import the public surface by package name:
+
+```ts
+import { Framework, FrameworkConfig, TextureSamplerFilteringPreset } from "ris-framework";
+```
+
+`Framework`, `FrameworkConfig`, and `TextureSamplerFilteringPreset` are that public surface. Built-in GLSL is compiled into `dist/index.js`, so a consumer does not load this repository's `shaders/` directory at runtime. The same file includes the browser KTX2 loader. A consuming Vite app can import the package and build without adding a Node stub of its own.
+
+To work in this repository:
 
 ```sh
 npm ci
 ```
 
-`src/main.ts` imports `reflect-metadata` before it constructs the framework. Keep that import first in the entry file. `Framework` registers itself on a tsyringe child container, and tsyringe expects `reflect-metadata` to be loaded.
+Import `reflect-metadata` before constructing the framework. `src/main.ts` keeps that import first. `Framework` registers itself on a tsyringe child container, and tsyringe expects `reflect-metadata` to be loaded.
 
 ## Create a framework instance
 
@@ -54,9 +68,7 @@ No config field is required. Each field has a default.
 ```ts
 import "reflect-metadata";
 
-import { Framework } from "./core/Framework.ts";
-import { FrameworkConfig } from "./core/FrameworkConfig.ts";
-import { TextureSamplerFilteringPreset } from "./core/rendering/enums.ts";
+import { Framework, FrameworkConfig, TextureSamplerFilteringPreset } from "ris-framework";
 
 const config = new FrameworkConfig();
 config.canvas = document.getElementById("game-canvas") as HTMLCanvasElement;
@@ -64,6 +76,8 @@ config.textureFiltering = TextureSamplerFilteringPreset.BILINEAR;
 
 const framework = new Framework(config);
 ```
+
+`src/main.ts` constructs the sample the same way, but it imports those three symbols from the source files under `src/` instead of from the package name.
 
 `framework.renderingBackend` is `RenderingBackend.WEB_GL`. After `initialize()`, `framework.graphicsDevice` is the renderer's WebGL2 device.
 
@@ -73,19 +87,22 @@ const framework = new Framework(config);
 npm run dev
 ```
 
-`dev` runs Vite. The served page is `index.html`.
+`dev` runs Vite. The served page is `index.html`. The sample imports the framework from `src/`.
 
 ```sh
 npm run build
 ```
 
-`build` runs `tsc && vite build`. Typecheck failures stop the production bundle. Vite writes the bundle to `dist/`. The Vite config replaces `ris-ktx2`'s Node loader with a browser stub so the client bundle does not import Node built-ins.
+`build` typechecks `src`, then writes two outputs:
+
+- The library, which is what `npm publish` ships. Vite compiles `src/index.ts` to `dist/index.js` and includes the built-in shader sources in that file. It also bundles `ris-ktx2` after replacing that package's Node loader with the browser stub from `vite.config.ts`. `gl-matrix`, `reflect-metadata`, `ris-framework-api`, `ris-ktx2-api`, and `tsyringe` stay as imports. `tsc` writes `dist/index.d.ts` and the declaration files it references. `package.json` `main`, `module`, `types`, and `exports` point at `dist`.
+- The sample page. `vite build` writes it to `dist-app/`. The sample Vite config replaces `ris-ktx2`'s Node loader with a browser stub so that bundle does not import Node built-ins.
 
 ```sh
 npm run preview
 ```
 
-`preview` runs `vite preview` and serves the `dist/` build.
+`preview` runs `vite preview` and serves the `dist-app/` build.
 
 ```sh
 npm test
