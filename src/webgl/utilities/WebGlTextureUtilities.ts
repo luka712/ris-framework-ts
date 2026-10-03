@@ -51,7 +51,7 @@ export class WebGlTextureUtilities {
 
         gl.texStorage2D(gl.TEXTURE_2D, mipLevels, internalFormat, width, height);
 
-        if(data) {
+        if (data) {
             for (let i = 0; i < mipLevels; i++) {
 
                 const mipLevelData = data[i];
@@ -64,11 +64,9 @@ export class WebGlTextureUtilities {
                     gl.texSubImage2D(gl.TEXTURE_2D, i, 0, 0, levelWidth, levelHeight, format, gl.UNSIGNED_BYTE, mipLevelData);
                 } else if (mipLevelData) {
                     gl.texSubImage2D(gl.TEXTURE_2D, i, 0, 0, levelWidth, levelHeight, format, gl.UNSIGNED_BYTE, mipLevelData);
-                }
-                else if(!mipLevelData) {
+                } else if (!mipLevelData) {
                     // If not must be empty array, so we can safely ignore it.
-                }
-                else {
+                } else {
                     throw new Error("unsupported data type");
                 }
             }
@@ -101,7 +99,7 @@ export class WebGlTextureUtilities {
      */
     public createCompressedTexture2D(
         gl: WebGL2RenderingContext,
-        dimension: vec2, _blockSize: vec2,
+        dimension: vec2, blockSize: vec2,
         data: Uint8Array[] | null = null,
         label: string | null = null,
         textureFormat = TextureFormat.RGBA_8_UNORM,
@@ -111,6 +109,9 @@ export class WebGlTextureUtilities {
         const baseWidth = dimension[0];
         const baseHeight = dimension[1];
         const mipLevels = data?.length ?? 1;
+
+        // To be able to use tex storage API, we need to be block aligned.
+        const useTexStorage = dimension[0] % blockSize[0] == 0 && dimension[1] % blockSize[1] == 0;
 
         const texture = gl.createTexture();
 
@@ -124,9 +125,10 @@ export class WebGlTextureUtilities {
 
         const internalFormat = WebGlConverter.convertInternalFormat(gl, textureFormat);
 
-        gl.texStorage2D(gl.TEXTURE_2D, mipLevels, internalFormat, baseWidth, baseHeight);
-
-        if(data && data.length > 0) {
+        if (useTexStorage) {
+            gl.texStorage2D(gl.TEXTURE_2D, mipLevels, internalFormat, baseWidth, baseHeight);
+        }
+        if (data && data.length > 0) {
 
             let width = baseWidth;
             let height = baseHeight;
@@ -136,13 +138,17 @@ export class WebGlTextureUtilities {
                 const mipLevelData = data[i];
 
                 if (mipLevelData instanceof Uint8Array) {
-                    gl.compressedTexSubImage2D(gl.TEXTURE_2D, i,  0, 0, width, height, internalFormat, mipLevelData, 0);
+                    if (useTexStorage) {
+                        gl.compressedTexSubImage2D(gl.TEXTURE_2D, i, 0, 0, width, height, internalFormat, mipLevelData, 0);
+                    } else {
+                        gl.compressedTexImage2D(gl.TEXTURE_2D, i, internalFormat, width, height, 0,mipLevelData);
+                    }
                 } else {
                     throw new Error("unsupported data type");
                 }
 
-                width /= 2;
-                height /= 2;
+                width = Math.max(1, Math.floor(width / 2));
+                height = Math.max(1, Math.floor(height / 2));
             }
         }
 
