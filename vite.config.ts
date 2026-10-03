@@ -8,7 +8,7 @@ import {defineConfig, type Plugin} from "vite";
  * Node built-ins. The browser path never executes the import, so replace the
  * chunk with a stub before it is bundled.
  */
-function stubRisKtx2NodeModule(): Plugin {
+export function stubRisKtx2NodeModule(): Plugin {
     const stubId = "\0ris-ktx2-node-module-stub";
 
     return {
@@ -41,4 +41,8 @@ export function readFileBytes() {
 
 export default defineConfig({
     plugins: [stubRisKtx2NodeModule()],
+    build: {
+        outDir: "dist-app",
+        emptyOutDir: true,
+    },
 });
