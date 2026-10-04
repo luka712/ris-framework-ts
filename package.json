@@ -18,9 +18,11 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && npm run build:lib && npm run build:app",
+    "dev:load-and-show-ktx2": "vite --config examples/load_and_show_ktx2/vite.config.ts",
+    "build": "tsc --noEmit && npm run build:lib && npm run build:app && npm run build:load-and-show-ktx2",
     "build:lib": "rm -rf dist && vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json && node scripts/rewrite-declaration-extensions.mjs",
     "build:app": "vite build",
+    "build:load-and-show-ktx2": "vite build --config examples/load_and_show_ktx2/vite.config.ts",
     "preview": "vite preview",
     "test": "tsc --noEmit"
   },

@@ -15,6 +15,7 @@ Open `index.html`. The module script is `src/main.ts`. That file builds the page
 | `src/geometry` | `GeometryBuilder` and mesh geometry data. |
 | `src/content` | Built-in shader modules. GLSL is imported from `shaders/glsl`. |
 | `shaders/glsl` | Vertex and fragment shaders used by those built-in modules. |
+| `examples/load_and_show_ktx2` | Browser page that loads `ktx_logo_200.ktx2` and draws it with the sprite batch. `npm run dev` does not serve this page. |
 
 Runtime dependencies are `ris-framework-api`, `ris-ktx2-api`, `gl-matrix`, `tsyringe`, and `reflect-metadata`. The library build also includes the browser portion of `ris-ktx2`, with its Node loader replaced by a stub, so the published entry does not import Node built-ins. TypeScript, Vite, and `ris-ktx2` are dev dependencies. Notices for the bundled KTX loader are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
@@ -93,10 +94,11 @@ npm run dev
 npm run build
 ```
 
-`build` typechecks `src`, then writes two outputs:
+`build` typechecks `src` and `examples/load_and_show_ktx2/main.ts`, then writes:
 
 - The library, which is what `npm publish` ships. Vite compiles `src/index.ts` to `dist/index.js` and includes the built-in shader sources in that file. It also bundles `ris-ktx2` after replacing that package's Node loader with the browser stub from `vite.config.ts`. `gl-matrix`, `reflect-metadata`, `ris-framework-api`, `ris-ktx2-api`, and `tsyringe` stay as imports. `tsc` writes `dist/index.d.ts` and the declaration files it references. `package.json` `main`, `module`, `types`, and `exports` point at `dist`.
 - The sample page. `vite build` writes it to `dist-app/`. The sample Vite config replaces `ris-ktx2`'s Node loader with a browser stub so that bundle does not import Node built-ins.
+- The KTX2 example. `build:load-and-show-ktx2` writes it to `examples/load_and_show_ktx2/dist/`.
 
 ```sh
 npm run preview
@@ -105,10 +107,22 @@ npm run preview
 `preview` runs `vite preview` and serves the `dist-app/` build.
 
 ```sh
+npm run dev:load-and-show-ktx2
+```
+
+Serves `examples/load_and_show_ktx2/index.html` on its own Vite root. That page sets `useKtx2`, waits for `ktx2Factory.initializeAsync()`, then calls `content.loadTexture2DAsync` with the bundled URL of `ktx_logo_200.ktx2` and draws the texture through `spriteBatch`. The root sample at `index.html` is unchanged.
+
+```sh
+npm run build:load-and-show-ktx2
+```
+
+Writes that page to `examples/load_and_show_ktx2/dist/`. `npm run build` runs this after the library and the root sample. The directory is gitignored with the other `dist/` outputs.
+
+```sh
 npm test
 ```
 
-`test` runs `tsc --noEmit`. It typechecks `src`.
+`test` runs `tsc --noEmit`. It typechecks `src` and `examples/load_and_show_ktx2/main.ts`.
 
 ## From startup to the first frame
 
@@ -199,7 +213,7 @@ These throw, or they accept a call and do not do the work the name suggests:
 - `SpriteBatch.draw` and `drawRect` accept rotation arguments and do not use them. `layerDepth` is written as the sprite's z position.
 - Keyboard and gamepad queries return empty state. `getKeyboardState()` is an empty `KeyboardState`. `getGamePadState()` is a disconnected `GamePadState`. `thumbstickDeadZone` is stored and not applied.
 - A render pass that enables stencil without depth throws `Not implemented`.
-- Paths ending in `.ktx2` go through `content.loadKtx2Async`, which uses its own `Ktx2Factory` and does not call `initializeAsync`. `loadAsync` needs the KTX module that `useKtx2` starts, and `initialize()` does not wait for that call. The `.ktx2` branch of `loadTexture2DAsync` also drops `ContentConfig`. The current entry file does not load a `.ktx2` file.
+- Paths ending in `.ktx2` go through `content.loadKtx2Async`, which uses its own `Ktx2Factory` and does not call `initializeAsync`. `loadAsync` needs the KTX module that `useKtx2` starts, and `initialize()` does not wait for that call. The `.ktx2` branch of `loadTexture2DAsync` also drops `ContentConfig`. `src/main.ts` does not load a `.ktx2` file. `examples/load_and_show_ktx2/main.ts` awaits `ktx2Factory.initializeAsync()` before `initialize()` so the load listener can call `loadTexture2DAsync` on `ktx_logo_200.ktx2`.
 - The geometry and unlit-pipeline steps at the bottom of `src/main.ts` are comments. `geometryBuilder.quadGeometry()` can build quad data; the entry file does not upload it or draw it.
 
 ## Version
