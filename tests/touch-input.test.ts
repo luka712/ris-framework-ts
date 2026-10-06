@@ -50,12 +50,21 @@ describe("TouchLocation", () => {
 
         location.state = TouchLocationState.RELEASED;
         expect(location.isReleased()).toBe(true);
+        expect(location.isCancelled()).toBe(false);
+        expect(location.isDown).toBe(false);
+
+        location.state = TouchLocationState.CANCELLED;
+        expect(location.isCancelled()).toBe(true);
+        expect(location.isReleased()).toBe(false);
+        expect(location.isPressed()).toBe(false);
+        expect(location.isMoved()).toBe(false);
         expect(location.isDown).toBe(false);
 
         location.write(4, TouchLocationState.INVALID, 0, 0, 0);
         expect(location.isPressed()).toBe(false);
         expect(location.isMoved()).toBe(false);
         expect(location.isReleased()).toBe(false);
+        expect(location.isCancelled()).toBe(false);
         expect(location.isDown).toBe(false);
         expect(location.tryGetPreviousLocation()).toBeUndefined();
         expect(location.tryGetPreviousLocation()).toBeUndefined();
@@ -79,13 +88,15 @@ describe("TouchCollection", () => {
             0.5,
         );
         const released = collection.tryAdd(3, TouchLocationState.RELEASED, 0, 0);
+        const cancelled = collection.tryAdd(5, TouchLocationState.CANCELLED, 1, 1);
         const duplicate = collection.tryAdd(1, TouchLocationState.MOVED, 9, 9);
 
         expect(pressed).toBe(collection.get(0));
         expect(moved).toBe(collection.get(1));
         expect(released).toBe(collection.get(2));
-        expect(duplicate).toBe(collection.get(3));
-        expect(collection.count).toBe(4);
+        expect(cancelled).toBe(collection.get(3));
+        expect(duplicate).toBe(collection.get(4));
+        expect(collection.count).toBe(5);
         expect(collection.activeCount).toBe(3);
         expect(collection.get(0)!.x).toBe(3);
         expect(collection.get(0)!.y).toBe(4);
@@ -96,7 +107,7 @@ describe("TouchCollection", () => {
         expect(collection.findById(3)).toBe(released);
         expect(collection.findById(99)).toBeUndefined();
         expect(collection.get(-1)).toBeUndefined();
-        expect(collection.get(4)).toBeUndefined();
+        expect(collection.get(5)).toBeUndefined();
 
         expect(collection.isDown(1)).toBe(true);
         expect(collection.isDown(2)).toBe(true);
@@ -104,12 +115,17 @@ describe("TouchCollection", () => {
         expect(collection.isDown(99)).toBe(false);
         expect(collection.isReleased(3)).toBe(true);
         expect(collection.isReleased(1)).toBe(false);
+        expect(collection.isReleased(5)).toBe(false);
         expect(collection.isReleased(99)).toBe(false);
+        expect(collection.isCancelled(5)).toBe(true);
+        expect(collection.isCancelled(3)).toBe(false);
+        expect(collection.isCancelled(99)).toBe(false);
+        expect(collection.isDown(5)).toBe(false);
 
         pressed!.state = TouchLocationState.RELEASED;
         expect(pressed!.isDown).toBe(false);
         expect(collection.activeCount).toBe(3);
-        expect(collection.count).toBe(4);
+        expect(collection.count).toBe(5);
     });
 
     it("reuses the same slots and vectors across reads and frames", () => {
@@ -202,6 +218,20 @@ describe("TouchPanelCapabilities", () => {
         const none = new TouchPanelCapabilities(false, 0, false);
         expect(none.isConnected).toBe(false);
         expect(none.maximumTouchCount).toBe(0);
+        expect(none.hasPressure).toBe(false);
+
+        const same = none;
+        none.set(true, 5, true);
+        expect(none).toBe(same);
+        expect(none.isConnected).toBe(true);
+        expect(none.maximumTouchCount).toBe(5);
+        expect(none.hasPressure).toBe(true);
+
+        none.isConnected = false;
+        none.maximumTouchCount = 2;
+        none.hasPressure = false;
+        expect(none.isConnected).toBe(false);
+        expect(none.maximumTouchCount).toBe(2);
         expect(none.hasPressure).toBe(false);
     });
 });

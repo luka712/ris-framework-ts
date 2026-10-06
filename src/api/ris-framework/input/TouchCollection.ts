@@ -38,7 +38,7 @@ export class TouchCollection {
 
     /**
      * The number of touches that were down when they were written.
-     * Pressed and moved contacts count. Released and invalid contacts do not.
+     * Pressed and moved contacts count. Released, cancelled, and invalid contacts do not.
      * This is stored while contacts are written, not counted again on read.
      */
     public get activeCount(): number {
@@ -147,5 +147,18 @@ export class TouchCollection {
             return false;
         }
         return location.isReleased();
+    }
+
+    /**
+     * True when the contact with this id was cancelled this frame.
+     * A missing id was not cancelled. A cancel is not a release.
+     * @param id The touch id.
+     */
+    public isCancelled(id: number): boolean {
+        const location = this.findById(id);
+        if (location === undefined) {
+            return false;
+        }
+        return location.isCancelled();
     }
 }

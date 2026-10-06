@@ -14,10 +14,16 @@ export class TouchLocation {
     /** The pressure, from 0 to 1. 0 when the device does not report pressure. */
     public pressure = 0;
 
-    /** The position of the touch. */
+    /**
+     * The position of the touch.
+     * Viewport coordinates in CSS pixels, the same space as MouseState (clientX, clientY).
+     */
     public readonly position: vec2 = vec2.create();
 
-    /** The delta from the previous sample. Zero when this frame has no previous sample. */
+    /**
+     * The delta from the previous sample. Zero when this frame has no previous sample.
+     * Viewport coordinates in CSS pixels, the same space as MouseState delta.
+     */
     public readonly delta: vec2 = vec2.create();
 
     /**
@@ -87,6 +93,11 @@ export class TouchLocation {
     /** True when the contact was released this frame. */
     public isReleased(): boolean {
         return this._state === TouchLocationState.RELEASED;
+    }
+
+    /** True when the contact was cancelled this frame. A cancel is not a finger lift. */
+    public isCancelled(): boolean {
+        return this._state === TouchLocationState.CANCELLED;
     }
 
     /**

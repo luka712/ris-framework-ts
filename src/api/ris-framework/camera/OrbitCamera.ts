@@ -201,7 +201,7 @@ export class OrbitCamera implements ICamera {
 
     /**
      * Handles touch orbit and pinch zoom.
-     * One finger down orbits. Two fingers down pinch. Released contacts are ignored.
+     * One finger down orbits. Two fingers down pinch. Released and cancelled contacts are ignored.
      * @param touches The touch locations.
      * @param deltaTime The delta time.
      */

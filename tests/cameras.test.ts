@@ -311,6 +311,27 @@ describe("OrbitCamera", () => {
         expect(vec3.distance(orbit.eye, orbit.target)).toBeCloseTo(3, 5);
     });
 
+    it("ignores a cancelled touch the same way it ignores a release", () => {
+        const touches = new TouchCollection();
+        touches.tryAdd(
+            1,
+            TouchLocationState.CANCELLED,
+            10,
+            0,
+            0,
+            TouchLocationState.MOVED,
+            0,
+            0,
+            0,
+        );
+        const { orbit } = createOrbit(mouseState({}), 0.01, 100, touches);
+
+        orbit.update(seconds(1));
+
+        expectComponents(orbit.eye, [0, 0, -3]);
+        expectComponents(orbit.target, [0, 0, 0]);
+    });
+
     it("pinch-zooms from two held touches and skips a repeated distance", () => {
         const touches = new TouchCollection();
         touches.tryAdd(1, TouchLocationState.MOVED, 0, 0);
