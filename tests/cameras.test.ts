@@ -7,6 +7,7 @@ import {
     OrbitCamera,
     OrthographicCamera,
     PerspectiveCamera,
+    PointerStateCollection,
     type IFramework,
     type IInputManager,
 } from "../src/index.ts";
@@ -78,7 +79,10 @@ function createOrbit(mouse: MouseState, near = 0.01, far = 100): {
     orbit: OrbitCamera;
 } {
     const core = new HeadlessPerspectiveCamera(framework, Math.PI / 3, 1, near, far);
-    const orbit = new OrbitCamera(core, { getMouseState: () => mouse } as IInputManager);
+    const orbit = new OrbitCamera(core, {
+        getMouseState: () => mouse,
+        getPointerStates: () => new PointerStateCollection([]),
+    } as IInputManager);
     return { core, orbit };
 }
 

@@ -1,6 +1,6 @@
 import {PointerState} from "./PointerState";
 
-/** The touch state. */
+/** The pointer states. */
 export class PointerStateCollection {
 
 
