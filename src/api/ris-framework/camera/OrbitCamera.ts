@@ -60,8 +60,14 @@ export class OrbitCamera implements ICamera {
     /** The maximum scrolling speed. */
     public maxScrollSpeed: number = 50;
 
+    /** The speed of pinch.*/
+    public pinchSpeed: number = 1;
+
     /** The up vector. */
     public up = vec3.fromValues(0, 1, 0);
+
+    /** The clamp values of pitch axis */
+    public pitchClamp = vec2.fromValues(-this.POSITIVE_89_DEG, this.POSITIVE_89_DEG);
 
     /** @inheritDoc */
     public get projectionViewBuffer(): IUniformBuffer {
@@ -163,6 +169,10 @@ export class OrbitCamera implements ICamera {
         throw new Error('Not implemented');
     }
 
+    private _pitchClamp(value: number): number {
+        return MathHelper.clamp(value, this.pitchClamp[0], this.pitchClamp[1]);
+    }
+
     /**
      * Sets the pitch and yaw from look direction.
      * @param lookDirection The direction.
@@ -171,13 +181,13 @@ export class OrbitCamera implements ICamera {
     private _setPitchAndYawFromDirection(lookDirection: vec3) {
         vec3.normalize(lookDirection, lookDirection);
         const y = MathHelper.clamp(lookDirection[1], -1, 1);
-        this._pitch = -MathHelper.clamp(Math.asin(y), -this.POSITIVE_89_DEG, this.POSITIVE_89_DEG);
+        this._pitch = -this._pitchClamp(Math.asin(y));
         this._yaw = -Math.atan2(lookDirection[0], lookDirection[2]);
     }
 
     private _calculateOrbitMovement() {
         // Clamp between [1.0, 179.0] degrees.
-        this._pitch = MathHelper.clamp(this._pitch, -this.POSITIVE_179_DEG, this.POSITIVE_179_DEG);
+        this._pitch = this._pitchClamp(this._pitch);
 
         // Convert spherical coordinates to Cartesian
         vec3.sub(this._tempVec3, this._coreCamera.target, this._coreCamera.eye);
@@ -256,31 +266,16 @@ export class OrbitCamera implements ICamera {
 
         // Find the current distance.
         vec3.copy(this._tempDirection, this.direction);
-        const distance = vec3.len(this._tempDirection);
-
-        // Map it to [1,0.1f] space.
-        const step = MathHelper.map(distance,
-            this._coreCamera.nearPlane, this._coreCamera.farPlane,
-            1, 0.1);
-
-        // Scroll speed is scaled with the distance between eye and target.
-        // - The closer the target is, the slower the scroll speed.
-        let trueScrollSpeed = step * this.scrollSpeed;
-
-        // Clamp to the max scroll speed.
-        if (trueScrollSpeed > this.maxScrollSpeed) {
-            trueScrollSpeed = this.maxScrollSpeed;
-        }
 
         // Find the next eye position.
         vec3.normalize(this._tempDirection, this._tempDirection);
         vec3.copy(this._tempNextEye, this.eye);
 
         if (diff < 0) {
-            vec3.scale(this._tempVec3, this._tempDirection, trueScrollSpeed * deltaTime);
+            vec3.scale(this._tempVec3, this._tempDirection, this.pinchSpeed * deltaTime);
             vec3.sub(this._tempNextEye, this._tempNextEye, this._tempVec3);
         } else {
-            vec3.scale(this._tempVec3, this._tempDirection, trueScrollSpeed * deltaTime);
+            vec3.scale(this._tempVec3, this._tempDirection, this.pinchSpeed * deltaTime);
             vec3.add(this._tempNextEye, this._tempNextEye, this._tempVec3);
         }
 
@@ -296,7 +291,7 @@ export class OrbitCamera implements ICamera {
         // Only if within bounds set and no change in direction of a vector.
         if (nextLength < this._coreCamera.nearPlane
             || nextLength > this._coreCamera.farPlane
-            || lenSq > 0.01
+            || lenSq > 0.1
         ) {
             return;
         }
