@@ -7,7 +7,8 @@ import {ICamera} from "./ICamera";
 import {MouseState} from "../input/MouseState";
 import {GameTime} from "../time/GameTime";
 import {MouseButton} from "../input/MouseButton";
-import {PointerStateCollection} from "../input/PointerStateCollection";
+import {TouchCollection} from "../input/TouchCollection";
+import {TouchLocation} from "../input/TouchLocation";
 
 /**
  * Camerae that support orbit movement.
@@ -22,8 +23,8 @@ export class OrbitCamera implements ICamera {
     private readonly _tempNextDirection = vec3.create();
     private readonly _tempNextEye = vec3.create();
 
-    /** For zooming via hand gestures */
-    private _lastPointersDistance = 0;
+    /** For pinch zoom. The distance between the two touches on the previous pinch frame. */
+    private _lastTouchDistance = 0;
 
     private readonly _coreCamera: PerspectiveCamera;
     private readonly _inputManager: IInputManager
@@ -199,84 +200,100 @@ export class OrbitCamera implements ICamera {
     }
 
     /**
-     * Handles the pointer movement for orbit camera.
-     * @param pointerStateCollection The mouse state.
+     * Handles touch orbit and pinch zoom.
+     * One finger down orbits. Two fingers down pinch. Released and cancelled contacts are ignored.
+     * @param touches The touch locations.
      * @param deltaTime The delta time.
      */
-    private _handleOrbitPointerMovement(pointerStateCollection: PointerStateCollection, deltaTime: number): void {
+    private _handleOrbitTouch(touches: TouchCollection, deltaTime: number): void {
+        let down = 0;
+        let first: TouchLocation | undefined;
+        let second: TouchLocation | undefined;
+        const count = touches.count;
+        for (let i = 0; i < count; i++) {
+            const touch = touches.get(i);
+            if (touch === undefined || !touch.isDown) {
+                continue;
+            }
+            if (down === 0) {
+                first = touch;
+            } else if (down === 1) {
+                second = touch;
+            }
+            down++;
+        }
 
-        // We are moving if only 1 pointer is used ( typically a finger ).
-        if(pointerStateCollection.count == 1) {
-            const state = pointerStateCollection.pointerStates[0];
-
+        // One finger orbits.
+        if (down === 1 && first !== undefined) {
             const dt = deltaTime * this.sensitivity;
-            this._yaw -= state.dX * dt;
-            this._pitch += state.dY * dt;
+            this._yaw -= first.dX * dt;
+            this._pitch += first.dY * dt;
             this._calculateOrbitMovement();
+            return;
         }
-        else if(pointerStateCollection.count == 2) {
-            const a = pointerStateCollection.pointerStates[0];
-            const b = pointerStateCollection.pointerStates[1];
 
-            const d = vec2.distance(a.position, b.position);
-            const diff = d - this._lastPointersDistance;
-            this._lastPointersDistance = d;
-
-            // Nothing to do, same distance.
-            if(diff == 0) {
-                return;
-            }
-
-            // Find the current distance.
-            vec3.copy(this._tempDirection, this.direction);
-            const distance = vec3.len(this._tempDirection);
-
-            // Map it to [1,0.1f] space.
-            const step = MathHelper.map(distance,
-                this._coreCamera.nearPlane, this._coreCamera.farPlane,
-                1, 0.1);
-
-            // Scroll speed is scaled with the distance between eye and target.
-            // - The closer the target is, the slower the scroll speed.
-            let trueScrollSpeed = step * this.scrollSpeed;
-
-            // Clamp to the max scroll speed.
-            if (trueScrollSpeed > this.maxScrollSpeed) {
-                trueScrollSpeed = this.maxScrollSpeed;
-            }
-
-            // Find the next eye position.
-            vec3.normalize(this._tempDirection, this._tempDirection);
-            vec3.copy(this._tempNextEye, this.eye);
-
-            if (diff < 0) {
-                vec3.scale(this._tempVec3, this._tempDirection, trueScrollSpeed * deltaTime);
-                vec3.sub(this._tempNextEye, this._tempNextEye, this._tempVec3);
-            } else {
-                vec3.scale(this._tempVec3, this._tempDirection, trueScrollSpeed * deltaTime);
-                vec3.add(this._tempNextEye, this._tempNextEye, this._tempVec3);
-            }
-
-            // Find the new potential length.
-            vec3.sub(this._tempNextDirection, this.target, this._tempNextEye);
-            const nextLength = this._tempNextDirection.length;
-            vec3.normalize(this._tempNextDirection, this._tempNextDirection);
-
-            // Difference between next direction and direction.
-            vec3.sub(this._tempVec3, this._tempNextDirection, this._tempDirection);
-            const lenSq =vec3.sqrLen(this._tempVec3);
-
-            // Only if within bounds set and no change in direction of a vector.
-            if (nextLength < this._coreCamera.nearPlane
-                || nextLength > this._coreCamera.farPlane
-                || lenSq > 0.01
-            ) {
-                return;
-            }
-
-            vec3.copy(this._coreCamera.eye, this._tempNextEye);
-            this._setPitchAndYawFromDirection(this._coreCamera.direction);
+        if (down !== 2 || first === undefined || second === undefined) {
+            return;
         }
+
+        const d = vec2.distance(first.position, second.position);
+        const diff = d - this._lastTouchDistance;
+        this._lastTouchDistance = d;
+
+        // Nothing to do, same distance.
+        if(diff == 0) {
+            return;
+        }
+
+        // Find the current distance.
+        vec3.copy(this._tempDirection, this.direction);
+        const distance = vec3.len(this._tempDirection);
+
+        // Map it to [1,0.1f] space.
+        const step = MathHelper.map(distance,
+            this._coreCamera.nearPlane, this._coreCamera.farPlane,
+            1, 0.1);
+
+        // Scroll speed is scaled with the distance between eye and target.
+        // - The closer the target is, the slower the scroll speed.
+        let trueScrollSpeed = step * this.scrollSpeed;
+
+        // Clamp to the max scroll speed.
+        if (trueScrollSpeed > this.maxScrollSpeed) {
+            trueScrollSpeed = this.maxScrollSpeed;
+        }
+
+        // Find the next eye position.
+        vec3.normalize(this._tempDirection, this._tempDirection);
+        vec3.copy(this._tempNextEye, this.eye);
+
+        if (diff < 0) {
+            vec3.scale(this._tempVec3, this._tempDirection, trueScrollSpeed * deltaTime);
+            vec3.sub(this._tempNextEye, this._tempNextEye, this._tempVec3);
+        } else {
+            vec3.scale(this._tempVec3, this._tempDirection, trueScrollSpeed * deltaTime);
+            vec3.add(this._tempNextEye, this._tempNextEye, this._tempVec3);
+        }
+
+        // Find the new potential length.
+        vec3.sub(this._tempNextDirection, this.target, this._tempNextEye);
+        const nextLength = this._tempNextDirection.length;
+        vec3.normalize(this._tempNextDirection, this._tempNextDirection);
+
+        // Difference between next direction and direction.
+        vec3.sub(this._tempVec3, this._tempNextDirection, this._tempDirection);
+        const lenSq =vec3.sqrLen(this._tempVec3);
+
+        // Only if within bounds set and no change in direction of a vector.
+        if (nextLength < this._coreCamera.nearPlane
+            || nextLength > this._coreCamera.farPlane
+            || lenSq > 0.01
+        ) {
+            return;
+        }
+
+        vec3.copy(this._coreCamera.eye, this._tempNextEye);
+        this._setPitchAndYawFromDirection(this._coreCamera.direction);
     }
 
     /** Handles forward/backward movement */
@@ -349,15 +366,14 @@ export class OrbitCamera implements ICamera {
 
         // Control pitch and yaw with mouse.
         const mouseState = this._inputManager.getMouseState();
-        const pointerStates = this._inputManager.getPointerStates();
 
         // If we have a mouse, use mouse.
         if (mouseState.isButtonDown(this.orbitButton)) {
             this._handleOrbitMouseMovement(mouseState, deltaTime);
         } else {
 
-            // Else we handle orbit with pointer ( touch ).
-            this._handleOrbitPointerMovement(pointerStates, deltaTime);
+            // Otherwise orbit and pinch with touch.
+            this._handleOrbitTouch(this._inputManager.getTouchCollection(), deltaTime);
 
             // Usually done with scroll wheel.
             this._handleMouseForwardBackwardMovement(mouseState, deltaTime);

@@ -10,4 +10,6 @@ export enum TouchLocationState {
     PRESSED = 2,
     /** The contact moved while held. */
     MOVED = 3,
+    /** The contact was cancelled this frame. This is not a finger lift. */
+    CANCELLED = 4,
 }
