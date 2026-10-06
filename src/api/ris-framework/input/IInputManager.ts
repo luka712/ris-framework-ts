@@ -1,8 +1,8 @@
 import {KeyboardState} from "./KeyboardState";
-import {MouseState} from "./MouseState";
-import {GamePadState} from "./GamePadState";
-import {TouchCollection} from "./TouchCollection";
-import {TouchPanelCapabilities} from "./TouchPanelCapabilities";
+import {MouseState} from "./mouse/MouseState";
+import {GamePadState} from "./gamepad/GamePadState";
+import {TouchCollection} from "./touch/TouchCollection";
+import {TouchPanelCapabilities} from "./touch/TouchPanelCapabilities";
 
 /**
  * The input manager.
