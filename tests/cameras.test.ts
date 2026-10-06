@@ -7,7 +7,8 @@ import {
     OrbitCamera,
     OrthographicCamera,
     PerspectiveCamera,
-    PointerStateCollection,
+    TouchCollection,
+    TouchLocationState,
     type IFramework,
     type IInputManager,
 } from "../src/index.ts";
@@ -74,14 +75,19 @@ function seconds(value: number): GameTime {
     return time;
 }
 
-function createOrbit(mouse: MouseState, near = 0.01, far = 100): {
+function createOrbit(
+    mouse: MouseState,
+    near = 0.01,
+    far = 100,
+    touches = new TouchCollection(),
+): {
     core: HeadlessPerspectiveCamera;
     orbit: OrbitCamera;
 } {
     const core = new HeadlessPerspectiveCamera(framework, Math.PI / 3, 1, near, far);
     const orbit = new OrbitCamera(core, {
         getMouseState: () => mouse,
-        getPointerStates: () => new PointerStateCollection([]),
+        getTouchCollection: () => touches,
     } as IInputManager);
     return { core, orbit };
 }
@@ -281,6 +287,41 @@ describe("OrbitCamera", () => {
         orbit.update(seconds(1));
 
         expectComponents(orbit.eye, [0, 0, -3]);
+    });
+
+    it("yaws from one held touch and ignores a released contact", () => {
+        const touches = new TouchCollection();
+        touches.tryAdd(
+            1,
+            TouchLocationState.MOVED,
+            10,
+            0,
+            0,
+            TouchLocationState.PRESSED,
+            0,
+            0,
+            0,
+        );
+        touches.tryAdd(2, TouchLocationState.RELEASED, 0, 40);
+        const { orbit } = createOrbit(mouseState({}), 0.01, 100, touches);
+
+        orbit.update(seconds(1));
+
+        expectComponents(orbit.eye, [-1.4382766485214233, 0, -2.6327476501464844]);
+        expect(vec3.distance(orbit.eye, orbit.target)).toBeCloseTo(3, 5);
+    });
+
+    it("pinch-zooms from two held touches and skips a repeated distance", () => {
+        const touches = new TouchCollection();
+        touches.tryAdd(1, TouchLocationState.MOVED, 0, 0);
+        touches.tryAdd(2, TouchLocationState.MOVED, 100, 0);
+        const { orbit } = createOrbit(mouseState({}), 0.01, 100, touches);
+
+        orbit.update(seconds(1));
+        expect(orbit.eye[2]).toBeCloseTo(-2.0269126892089844, 5);
+
+        orbit.update(seconds(1));
+        expect(orbit.eye[2]).toBeCloseTo(-2.0269126892089844, 5);
     });
 
     it("rejects a zoom when the length check is outside the far plane", () => {
