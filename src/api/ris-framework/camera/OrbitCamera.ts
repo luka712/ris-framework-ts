@@ -4,11 +4,12 @@ import {PerspectiveCamera} from "./PerspectiveCamera";
 import {IInputManager} from "../input/IInputManager";
 import {MathHelper} from "../utilities/MathHelper";
 import {ICamera} from "./ICamera";
-import {MouseState} from "../input/MouseState";
+import {MouseState} from "../input/mouse/MouseState";
 import {GameTime} from "../time/GameTime";
-import {MouseButton} from "../input/MouseButton";
-import {TouchCollection} from "../input/TouchCollection";
-import {TouchLocation} from "../input/TouchLocation";
+import {MouseButton} from "../input/mouse/MouseButton";
+import {TouchCollection} from "../input/touch/TouchCollection";
+import {TouchLocation} from "../input/touch/TouchLocation";
+import {InputDeviceType} from "../input/InputDeviceType";
 
 /**
  * Camerae that support orbit movement.
@@ -35,7 +36,15 @@ export class OrbitCamera implements ICamera {
     /** The tilt of the camera.*/
     private _pitch = 0;
 
-    constructor(coreCamera: PerspectiveCamera, inputManager: IInputManager) {
+    /**
+     * The constructor.
+     * @param coreCamera The underlying core camera.
+     * @param inputManager The input manager.
+     * @param supportedInputTypes The input devices that control the camera.
+     */
+    public constructor(coreCamera: PerspectiveCamera,
+                       inputManager: IInputManager,
+                       public supportedInputTypes: InputDeviceType = InputDeviceType.MOUSE | InputDeviceType.TOUCHPAD) {
         this._coreCamera = coreCamera;
         this._inputManager = inputManager;
         this.eye = vec3.fromValues(0, 0, -3);
@@ -364,19 +373,26 @@ export class OrbitCamera implements ICamera {
 
         const deltaTime = time.deltaTimeSec;
 
+        const mouseSupported = (this.supportedInputTypes & InputDeviceType.MOUSE) !== 0;
+        const touchSupported = (this.supportedInputTypes & InputDeviceType.TOUCHPAD) !== 0;
+
         // Control pitch and yaw with mouse.
         const mouseState = this._inputManager.getMouseState();
 
         // If we have a mouse, use mouse.
-        if (mouseState.isButtonDown(this.orbitButton)) {
+        if (mouseSupported && mouseState.isButtonDown(this.orbitButton)) {
             this._handleOrbitMouseMovement(mouseState, deltaTime);
         } else {
 
             // Otherwise orbit and pinch with touch.
-            this._handleOrbitTouch(this._inputManager.getTouchCollection(), deltaTime);
+            if (touchSupported) {
+                this._handleOrbitTouch(this._inputManager.getTouchCollection(), deltaTime);
+            }
 
             // Usually done with scroll wheel.
-            this._handleMouseForwardBackwardMovement(mouseState, deltaTime);
+            if (mouseSupported) {
+                this._handleMouseForwardBackwardMovement(mouseState, deltaTime);
+            }
         }
 
         this._coreCamera.update(time);
