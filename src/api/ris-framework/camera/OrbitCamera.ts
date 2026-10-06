@@ -1,4 +1,4 @@
-import {vec3, mat4} from "gl-matrix";
+import {vec3, mat4, vec2} from "gl-matrix";
 import {IUniformBuffer} from "../rendering/buffers/IUniformBuffer";
 import {PerspectiveCamera} from "./PerspectiveCamera";
 import {IInputManager} from "../input/IInputManager";
@@ -7,6 +7,7 @@ import {ICamera} from "./ICamera";
 import {MouseState} from "../input/MouseState";
 import {GameTime} from "../time/GameTime";
 import {MouseButton} from "../input/MouseButton";
+import {PointerStateCollection} from "../input/PointerStateCollection";
 
 /**
  * Camerae that support orbit movement.
@@ -20,6 +21,9 @@ export class OrbitCamera implements ICamera {
     private readonly _tempDirection = vec3.create();
     private readonly _tempNextDirection = vec3.create();
     private readonly _tempNextEye = vec3.create();
+
+    /** For zooming via hand gestures */
+    private _lastPointersDistance = 0;
 
     private readonly _coreCamera: PerspectiveCamera;
     private readonly _inputManager: IInputManager
@@ -161,16 +165,7 @@ export class OrbitCamera implements ICamera {
         this._yaw = -Math.atan2(lookDirection[0], lookDirection[2]);
     }
 
-    /**
-     * Handles the mouse movement for orbit camera.
-     * @param mouseState The mouse state.
-     * @param deltaTime The delta time.
-     */
-    private _handleOrbitMouseMovement(mouseState: MouseState, deltaTime: number): void {
-        const dt = deltaTime * this.sensitivity;
-        this._yaw -= mouseState.dX * dt;
-        this._pitch += mouseState.dY * dt;
-
+    private _calculateOrbitMovement() {
         // Clamp between [1.0, 179.0] degrees.
         this._pitch = MathHelper.clamp(this._pitch, -this.POSITIVE_179_DEG, this.POSITIVE_179_DEG);
 
@@ -191,8 +186,101 @@ export class OrbitCamera implements ICamera {
         vec3.add(this._coreCamera.eye, this._coreCamera.target, this._tempVec3);
     }
 
+    /**
+     * Handles the mouse movement for orbit camera.
+     * @param mouseState The mouse state.
+     * @param deltaTime The delta time.
+     */
+    private _handleOrbitMouseMovement(mouseState: MouseState, deltaTime: number): void {
+        const dt = deltaTime * this.sensitivity;
+        this._yaw -= mouseState.dX * dt;
+        this._pitch += mouseState.dY * dt;
+        this._calculateOrbitMovement();
+    }
+
+    /**
+     * Handles the pointer movement for orbit camera.
+     * @param pointerStateCollection The mouse state.
+     * @param deltaTime The delta time.
+     */
+    private _handleOrbitPointerMovement(pointerStateCollection: PointerStateCollection, deltaTime: number): void {
+
+        // We are moving if only 1 pointer is used ( typically a finger ).
+        if(pointerStateCollection.count == 1) {
+            const state = pointerStateCollection.pointerStates[0];
+
+            const dt = deltaTime * this.sensitivity;
+            this._yaw -= state.dX * dt;
+            this._pitch += state.dY * dt;
+            this._calculateOrbitMovement();
+        }
+        else if(pointerStateCollection.count == 2) {
+            const a = pointerStateCollection.pointerStates[0];
+            const b = pointerStateCollection.pointerStates[1];
+
+            const d = vec2.distance(a.position, b.position);
+            const diff = d - this._lastPointersDistance;
+            this._lastPointersDistance = d;
+
+            // Nothing to do, same distance.
+            if(diff == 0) {
+                return;
+            }
+
+            // Find the current distance.
+            vec3.copy(this._tempDirection, this.direction);
+            const distance = vec3.len(this._tempDirection);
+
+            // Map it to [1,0.1f] space.
+            const step = MathHelper.map(distance,
+                this._coreCamera.nearPlane, this._coreCamera.farPlane,
+                1, 0.1);
+
+            // Scroll speed is scaled with the distance between eye and target.
+            // - The closer the target is, the slower the scroll speed.
+            let trueScrollSpeed = step * this.scrollSpeed;
+
+            // Clamp to the max scroll speed.
+            if (trueScrollSpeed > this.maxScrollSpeed) {
+                trueScrollSpeed = this.maxScrollSpeed;
+            }
+
+            // Find the next eye position.
+            vec3.normalize(this._tempDirection, this._tempDirection);
+            vec3.copy(this._tempNextEye, this.eye);
+
+            if (diff < 0) {
+                vec3.scale(this._tempVec3, this._tempDirection, trueScrollSpeed * deltaTime);
+                vec3.sub(this._tempNextEye, this._tempNextEye, this._tempVec3);
+            } else {
+                vec3.scale(this._tempVec3, this._tempDirection, trueScrollSpeed * deltaTime);
+                vec3.add(this._tempNextEye, this._tempNextEye, this._tempVec3);
+            }
+
+            // Find the new potential length.
+            vec3.sub(this._tempNextDirection, this.target, this._tempNextEye);
+            const nextLength = this._tempNextDirection.length;
+            vec3.normalize(this._tempNextDirection, this._tempNextDirection);
+
+            // Difference between next direction and direction.
+            vec3.sub(this._tempVec3, this._tempNextDirection, this._tempDirection);
+            const lenSq =vec3.sqrLen(this._tempVec3);
+
+            // Only if within bounds set and no change in direction of a vector.
+            if (nextLength < this._coreCamera.nearPlane
+                || nextLength > this._coreCamera.farPlane
+                || lenSq > 0.01
+            ) {
+                return;
+            }
+
+            vec3.copy(this._coreCamera.eye, this._tempNextEye);
+            this._setPitchAndYawFromDirection(this._coreCamera.direction);
+        }
+    }
+
     /** Handles forward/backward movement */
-    private _handleForwardBackwardMovement(mouseState: MouseState, deltaTime: number) {
+    private _handleMouseForwardBackwardMovement(mouseState: MouseState, deltaTime: number) {
 
         const mouseScrollPos = mouseState.scrollWheelPosition[1];
 
@@ -261,11 +349,18 @@ export class OrbitCamera implements ICamera {
 
         // Control pitch and yaw with mouse.
         const mouseState = this._inputManager.getMouseState();
+        const pointerStates = this._inputManager.getPointerStates();
+
+        // If we have a mouse, use mouse.
         if (mouseState.isButtonDown(this.orbitButton)) {
             this._handleOrbitMouseMovement(mouseState, deltaTime);
         } else {
+
+            // Else we handle orbit with pointer ( touch ).
+            this._handleOrbitPointerMovement(pointerStates, deltaTime);
+
             // Usually done with scroll wheel.
-            this._handleForwardBackwardMovement(mouseState, deltaTime);
+            this._handleMouseForwardBackwardMovement(mouseState, deltaTime);
         }
 
         this._coreCamera.update(time);

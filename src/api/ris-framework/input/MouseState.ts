@@ -38,9 +38,9 @@ export class MouseState {
     }
 
     /**
-     * Returns true if  is down in current frame.
-     * @param button - The .
-     * @returns True if  is down.
+     * Returns true if MouseButton is down in current frame.
+     * @param button - The button to check.
+     * @returns True if button is down.
      */
     public isButtonDown(button: MouseButton): boolean {
         return this._downButtons[button];

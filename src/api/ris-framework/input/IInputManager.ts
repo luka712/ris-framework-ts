@@ -1,6 +1,7 @@
 import {KeyboardState} from "./KeyboardState";
 import {MouseState} from "./MouseState";
 import {GamePadState} from "./GamePadState";
+import {PointerStateCollection} from "./PointerStateCollection";
 
 /**
  * The input manager.
@@ -32,6 +33,12 @@ export interface IInputManager {
      * @returns The .
      */
     getGamePadState(gamePadIndex: number): GamePadState;
+
+    /**
+     * Gets the collection of all pointer states.
+     * Pointer is any mouse, touch or pen event.
+     */
+    getPointerStates() : PointerStateCollection;
 
     /**
      * Initialize the input manager.
