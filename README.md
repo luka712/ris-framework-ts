@@ -133,7 +133,7 @@ Register listeners before `initialize()`. Load-content and initialized listeners
 1. Starts KTX2 initialization when `useKtx2` is set, without awaiting it.
 2. Creates the WebGL2 context, swap chain, and default sampler, blend state, and primitive state.
 3. Initializes the sprite batch (a default orthographic camera and a 1×1 white texture).
-4. Initializes input. Mouse move, mouse buttons, and wheel events on the canvas update `framework.input.getMouseState()`. Touch start, move, end, and cancel events on the canvas update `framework.input.getTouchCollection()`, using the same viewport `clientX` / `clientY` coordinates as the mouse. The canvas `touch-action` is set to `none`, and touch start and move call `preventDefault`, so the browser does not scroll or pinch-zoom that canvas.
+4. Initializes input. Mouse move, mouse buttons, and wheel events on the canvas update `framework.input.getMouseState()`. Touch start, move, end, and cancel events on the canvas update `framework.input.getTouchCollection()`, using the same viewport `clientX` / `clientY` coordinates as the mouse. A cancel is `TouchLocationState.CANCELLED`, which is not a finger lift. The canvas `touch-action` is set to `none`, and touch start and move call `preventDefault`, so the browser does not scroll or pinch-zoom that canvas.
 5. Prepares the time manager.
 6. Calls every `addOnLoadContentListener` callback. Async callbacks are not awaited.
 7. Calls every `addOnInitializedListener` callback.

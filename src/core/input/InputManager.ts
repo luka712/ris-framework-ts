@@ -69,6 +69,7 @@ export class InputManager implements IInputManager {
     private static readonly _PHASE_BEGIN = 0;
     private static readonly _PHASE_MOVE = 1;
     private static readonly _PHASE_END = 2;
+    private static readonly _PHASE_CANCEL = 3;
     private static readonly _touchListenerOptions: AddEventListenerOptions = {passive: false};
 
     /** TODO */
@@ -197,7 +198,7 @@ export class InputManager implements IInputManager {
     };
 
     private readonly _onTouchCancel = (event: TouchEvent): void => {
-        this._readTouches(event, InputManager._PHASE_END);
+        this._readTouches(event, InputManager._PHASE_CANCEL);
     };
 
     private _blockBrowserTouchGesture(event: TouchEvent): void {
@@ -218,10 +219,14 @@ export class InputManager implements IInputManager {
                 this._beginTouch(touch);
             } else if (phase === InputManager._PHASE_MOVE) {
                 this._moveTouch(touch);
+            } else if (phase === InputManager._PHASE_CANCEL) {
+                this._cancelTouch(touch);
             } else {
                 this._endTouch(touch);
             }
         }
+
+        this._noteTouchDevice(event);
     }
 
     private _beginTouch(touch: Touch): void {
@@ -245,7 +250,7 @@ export class InputManager implements IInputManager {
 
     private _moveTouch(touch: Touch): void {
         const contact = this._findContact(touch.identifier);
-        if (contact === undefined || contact.state === TouchLocationState.RELEASED) {
+        if (contact === undefined || this._isTerminal(contact)) {
             return;
         }
 
@@ -261,7 +266,7 @@ export class InputManager implements IInputManager {
 
     private _endTouch(touch: Touch): void {
         const contact = this._findContact(touch.identifier);
-        if (contact === undefined || contact.state === TouchLocationState.RELEASED) {
+        if (contact === undefined || this._isTerminal(contact)) {
             return;
         }
 
@@ -272,7 +277,7 @@ export class InputManager implements IInputManager {
         }
         contact.x = touch.clientX;
         contact.y = touch.clientY;
-        // touchend and touchcancel usually report force 0. Keep the last real reading.
+        // touchend usually reports force 0. Keep the last real reading.
         const pressure = this._readPressure(touch);
         if (pressure > 0) {
             contact.pressure = pressure;
@@ -282,6 +287,31 @@ export class InputManager implements IInputManager {
             return;
         }
         contact.state = TouchLocationState.RELEASED;
+    }
+
+    private _cancelTouch(touch: Touch): void {
+        const contact = this._findContact(touch.identifier);
+        if (contact === undefined || contact.state === TouchLocationState.CANCELLED) {
+            return;
+        }
+
+        // A system cancel is not a finger lift, including when the press has not been published yet.
+        if (!contact.hasFramePrevious) {
+            this._rememberCurrentAsPrevious(contact);
+        }
+        contact.x = touch.clientX;
+        contact.y = touch.clientY;
+        const pressure = this._readPressure(touch);
+        if (pressure > 0) {
+            contact.pressure = pressure;
+        }
+        contact.sameFrameReleased = false;
+        contact.state = TouchLocationState.CANCELLED;
+    }
+
+    private _isTerminal(contact: TouchContact): boolean {
+        return contact.state === TouchLocationState.RELEASED
+            || contact.state === TouchLocationState.CANCELLED;
     }
 
     private _rememberCurrentAsPrevious(contact: TouchContact): void {
@@ -339,6 +369,47 @@ export class InputManager implements IInputManager {
         return new TouchPanelCapabilities(maximumTouchCount > 0, maximumTouchCount, hasPressure);
     }
 
+    /**
+     * A touch event means a device is connected, even when maxTouchPoints is 0.
+     * Writes into the existing capabilities instance.
+     */
+    private _noteTouchDevice(event: TouchEvent): void {
+        const changed = event.changedTouches;
+        const liveCount = event.touches.length;
+        if (changed.length === 0 && liveCount === 0) {
+            return;
+        }
+
+        const capabilities = this._touchCapabilities;
+        let maximumTouchCount = capabilities.maximumTouchCount;
+        if (liveCount > maximumTouchCount) {
+            maximumTouchCount = liveCount;
+        }
+        if (maximumTouchCount < 1 && changed.length > maximumTouchCount) {
+            maximumTouchCount = changed.length;
+        }
+
+        let hasPressure = capabilities.hasPressure;
+        if (!hasPressure) {
+            const length = changed.length;
+            for (let i = 0; i < length; i++) {
+                const touch = changed.item(i);
+                if (touch !== null && touch.force > 0) {
+                    hasPressure = true;
+                    break;
+                }
+            }
+        }
+
+        if (capabilities.isConnected
+            && capabilities.maximumTouchCount === maximumTouchCount
+            && capabilities.hasPressure === hasPressure) {
+            return;
+        }
+
+        capabilities.set(true, maximumTouchCount, hasPressure);
+    }
+
     private _publishTouches(): void {
         const collection = this._touchCollection;
         collection.clear();
@@ -377,7 +448,7 @@ export class InputManager implements IInputManager {
 
     /**
      * Pressed becomes moved, and a same-frame release becomes released, after the frame has read them.
-     * Released contacts leave the pool so the next publish does not report them again.
+     * Released and cancelled contacts leave the pool so the next publish does not report them again.
      */
     private _ageTouches(): void {
         const contacts = this._contacts;
@@ -388,7 +459,8 @@ export class InputManager implements IInputManager {
                 continue;
             }
 
-            if (contact.state === TouchLocationState.RELEASED) {
+            if (contact.state === TouchLocationState.RELEASED
+                || contact.state === TouchLocationState.CANCELLED) {
                 contact.releaseSlot();
                 continue;
             }
