@@ -52,11 +52,14 @@ export class WebGlTextureUtilities {
         gl.texStorage2D(gl.TEXTURE_2D, mipLevels, internalFormat, width, height);
 
         if (data) {
+            // texStorage2D and KTX keep every mip at least 1×1. A right shift
+            // would pass 0 for the shorter side of a non-square RGBA32 chain.
+            let levelWidth = width;
+            let levelHeight = height;
+
             for (let i = 0; i < mipLevels; i++) {
 
                 const mipLevelData = data[i];
-                const levelWidth = width >> i;
-                const levelHeight = height >> i;
 
                 if (mipLevelData instanceof HTMLImageElement) {
                     gl.texSubImage2D(gl.TEXTURE_2D, i, 0, 0, levelWidth, levelHeight, format, gl.UNSIGNED_BYTE, mipLevelData);
@@ -69,6 +72,9 @@ export class WebGlTextureUtilities {
                 } else {
                     throw new Error("unsupported data type");
                 }
+
+                levelWidth = Math.max(1, Math.floor(levelWidth / 2));
+                levelHeight = Math.max(1, Math.floor(levelHeight / 2));
             }
         }
 

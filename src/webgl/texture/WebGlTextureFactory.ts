@@ -58,14 +58,26 @@ export class WebGlTextureFactory implements ITextureFactory {
                     transcodeFormat = KtxTranscodeFormat.ETC2_RGBA;
                     textureFormat = TextureFormat.ETC2_RGBA8_UNORM;
                 }
+                else
+                {
+                    // NO_SELECTION is not a transcode target, and
+                    // convertKtxTranscodeFormatToVkFormat throws on it.
+                    transcodeFormat = KtxTranscodeFormat.RGBA32;
+                    textureFormat = TextureFormat.RGBA_8_UNORM;
+                }
             }
             else
             {
+                // Returns only RGBA32, ASTC_4X4_RGBA, BC3_RGBA, BC7_RGBA, or
+                // ETC2_RGBA. convertKtxTranscodeFormatToVkFormat accepts each
+                // of those. It throws for KTX_TTF_ETC, BC1_OR_3, and
+                // NO_SELECTION, which this helper does not return. Any other
+                // descriptor format throws from this call and is not transcoded.
                 transcodeFormat = TextureUtilities.convertTextureFormatToKtxTranscodeFormat(textureFormat);
             }
 
             ktxTexture.transcodeBasis(transcodeFormat, KtxTranscodeFlags.HIGH_QUALITY);
-            texFormatInfo = ktxTexture.getTextureFormatInfo(transcodeFormat);
+            texFormatInfo = ktxTexture.getTextureFormatInfo(TextureUtilities.convertKtxTranscodeFormatToVkFormat(transcodeFormat));
         }
         else {
             // No transcoding path, but still get info about the texture format.
