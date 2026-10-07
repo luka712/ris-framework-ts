@@ -98,4 +98,52 @@ describe("TextureUtilities", () => {
         expect(() => TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.DEPTH_24_STENCIL_8))
             .toThrow(`Not implemented: ${TextureFormat.DEPTH_24_STENCIL_8}`);
     });
+
+    it("maps KTX transcode targets onto unsigned normalized Vulkan formats", () => {
+        const mapped: Array<[KtxTranscodeFormat, VkFormat]> = [
+            [KtxTranscodeFormat.KTX_TTF_ETC1_RGB, VkFormat.ETC2_R8G8B8_UNORM_BLOCK],
+            [KtxTranscodeFormat.ETC2_RGBA, VkFormat.ETC2_R8G8B8A8_UNORM_BLOCK],
+            [KtxTranscodeFormat.KTX_TTF_BC1_RGB, VkFormat.BC1_RGB_UNORM_BLOCK],
+            [KtxTranscodeFormat.BC3_RGBA, VkFormat.BC3_UNORM_BLOCK],
+            [KtxTranscodeFormat.KTX_TTF_BC4_R, VkFormat.BC4_UNORM_BLOCK],
+            [KtxTranscodeFormat.KTX_TTF_BC5_RG, VkFormat.BC5_UNORM_BLOCK],
+            [KtxTranscodeFormat.BC7_RGBA, VkFormat.BC7_UNORM_BLOCK],
+            [KtxTranscodeFormat.KTX_TTF_PVRTC1_4_RGB, VkFormat.PVRTC1_4BPP_UNORM_BLOCK_IMG],
+            [KtxTranscodeFormat.KTX_TTF_PVRTC1_4_RGBA, VkFormat.PVRTC1_4BPP_UNORM_BLOCK_IMG],
+            [KtxTranscodeFormat.ASTC_4X4_RGBA, VkFormat.ASTC_4X4_UNORM_BLOCK],
+            [KtxTranscodeFormat.RGBA32, VkFormat.R8G8B8A8_UNORM],
+            [KtxTranscodeFormat.KTX_TTF_RGB565, VkFormat.R5G6B5_UNORM_PACK16],
+            [KtxTranscodeFormat.KTX_TTF_BGR565, VkFormat.B5G6R5_UNORM_PACK16],
+            [KtxTranscodeFormat.KTX_TTF_RGBA4444, VkFormat.R4G4B4A4_UNORM_PACK16],
+            [KtxTranscodeFormat.KTX_TTF_PVRTC2_4_RGB, VkFormat.PVRTC2_4BPP_UNORM_BLOCK_IMG],
+            [KtxTranscodeFormat.KTX_TTF_PVRTC2_4_RGBA, VkFormat.PVRTC2_4BPP_UNORM_BLOCK_IMG],
+            [KtxTranscodeFormat.KTX_TTF_ETC2_EAC_R11, VkFormat.EAC_R11_UNORM_BLOCK],
+            [KtxTranscodeFormat.KTX_TTF_ETC2_EAC_RG11, VkFormat.EAC_R11G11_UNORM_BLOCK],
+        ];
+
+        for (const [transcodeFormat, vkFormat] of mapped) {
+            expect(TextureUtilities.convertKtxTranscodeFormatToVkFormat(transcodeFormat)).toBe(vkFormat);
+        }
+
+        const shared = [
+            TextureFormat.RGBA_8_UNORM,
+            TextureFormat.ASTC_4X4_RGBA,
+            TextureFormat.BC3_RGBA_UNORM,
+            TextureFormat.BC7_RGBA_UNORM,
+            TextureFormat.ETC2_RGBA8_UNORM,
+        ];
+
+        for (const textureFormat of shared) {
+            const transcodeFormat = TextureUtilities.convertTextureFormatToKtxTranscodeFormat(textureFormat);
+            const vkFormat = TextureUtilities.convertKtxTranscodeFormatToVkFormat(transcodeFormat);
+            expect(TextureUtilities.convertVkFormatToTextureFormat(vkFormat)).toBe(textureFormat);
+        }
+
+        expect(() => TextureUtilities.convertKtxTranscodeFormatToVkFormat(KtxTranscodeFormat.KTX_TTF_ETC))
+            .toThrow(`Not implemented: ${KtxTranscodeFormat.KTX_TTF_ETC}`);
+        expect(() => TextureUtilities.convertKtxTranscodeFormatToVkFormat(KtxTranscodeFormat.BC1_OR_3))
+            .toThrow(`Not implemented: ${KtxTranscodeFormat.BC1_OR_3}`);
+        expect(() => TextureUtilities.convertKtxTranscodeFormatToVkFormat(KtxTranscodeFormat.NO_SELECTION))
+            .toThrow(`Not implemented: ${KtxTranscodeFormat.NO_SELECTION}`);
+    });
 });
