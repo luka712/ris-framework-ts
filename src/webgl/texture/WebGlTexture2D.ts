@@ -4,7 +4,7 @@ import {
     type IFramework, State,
     type ITextureView,
     type TextureViewDescriptor, TextureUtilities
-} from "ris-framework-api";
+} from "../../api/index.ts";
 import type {WebGlGraphicsDevice} from "../WebGlGraphicsDevice.ts";
 import {ATexture2D} from "../../core/rendering/texture/texture.ts";
 import {vec2} from "gl-matrix";

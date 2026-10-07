@@ -1,6 +1,6 @@
 import { TextureSamplerFilteringPreset } from "./rendering/enums.ts";
 import {vec2} from "gl-matrix";
-import {IFrameworkConfig} from "ris-framework-api";
+import {IFrameworkConfig} from "../api/index.ts";
 
 /**
  * The options for configuring the Framework.

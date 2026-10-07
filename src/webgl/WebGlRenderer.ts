@@ -1,7 +1,7 @@
 import { type RenderConfiguration } from "../core/renderer/renderer-interface";
 import { ARenderer } from "../core/rendering/ARenderer.ts";
 import { WebGlGraphicsDevice } from "./WebGlGraphicsDevice.ts";
-import type {IFramework, IGraphicsDevice} from "ris-framework-api";
+import type {IFramework, IGraphicsDevice} from "../api/index.ts";
 
 /**
  * The WebGL implementation of the IRenderer interface.

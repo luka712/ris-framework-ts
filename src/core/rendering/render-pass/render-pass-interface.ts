@@ -1,4 +1,4 @@
-import type {IDisposable} from "ris-framework-api";
+import type {IDisposable} from "../../../api/index.ts";
 
 /**
  * Defines the interface for a render pass, which encapsulates the operations and state management required to execute a rendering sequence.

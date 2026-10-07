@@ -1,6 +1,6 @@
 import { type PrimitiveTopology, CullMode, type FrontFace } from "../../core/rendering/primitive/enums";
 import type { PrimitiveStateDescriptor } from "../../core/rendering/primitive/PrimitiveStateDescriptor.ts";
-import type { IPrimitiveState } from "ris-framework-api";
+import type { IPrimitiveState } from "../../api/index.ts";
 import { WebGlConverter } from "../utilities/WebGlConverter.ts";
 
 /**

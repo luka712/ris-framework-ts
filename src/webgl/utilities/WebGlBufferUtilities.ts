@@ -1,5 +1,5 @@
 import { WebGlConverter } from "./WebGlConverter.ts";
-import type {BufferUsage} from "ris-framework-api";
+import type {BufferUsage} from "../../api/index.ts";
 
 /**
  * This file contains utility functions for working with WebGL buffers, 

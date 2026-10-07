@@ -17,7 +17,7 @@ import type {
     IWindowManager,
     RenderPassDescriptor,
     SwapChainDescriptor
-} from "ris-framework-api";
+} from "../api/index.ts";
 import type {SamplerDescriptor} from "../core/rendering/sampler/sampler-descriptor.ts";
 
 export class WebGlGraphicsDevice extends AGraphicsDevice {

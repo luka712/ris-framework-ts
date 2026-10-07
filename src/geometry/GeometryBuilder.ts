@@ -1,6 +1,6 @@
 import { vec2 } from "gl-matrix"
 import { BaseGeometry } from "./BaseGeometry.ts";
-import type {IGeometry, IGeometryBuilder} from "ris-framework-api";
+import type {IGeometry, IGeometryBuilder} from "../api/index.ts";
 
 /**
  * The GeometryBuilder class provides methods for creating various types of geometries, such as quads, with specified parameters like scale and winding order.

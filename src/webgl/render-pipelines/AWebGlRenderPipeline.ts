@@ -1,4 +1,4 @@
-import type {IBlendState, IFramework, IIndexBuffer, IPrimitiveState, IRenderPipeline, IVertexBuffer} from "ris-framework-api";
+import type {IBlendState, IFramework, IIndexBuffer, IPrimitiveState, IRenderPipeline, IVertexBuffer} from "../../api/index.ts";
 import type {VertexBufferLayout} from '../../core/rendering/vertex-buffer-layout';
 import type {WebGlBlendState} from '../blending/webgl-blend-state';
 import type {WebGlPrimitiveState} from '../primitive/WebGlPrimitiveState.ts';

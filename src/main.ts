@@ -15,7 +15,7 @@ import {
   Rect,
   SamplerDescriptor,
   SamplerFilter, TextureDescriptor, TextureFormat
-} from "ris-framework-api";
+} from "./api/index.ts";
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div>

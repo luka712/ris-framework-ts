@@ -1,5 +1,5 @@
 import WebGlShaderModule from "./WebGlShaderModule.ts";
-import type {IFramework, IShaderModule} from "ris-framework-api";
+import type {IFramework, IShaderModule} from "../../api/index.ts";
 
 
 /**

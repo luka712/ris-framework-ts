@@ -11,7 +11,7 @@ import {
     type IPrimitiveState,
     type IGraphicsDevice, SwapChainDescriptor, type RenderPassDescriptor, SamplerFilter, MipMapSamplerFilter,
     type ISwapChain
-} from "ris-framework-api";
+} from "../../api/index.ts";
 
 /**
  * The descriptor for the graphics device. This is used to configure the graphics device during initialization.

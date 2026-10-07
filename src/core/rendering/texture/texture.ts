@@ -5,7 +5,7 @@ import {
     type TextureFormat,
     TextureUsage,
     TextureViewDescriptor
-} from "ris-framework-api";
+} from "../../../api/index.ts";
 import {vec2} from "gl-matrix";
 
 /**

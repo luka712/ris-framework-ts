@@ -1,4 +1,4 @@
-import { VertexStepMode } from "ris-framework-api";
+import { VertexStepMode } from "../../api/index.ts";
 import type {  VertexAttribute } from "./vertex-attribute";
 import {VertexFormat} from "../../VertexFormat.ts";
 

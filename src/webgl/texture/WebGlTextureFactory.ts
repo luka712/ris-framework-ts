@@ -7,7 +7,7 @@ import {
     TextureFormat,
     TextureUsage,
     TextureUtilities
-} from "ris-framework-api"
+} from "../../api/index.ts"
 import {WebGlTexture2D} from "./WebGlTexture2D.ts";
 import {type IKtx2Texture, KtxTranscodeFlags, KtxTranscodeFormat, TextureFormatInfo, VkFormat} from "ris-ktx2-api";
 import {vec2} from "gl-matrix";

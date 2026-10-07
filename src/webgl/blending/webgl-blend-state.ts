@@ -1,7 +1,7 @@
 import type { BlendStateDescriptor } from "../../core/rendering/blending/blend-state-descriptor";
 import { WebGlConverter } from "../utilities/WebGlConverter.ts";
 import type { WebGlGraphicsDevice } from "../WebGlGraphicsDevice.ts";
-import type {IBlendState} from "ris-framework-api";
+import type {IBlendState} from "../../api/index.ts";
 
 /**
  * The WebGL blend state.

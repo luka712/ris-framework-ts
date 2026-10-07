@@ -1,5 +1,5 @@
 import {WebGlConverter} from "./WebGlConverter.ts";
-import {TextureFormat} from "ris-framework-api";
+import {TextureFormat} from "../../api/index.ts";
 import {vec2} from "gl-matrix";
 
 /**

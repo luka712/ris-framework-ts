@@ -6,7 +6,7 @@ import {VertexBufferLayout} from "../../core/rendering/vertex-buffer-layout";
 import type {WebGlTexture2D} from "../texture/WebGlTexture2D.ts";
 import WebGlShaderModule from "../shader/WebGlShaderModule.ts";
 import {AWebGlRenderPipeline} from "./AWebGlRenderPipeline.ts";
-import {BufferUsage, type IFramework, type IMainRenderTargetRenderPipeline, type ITexture2D} from "ris-framework-api";
+import {BufferUsage, type IFramework, type IMainRenderTargetRenderPipeline, type ITexture2D} from "../../api/index.ts";
 
 /**
  * The WebGL implementation of the main render target render pipeline.
