@@ -40,6 +40,27 @@ export class TextureUtilities {
         [TextureFormat.ETC2_RGBA8_UNORM]: KtxTranscodeFormat.ETC2_RGBA,
     };
 
+    private static readonly _mapKtxTranscodeFormatVkFormat: { [key: number]: number } = {
+        [KtxTranscodeFormat.KTX_TTF_ETC1_RGB]: VkFormat.ETC2_R8G8B8_UNORM_BLOCK,
+        [KtxTranscodeFormat.ETC2_RGBA]: VkFormat.ETC2_R8G8B8A8_UNORM_BLOCK,
+        [KtxTranscodeFormat.KTX_TTF_BC1_RGB]: VkFormat.BC1_RGB_UNORM_BLOCK,
+        [KtxTranscodeFormat.BC3_RGBA]: VkFormat.BC3_UNORM_BLOCK,
+        [KtxTranscodeFormat.KTX_TTF_BC4_R]: VkFormat.BC4_UNORM_BLOCK,
+        [KtxTranscodeFormat.KTX_TTF_BC5_RG]: VkFormat.BC5_UNORM_BLOCK,
+        [KtxTranscodeFormat.BC7_RGBA]: VkFormat.BC7_UNORM_BLOCK,
+        [KtxTranscodeFormat.KTX_TTF_PVRTC1_4_RGB]: VkFormat.PVRTC1_4BPP_UNORM_BLOCK_IMG,
+        [KtxTranscodeFormat.KTX_TTF_PVRTC1_4_RGBA]: VkFormat.PVRTC1_4BPP_UNORM_BLOCK_IMG,
+        [KtxTranscodeFormat.ASTC_4X4_RGBA]: VkFormat.ASTC_4X4_UNORM_BLOCK,
+        [KtxTranscodeFormat.RGBA32]: VkFormat.R8G8B8A8_UNORM,
+        [KtxTranscodeFormat.KTX_TTF_RGB565]: VkFormat.R5G6B5_UNORM_PACK16,
+        [KtxTranscodeFormat.KTX_TTF_BGR565]: VkFormat.B5G6R5_UNORM_PACK16,
+        [KtxTranscodeFormat.KTX_TTF_RGBA4444]: VkFormat.R4G4B4A4_UNORM_PACK16,
+        [KtxTranscodeFormat.KTX_TTF_PVRTC2_4_RGB]: VkFormat.PVRTC2_4BPP_UNORM_BLOCK_IMG,
+        [KtxTranscodeFormat.KTX_TTF_PVRTC2_4_RGBA]: VkFormat.PVRTC2_4BPP_UNORM_BLOCK_IMG,
+        [KtxTranscodeFormat.KTX_TTF_ETC2_EAC_R11]: VkFormat.EAC_R11_UNORM_BLOCK,
+        [KtxTranscodeFormat.KTX_TTF_ETC2_EAC_RG11]: VkFormat.EAC_R11G11_UNORM_BLOCK,
+    };
+
     /**
      * Checks if the given texture format is a compressed texture format.
      * @param format - The texture format to check.
@@ -61,7 +82,7 @@ export class TextureUtilities {
     }
 
     /**
-     * Gets the number of         [TextureFormat.ETC2_RGBA8_UNORM] : VkFormat.ETC2_R8G8B8_UNORM_BLOCK,VRAM reserved for a given texture format of a given size.
+     * Gets the number of VRAM reserved for a given texture format of a given size.
      *
      * @param textureFormat The texture format.
      * @param width Texture width.
@@ -108,6 +129,19 @@ export class TextureUtilities {
         const format = this._mapTextureFormatKtxTranscodeFormat[textureFormat];
         if (!format) {
             throw new Error(`Not implemented: ${textureFormat}`);
+        }
+        return format;
+    }
+
+    /**
+     * Converts the Ktx Transcode Format to VkFormat.
+     * @param transcodeFormat The KTX transcode format.
+     * @returns The VkFormat.
+     */
+    public static convertKtxTranscodeFormatToVkFormat(transcodeFormat: KtxTranscodeFormat): VkFormat {
+        const format = this._mapKtxTranscodeFormatVkFormat[transcodeFormat];
+        if (!format) {
+            throw new Error(`Not implemented: ${transcodeFormat}`);
         }
         return format;
     }
