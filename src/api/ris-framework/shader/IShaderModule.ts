@@ -1,5 +1,5 @@
-import {IContent} from "../content/IContent";
-import {ShaderStage} from "./ShaderStage";
+import type { IContent } from "../content/IContent.ts";
+import {ShaderStage} from "./ShaderStage.ts";
 
 /**
  * The shader module.

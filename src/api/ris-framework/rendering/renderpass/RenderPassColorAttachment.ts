@@ -1,9 +1,9 @@
-import {ISwapChain} from "../swapchain/ISwapChain";
-import {Color} from "../../data/Color";
-import {ITexture2D} from "../texture/ITexture2D";
-import {ITextureView} from "../texture/ITextureView";
-import {StoreAction} from "./StoreAction";
-import {LoadAction} from "./LoadAction";
+import type { ISwapChain } from "../swapchain/ISwapChain.ts";
+import {Color} from "../../data/Color.ts";
+import type { ITexture2D } from "../texture/ITexture2D.ts";
+import type { ITextureView } from "../texture/ITextureView.ts";
+import {StoreAction} from "./StoreAction.ts";
+import {LoadAction} from "./LoadAction.ts";
 
 /**
  * Color attachment for a render pass.

@@ -1,4 +1,4 @@
-import {GeometryFormat} from "../geometry/GeometryFormat";
+import {GeometryFormat} from "../geometry/GeometryFormat.ts";
 
 /**
  * The geometry utilities.

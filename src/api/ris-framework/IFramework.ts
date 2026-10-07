@@ -1,23 +1,23 @@
-import {RenderingBackend} from "./rendering/RenderingBackend";
-import {ISpriteBatch} from "./sprites/ISpriteBatch";
-import {IRenderer} from "./rendering/IRenderer";
-import {IGraphicsDevice} from "./rendering/IGraphicsDevice";
-import {IRenderPipelineFactory} from "./rendering/render-pipelines/IRenderPipelineFactory";
-import {IBufferFactory} from "./rendering/buffers/IBufferFactory";
-import {IGeometryBuilder} from "./geometry/IGeometryBuilder";
-import {ICameraFactory} from "./camera/ICameraFactory";
-import {ITextureFactory} from "./rendering/texture/ITextureFactory";
-import {IContentManager} from "./content/IContentManager";
-import {IImageLoader} from "./loaders/IImageLoader";
-import {IMeshFactory} from "./meshes/IMeshFactory";
-import {IMaterialFactory} from "./material/IMaterialFactory";
-import {ITimeManager} from "./time/ITimeManager";
-import {IInputManager} from "./input/IInputManager";
-import {IWindowManager} from "./window/IWindowManager";
-import {GameTime} from "./time/GameTime";
-import {IImageProcessor} from "./image/IImageProcessor";
-import {IKtx2Factory} from "ris-ktx2-api";
-import {IDisposable} from "./core/IDisposable";
+import {RenderingBackend} from "./rendering/RenderingBackend.ts";
+import type { ISpriteBatch } from "./sprites/ISpriteBatch.ts";
+import type { IRenderer } from "./rendering/IRenderer.ts";
+import type { IGraphicsDevice } from "./rendering/IGraphicsDevice.ts";
+import type { IRenderPipelineFactory } from "./rendering/render-pipelines/IRenderPipelineFactory.ts";
+import type { IBufferFactory } from "./rendering/buffers/IBufferFactory.ts";
+import type { IGeometryBuilder } from "./geometry/IGeometryBuilder.ts";
+import type { ICameraFactory } from "./camera/ICameraFactory.ts";
+import type { ITextureFactory } from "./rendering/texture/ITextureFactory.ts";
+import type { IContentManager } from "./content/IContentManager.ts";
+import type { IImageLoader } from "./loaders/IImageLoader.ts";
+import type { IMeshFactory } from "./meshes/IMeshFactory.ts";
+import type { IMaterialFactory } from "./material/IMaterialFactory.ts";
+import type { ITimeManager } from "./time/ITimeManager.ts";
+import type { IInputManager } from "./input/IInputManager.ts";
+import type { IWindowManager } from "./window/IWindowManager.ts";
+import {GameTime} from "./time/GameTime.ts";
+import type { IImageProcessor } from "./image/IImageProcessor.ts";
+import type { IKtx2Factory } from "ris-ktx2-api";
+import type { IDisposable } from "./core/IDisposable.ts";
 
 /** The framework interface. */
 export interface IFramework extends IDisposable {

@@ -1,9 +1,9 @@
-import {ITextureView} from "./ITextureView";
-import {IContent} from "../../content/IContent";
-import {TextureUsage} from "./TextureUsage";
-import {State} from "../../data/State";
-import {TextureViewDescriptor} from "./TextureViewDescriptor";
-import {TextureFormat} from "./TextureFormat";
+import type { ITextureView } from "./ITextureView.ts";
+import type { IContent } from "../../content/IContent.ts";
+import {TextureUsage} from "./TextureUsage.ts";
+import {State} from "../../data/State.ts";
+import {TextureViewDescriptor} from "./TextureViewDescriptor.ts";
+import {TextureFormat} from "./TextureFormat.ts";
 
 /**
  * The texture 2D interface.

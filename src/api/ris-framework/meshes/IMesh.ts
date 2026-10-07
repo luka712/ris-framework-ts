@@ -1,6 +1,6 @@
-import {IVertexBuffer} from "../rendering/buffers/IVertexBuffer";
-import {IDisposable} from "../core/IDisposable";
-import {IIndexBuffer} from "../rendering/buffers/IIndexBuffer";
+import type { IVertexBuffer } from "../rendering/buffers/IVertexBuffer.ts";
+import type { IDisposable } from "../core/IDisposable.ts";
+import type { IIndexBuffer } from "../rendering/buffers/IIndexBuffer.ts";
 
 /**
  * The mesh interface.

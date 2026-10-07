@@ -1,3 +1,3 @@
-export * from "./Color";
-export * from "./State";
-export * from "./Rect";
+export * from "./Color.ts";
+export * from "./State.ts";
+export * from "./Rect.ts";

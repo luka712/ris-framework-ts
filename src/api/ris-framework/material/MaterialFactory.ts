@@ -1,7 +1,7 @@
-import {InspectTextureMipsMaterial} from "./InspectTextureMipsMaterial";
-import {IFramework} from "../IFramework";
-import {IMaterialFactory} from "./IMaterialFactory";
-import {UnlitMaterial, UnlitMaterialDescriptor} from "./UnlitMaterial";
+import {InspectTextureMipsMaterial} from "./InspectTextureMipsMaterial.ts";
+import type { IFramework } from "../IFramework.ts";
+import type { IMaterialFactory } from "./IMaterialFactory.ts";
+import {UnlitMaterial, UnlitMaterialDescriptor} from "./UnlitMaterial.ts";
 
 /**
  * The material factory.

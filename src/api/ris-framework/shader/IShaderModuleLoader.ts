@@ -1,4 +1,4 @@
-import {IShaderModule} from "./IShaderModule";
+import type { IShaderModule } from "./IShaderModule.ts";
 
 /**
  * The loader for shader modules.

@@ -1,5 +1,5 @@
-import {IImageProcessor} from "./IImageProcessor";
-import {RawImageData} from "./RawImageData";
+import type { IImageProcessor } from "./IImageProcessor.ts";
+import {RawImageData} from "./RawImageData.ts";
 import {vec2} from "gl-matrix";
 
 /**
@@ -104,6 +104,7 @@ export class CpuImageProcessor implements IImageProcessor {
         context.drawImage(image, 0, 0, w, h);
 
         const pixels = context.getImageData(0, 0, w, h);
+        void pixels;
 
         const resizedImage = new Image();
         resizedImage.width = w;

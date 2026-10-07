@@ -3,7 +3,7 @@ import "reflect-metadata";
 import {Framework} from "../../src/core/Framework.ts";
 import {FrameworkConfig} from "../../src/core/FrameworkConfig.ts";
 import {TextureSamplerFilteringPreset} from "../../src/core/rendering/enums.ts";
-import {Color, Rect, type IFramework, type ITexture2D} from "ris-framework-api";
+import {Color, Rect, type IFramework, type ITexture2D} from "../../src/api/index.ts";
 // Vite inlines files under 4KB as data URLs. A data URL does not end in
 // ".ktx2", so ContentManager would skip the KTX2 loader. `no-inline` emits a
 // file URL. Dev still appends "?no-inline", which fails that suffix check.

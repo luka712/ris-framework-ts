@@ -1,5 +1,5 @@
-import {RenderPassDepthStencilAttachment} from "./RenderPassDepthStencilAttachment";
-import {RenderPassColorAttachment} from "./RenderPassColorAttachment";
+import {RenderPassDepthStencilAttachment} from "./RenderPassDepthStencilAttachment.ts";
+import {RenderPassColorAttachment} from "./RenderPassColorAttachment.ts";
 
 /**
  * The render pass.

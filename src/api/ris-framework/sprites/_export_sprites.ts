@@ -1,1 +1,1 @@
-export * from "./ISpriteBatch";
+export * from "./ISpriteBatch.ts";

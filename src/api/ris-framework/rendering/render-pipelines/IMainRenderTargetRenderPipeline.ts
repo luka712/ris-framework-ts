@@ -1,5 +1,5 @@
-import {IRenderPipeline} from "./IRenderPipeline";
-import {ITexture2D} from "../texture/ITexture2D";
+import type { IRenderPipeline } from "./IRenderPipeline.ts";
+import type { ITexture2D } from "../texture/ITexture2D.ts";
 
 /**
  * Pipeline that is used in renderer as

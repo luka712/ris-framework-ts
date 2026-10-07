@@ -1,3 +1,3 @@
-export * from "./GameTime";
-export * from "./ITimeManager";
-export * from "./TimeManager";
+export * from "./GameTime.ts";
+export * from "./ITimeManager.ts";
+export * from "./TimeManager.ts";

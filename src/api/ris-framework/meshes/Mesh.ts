@@ -1,16 +1,16 @@
 /**
  * The mesh is a building class for a world shape.
  */
-import {State} from "../data/State";
-import {IVertexBuffer} from "../rendering/buffers/IVertexBuffer";
-import {IIndexBuffer} from "../rendering/buffers/IIndexBuffer";
-import {IFramework} from "../IFramework";
-import {IMesh} from "./IMesh";
-import {BufferUsage} from "../rendering/buffers/BufferUsage";
-import {IGeometry} from "../geometry/IGeometry";
-import {GeometryFormat} from "../geometry/GeometryFormat";
-import {MeshParameters} from "./MeshParameters";
-import {GeometryUtilities} from "../utilities/GeometryUtilities";
+import {State} from "../data/State.ts";
+import type { IVertexBuffer } from "../rendering/buffers/IVertexBuffer.ts";
+import type { IIndexBuffer } from "../rendering/buffers/IIndexBuffer.ts";
+import type { IFramework } from "../IFramework.ts";
+import type { IMesh } from "./IMesh.ts";
+import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
+import type { IGeometry } from "../geometry/IGeometry.ts";
+import {GeometryFormat} from "../geometry/GeometryFormat.ts";
+import {MeshParameters} from "./MeshParameters.ts";
+import {GeometryUtilities} from "../utilities/GeometryUtilities.ts";
 
 /**
  * The mesh.

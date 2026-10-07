@@ -1,9 +1,8 @@
-import {ITexture2D} from "../rendering/texture/ITexture2D";
-import {Rect} from "../data/Rect";
-import {Color} from "../data/Color";
+import type { ITexture2D } from "../rendering/texture/ITexture2D.ts";
+import {Rect} from "../data/Rect.ts";
+import {Color} from "../data/Color.ts";
 import {vec2, mat4} from "gl-matrix"
-import {IUniformBuffer} from "../rendering/buffers/IUniformBuffer";
-import {ISampler} from "../rendering/sampler/ISampler";
+import type { ISampler } from "../rendering/sampler/ISampler.ts";
 
 /**
  * The sprite batch.

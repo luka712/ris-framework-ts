@@ -1,5 +1,5 @@
-import {BufferUsage} from "./BufferUsage";
-import {IDisposable} from "../../core/IDisposable";
+import {BufferUsage} from "./BufferUsage.ts";
+import type { IDisposable } from "../../core/IDisposable.ts";
 
 /**
  * The common interface for all buffers.

@@ -1,4 +1,4 @@
-import {IContent} from "./IContent";
+import type { IContent } from "./IContent.ts";
 
 /**
  * The content module.

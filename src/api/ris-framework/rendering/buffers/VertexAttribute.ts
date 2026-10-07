@@ -1,5 +1,5 @@
 
-import {VertexFormat} from "../../geometry/VertexFormat";
+import {VertexFormat} from "../../geometry/VertexFormat.ts";
 
 /**
  * The vertex attribute class.

@@ -1,5 +1,5 @@
-import {TextureFormat} from "./TextureFormat";
-import {TextureUsage} from "./TextureUsage";
+import {TextureFormat} from "./TextureFormat.ts";
+import {TextureUsage} from "./TextureUsage.ts";
 import {vec2} from "gl-matrix";
 
 /**

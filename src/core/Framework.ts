@@ -12,18 +12,18 @@ import {
     type IBufferFactory, type IGeometryBuilder, type IGraphicsDevice, type IImageProcessor, type IInputManager,
     ImageLoader,
     type IMeshFactory, type ISpriteBatch, type ITextureFactory, type ITimeManager, RenderingBackend, TimeManager
-} from "ris-framework-api";
+} from "../api/index.ts";
 import {WebGlShaderModuleLoader} from "../webgl/shader/WebGlShaderModuleLoader.ts";
 import {TextureSamplerFilteringPreset} from "./rendering/enums.ts";
 import {SpriteBatch} from "./sprite-batch/SpriteBatch.ts";
 import type {ICameraFactory, IContentManager, IFramework, IImageLoader,
     IRenderer,
     IWindowManager
-} from "ris-framework-api";
+} from "../api/index.ts";
 import {WebGlTextureFactory} from "../webgl/texture/WebGlTextureFactory.ts";
 import {WebGlRenderPipelineFactory} from "../webgl/render-pipelines/WebGlRenderPipelineFactory.ts";
-import type {IRenderPipelineFactory} from "ris-framework-api";
-import {MeshFactory, type IMaterialFactory, MaterialFactory} from "ris-framework-api";
+import type {IRenderPipelineFactory} from "../api/index.ts";
+import {MeshFactory, type IMaterialFactory, MaterialFactory} from "../api/index.ts";
 import {InputManager} from "./input/InputManager.ts";
 import {Ktx2Factory} from "ris-ktx2";
 import type {IKtx2Factory} from "ris-ktx2-api";

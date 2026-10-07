@@ -4,7 +4,7 @@ import {
     type IShaderModuleLoader,
     type ITexture2D,
     type IFramework, TextureDescriptor, TextureFormat, ContentConfig, TextureUsage
-} from "ris-framework-api";
+} from "../../api/index.ts";
 import {Ktx2Factory} from "ris-ktx2";
 import type {IKtx2Texture} from "ris-ktx2-api";
 

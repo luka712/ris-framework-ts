@@ -1,7 +1,7 @@
-import {IOrthographicCamera} from "./IOrthographicCamera";
+import type { IOrthographicCamera } from "./IOrthographicCamera.ts";
 import {vec2} from "gl-matrix";
-import {OrbitCamera} from "./OrbitCamera";
-import {PerspectiveCamera} from "./PerspectiveCamera";
+import {OrbitCamera} from "./OrbitCamera.ts";
+import {PerspectiveCamera} from "./PerspectiveCamera.ts";
 
 /**
  * The camera factory.

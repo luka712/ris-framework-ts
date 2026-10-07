@@ -1,5 +1,5 @@
-import {VertexFormat} from "./VertexFormat";
-import {GeometryFormat} from "./GeometryFormat";
+import {VertexFormat} from "./VertexFormat.ts";
+import {GeometryFormat} from "./GeometryFormat.ts";
 
 /**
  * The geometry.

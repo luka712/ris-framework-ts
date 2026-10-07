@@ -1,6 +1,6 @@
-import {PrimitiveTopology} from "./PrimitiveTopology";
-import {CullMode} from "./CullMode";
-import {FrontFace} from "./FrontFace";
+import {PrimitiveTopology} from "./PrimitiveTopology.ts";
+import {CullMode} from "./CullMode.ts";
+import {FrontFace} from "./FrontFace.ts";
 
 /**
  * Describes the state of a primitive.

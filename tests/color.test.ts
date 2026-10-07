@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Color } from "../src/index.ts";
+import { Color } from "../src/api/index.ts";
 
 describe("Color", () => {
     it("stores channels and defaults alpha to 1", () => {

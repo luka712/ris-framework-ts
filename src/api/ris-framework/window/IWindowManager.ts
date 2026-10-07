@@ -1,5 +1,5 @@
-import {IDisposable} from "../core/IDisposable";
-import {WindowBounds} from "./WindowBounds";
+import type { IDisposable } from "../core/IDisposable.ts";
+import {WindowBounds} from "./WindowBounds.ts";
 import {vec2} from "gl-matrix";
 
 /**

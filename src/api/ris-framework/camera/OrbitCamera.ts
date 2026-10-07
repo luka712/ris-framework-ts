@@ -1,15 +1,15 @@
 import {vec3, mat4, vec2} from "gl-matrix";
-import {IUniformBuffer} from "../rendering/buffers/IUniformBuffer";
-import {PerspectiveCamera} from "./PerspectiveCamera";
-import {IInputManager} from "../input/IInputManager";
-import {MathHelper} from "../utilities/MathHelper";
-import {ICamera} from "./ICamera";
-import {MouseState} from "../input/mouse/MouseState";
-import {GameTime} from "../time/GameTime";
-import {MouseButton} from "../input/mouse/MouseButton";
-import {TouchCollection} from "../input/touch/TouchCollection";
-import {TouchLocation} from "../input/touch/TouchLocation";
-import {InputDeviceType} from "../input/InputDeviceType";
+import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
+import {PerspectiveCamera} from "./PerspectiveCamera.ts";
+import type { IInputManager } from "../input/IInputManager.ts";
+import {MathHelper} from "../utilities/MathHelper.ts";
+import type { ICamera } from "./ICamera.ts";
+import {MouseState} from "../input/mouse/MouseState.ts";
+import {GameTime} from "../time/GameTime.ts";
+import {MouseButton} from "../input/mouse/MouseButton.ts";
+import {TouchCollection} from "../input/touch/TouchCollection.ts";
+import {TouchLocation} from "../input/touch/TouchLocation.ts";
+import {InputDeviceType} from "../input/InputDeviceType.ts";
 
 /**
  * Camerae that support orbit movement.
@@ -49,6 +49,8 @@ export class OrbitCamera implements ICamera {
         this._inputManager = inputManager;
         this.eye = vec3.fromValues(0, 0, -3);
         this.target = vec3.fromValues(0, 0, 0);
+        void this.POSITIVE_179_DEG;
+        void this.findTarget;
     }
 
     /** The mouse sensitivity. */

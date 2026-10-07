@@ -9,7 +9,7 @@ import {
     State,
     type IFramework,
     type IGeometry,
-} from "../src/index.ts";
+} from "../src/api/index.ts";
 
 class InspectableQuad extends QuadMesh {
     public constructor(framework: IFramework, isUpdatable: boolean, scale?: vec2) {

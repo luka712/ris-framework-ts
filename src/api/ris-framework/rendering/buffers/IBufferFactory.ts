@@ -1,7 +1,7 @@
-import {IIndexBuffer} from "./IIndexBuffer";
-import {BufferUsage} from "./BufferUsage";
-import {IUniformBuffer} from "./IUniformBuffer";
-import {IVertexBuffer} from "./IVertexBuffer";
+import type { IIndexBuffer } from "./IIndexBuffer.ts";
+import {BufferUsage} from "./BufferUsage.ts";
+import type { IUniformBuffer } from "./IUniformBuffer.ts";
+import type { IVertexBuffer } from "./IVertexBuffer.ts";
 
 /**
  * The buffer factory interface.

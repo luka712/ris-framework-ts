@@ -1,1 +1,1 @@
-export * from "./IDisposable";
+export * from "./IDisposable.ts";

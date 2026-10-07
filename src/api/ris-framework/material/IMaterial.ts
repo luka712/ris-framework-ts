@@ -1,9 +1,9 @@
 import {mat4} from "gl-matrix";
-import {IDisposable} from "../core/IDisposable";
-import {GeometryFormat} from "../geometry/GeometryFormat";
-import {IMesh} from "../meshes/IMesh";
-import {IVertexBuffer} from "../rendering/buffers/IVertexBuffer";
-import {IIndexBuffer} from "../rendering/buffers/IIndexBuffer";
+import type { IDisposable } from "../core/IDisposable.ts";
+import {GeometryFormat} from "../geometry/GeometryFormat.ts";
+import type { IMesh } from "../meshes/IMesh.ts";
+import type { IVertexBuffer } from "../rendering/buffers/IVertexBuffer.ts";
+import type { IIndexBuffer } from "../rendering/buffers/IIndexBuffer.ts";
 
 /**
  * The material interface.

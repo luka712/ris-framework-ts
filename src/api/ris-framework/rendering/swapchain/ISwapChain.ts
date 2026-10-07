@@ -1,5 +1,5 @@
-import {TextureFormat} from "../texture/TextureFormat";
-import {IDisposable} from "../../core/IDisposable";
+import {TextureFormat} from "../texture/TextureFormat.ts";
+import type { IDisposable } from "../../core/IDisposable.ts";
 import {vec2} from "gl-matrix";
 
 /**

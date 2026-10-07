@@ -1,8 +1,8 @@
-import {IGeometry} from "../geometry/IGeometry";
-import {GeometryFormat} from "../geometry/GeometryFormat";
-import {QuadMesh} from "./QuadMesh";
+import type { IGeometry } from "../geometry/IGeometry.ts";
+import {GeometryFormat} from "../geometry/GeometryFormat.ts";
+import {QuadMesh} from "./QuadMesh.ts";
 import {vec2} from "gl-matrix";
-import {IMesh} from "./IMesh";
+import type { IMesh } from "./IMesh.ts";
 
 /**
  * The mesh factory.

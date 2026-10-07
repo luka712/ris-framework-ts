@@ -1,9 +1,7 @@
-import {IIndexBuffer} from "../buffers/IIndexBuffer";
-import {IUniformBuffer} from "../buffers/IUniformBuffer";
-import {IVertexBuffer} from "../buffers/IVertexBuffer";
-import {ITexture2D} from "../texture/ITexture2D";
-import {ISampler} from "../sampler/ISampler";
-import {IRenderPipeline} from "./IRenderPipeline";
+import type { IUniformBuffer } from "../buffers/IUniformBuffer.ts";
+import type { ITexture2D } from "../texture/ITexture2D.ts";
+import type { ISampler } from "../sampler/ISampler.ts";
+import type { IRenderPipeline } from "./IRenderPipeline.ts";
 
 /**
  * The pipeline for sprite rendering.

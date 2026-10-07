@@ -1,11 +1,11 @@
 import  {vec2} from "gl-matrix";
-import {ICameraFactory} from "./ICameraFactory";
-import {IFramework} from "../IFramework";
-import {IOrthographicCamera} from "./IOrthographicCamera";
-import {OrthographicCamera} from "./OrthographicCamera";
-import {OrbitCamera} from "./OrbitCamera";
-import {PerspectiveCamera} from "./PerspectiveCamera";
-import {MathHelper} from "../utilities/MathHelper";
+import type { ICameraFactory } from "./ICameraFactory.ts";
+import type { IFramework } from "../IFramework.ts";
+import type { IOrthographicCamera } from "./IOrthographicCamera.ts";
+import {OrthographicCamera} from "./OrthographicCamera.ts";
+import {OrbitCamera} from "./OrbitCamera.ts";
+import {PerspectiveCamera} from "./PerspectiveCamera.ts";
+import {MathHelper} from "../utilities/MathHelper.ts";
 
 /** The Camera Factory */
 export class CameraFactory implements ICameraFactory {

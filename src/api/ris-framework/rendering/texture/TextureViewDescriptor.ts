@@ -2,8 +2,8 @@
  * The descriptor for the texture view.
  *     It contains the parameters that are used to create a texture view.
  */
-import {TextureViewDimension} from "./TextureViewDimension";
-import {TextureFormat} from "./TextureFormat";
+import {TextureViewDimension} from "./TextureViewDimension.ts";
+import {TextureFormat} from "./TextureFormat.ts";
 
 export class TextureViewDescriptor {
 

@@ -1,4 +1,4 @@
-import {IDisposable} from "../core/IDisposable";
+import type { IDisposable } from "../core/IDisposable.ts";
 
 /**
  * The image data.

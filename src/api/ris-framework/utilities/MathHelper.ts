@@ -37,6 +37,7 @@ export class MathHelper {
      * @returns The polar angle.
      */
     public pitchToPolar(pitch: number): number {
+        void pitch;
         throw new Error('Not implemented');
     }
 
@@ -50,6 +51,7 @@ export class MathHelper {
      * @returns The azimuth angle.
      */
     public yawToAzimuth(yaw: number): number {
+        void yaw;
         throw new Error('Not implemented');
     }
 
@@ -61,6 +63,7 @@ export class MathHelper {
      * @returns The pitch angle.
      */
     public polarToPitch(polar: number): number {
+        void polar;
         throw new Error('Not implemented');
     }
 
@@ -74,6 +77,7 @@ export class MathHelper {
      * @returns The yaw angle.
      */
     public azimuthToYaw(azimuth: number): number {
+        void azimuth;
         throw new Error('Not implemented');
     }
 
@@ -84,6 +88,7 @@ export class MathHelper {
      * @returns The smoothed value.
      */
     public smoothStep(x: number): number {
+        void x;
         throw new Error('Not implemented');
     }
 
@@ -107,6 +112,8 @@ export class MathHelper {
      * @returns The aligned bytes.
      */
     public alignBytes(value: number, alignment: number): number {
+        void value;
+        void alignment;
         throw new Error('Not implemented');
     }
 
@@ -135,6 +142,8 @@ export class MathHelper {
      * @returns The maximum value.
      */
     public max(a: number, b: number): number {
+        void a;
+        void b;
         throw new Error('Not implemented');
     }
 
@@ -145,6 +154,8 @@ export class MathHelper {
      * @returns The minimum value.
      */
     public min(a: number, b: number): number {
+        void a;
+        void b;
         throw new Error('Not implemented');
     }
 
@@ -157,6 +168,10 @@ export class MathHelper {
      * @returns
      */
     public circleIntersectsCircle(p1: vec2, r1: number, p2: vec2, r2: number): boolean {
+        void p1;
+        void r1;
+        void p2;
+        void r2;
         throw new Error('Not implemented');
     }
 
@@ -167,6 +182,8 @@ export class MathHelper {
      * @returns The dot product.
      */
     public dot(v1: vec2, v2: vec2): number {
+        void v1;
+        void v2;
         throw new Error('Not implemented');
     }
 
@@ -177,6 +194,8 @@ export class MathHelper {
      * @returns The reflected vector.
      */
     public reflect(v: vec2, n: vec2): vec2 {
+        void v;
+        void n;
         throw new Error('Not implemented');
     }
 
@@ -186,6 +205,7 @@ export class MathHelper {
      * @returns The vector.
      */
     public angleToVector(angle: number): vec2 {
+        void angle;
         throw new Error('Not implemented');
     }
 
@@ -204,6 +224,7 @@ export class MathHelper {
      * @returns The  of .
      */
     public vector2DFromAngle(angle: number): vec2 {
+        void angle;
         throw new Error('Not implemented');
     }
 
@@ -214,6 +235,8 @@ export class MathHelper {
      * @returns baseValue raised to exponent
      */
     public pow(baseValue: number, exponent: number): number {
+        void baseValue;
+        void exponent;
         throw new Error('Not implemented');
     }
 
@@ -225,6 +248,9 @@ export class MathHelper {
      * @returns Rotated vector.
      */
     public rotatePoint(point: vec2, center: vec2, angle: number): vec2 {
+        void point;
+        void center;
+        void angle;
         throw new Error('Not implemented');
     }
 }

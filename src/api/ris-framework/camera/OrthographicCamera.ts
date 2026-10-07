@@ -1,9 +1,9 @@
-import {IOrthographicCamera} from "./IOrthographicCamera";
-import {IFramework} from "../IFramework";
+import type { IOrthographicCamera } from "./IOrthographicCamera.ts";
+import type { IFramework } from "../IFramework.ts";
 import {vec3, mat4} from "gl-matrix";
-import {IUniformBuffer} from "../rendering/buffers/IUniformBuffer";
-import {BufferUsage} from "../rendering/buffers/BufferUsage";
-import {GameTime} from "../time/GameTime";
+import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
+import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
+import {GameTime} from "../time/GameTime.ts";
 
 /**
  * The Orthographic Camera.

@@ -1,6 +1,6 @@
-import {GamePadThumbSticks} from "./GamePadThumbSticks";
+import {GamePadThumbSticks} from "./GamePadThumbSticks.ts";
 import {vec2} from "gl-matrix";
-import {Button} from "./Button";
+import {Button} from "./Button.ts";
 
 /**
  * The state of the gamepad.

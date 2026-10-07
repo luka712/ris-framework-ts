@@ -1,8 +1,8 @@
 import { vec2 } from "gl-matrix";
 import { TextureSamplerFilteringPreset } from "../rendering/enums";
 import type {RenderingLimits} from "./rendering-limits.ts";
-import type {Color, IGraphicsDevice, IRenderer} from "ris-framework-api";
-import type {TextureFormat} from "ris-framework-api";
+import type {Color, IGraphicsDevice, IRenderer} from "../../api/index.ts";
+import type {TextureFormat} from "../../api/index.ts";
 
 export const RenderConfigurationSymbol = Symbol("RenderConfiguration");
 

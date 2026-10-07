@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": [
+    "src",
+    "tests",
+    "examples/load_and_show_ktx2/main.ts",
+    "vitest.config.ts"
+  ]
+}

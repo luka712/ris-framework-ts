@@ -1,6 +1,6 @@
-import {TextureFormat} from "./TextureFormat";
+import {TextureFormat} from "./TextureFormat.ts";
 import {KtxTranscodeFormat, TextureFormatInfo, VkFormat} from "ris-ktx2-api";
-import {AlignUtilities} from "../../utilities/AlignUtilities";
+import {AlignUtilities} from "../../utilities/AlignUtilities.ts";
 
 /**
  * The texture utilities.

@@ -1,3 +1,3 @@
-export * from "./RawImageData"
-export * from "./IImageProcessor";
-export * from "./CpuImageProcessor"
+export * from "./RawImageData.ts"
+export * from "./IImageProcessor.ts";
+export * from "./CpuImageProcessor.ts"

@@ -1,4 +1,4 @@
-import type {IBlendState, IIndexBuffer, ITexture2D, IUniformBuffer, IVertexBuffer} from "ris-framework-api";
+import type {IBlendState, IIndexBuffer, ITexture2D, IUniformBuffer, IVertexBuffer} from "../../api/index.ts";
 import type { ITempRenderer } from "../../core/renderer/renderer-interface";
 import { WebGlBlendState } from "../blending/webgl-blend-state";
 import { WebGLIndexBuffer } from "../buffers/webgl-index-buffer";

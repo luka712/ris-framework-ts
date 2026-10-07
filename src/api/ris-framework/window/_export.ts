@@ -1,2 +1,2 @@
-export * from "./IWindowManager";
-export * from "./WindowBounds";
+export * from "./IWindowManager.ts";
+export * from "./WindowBounds.ts";

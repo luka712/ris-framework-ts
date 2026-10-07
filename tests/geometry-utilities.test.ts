@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GeometryFormat, GeometryUtilities } from "../src/index.ts";
+import { GeometryFormat, GeometryUtilities } from "../src/api/index.ts";
 
 describe("GeometryUtilities", () => {
     it("returns the byte stride of an interleaved position, color, and uv vertex", () => {

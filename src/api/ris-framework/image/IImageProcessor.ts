@@ -1,4 +1,4 @@
-import {RawImageData} from "./RawImageData";
+import {RawImageData} from "./RawImageData.ts";
 import {vec2} from "gl-matrix";
 /** The image processor. */
 export interface IImageProcessor {

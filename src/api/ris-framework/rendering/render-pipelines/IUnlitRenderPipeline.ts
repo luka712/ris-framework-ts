@@ -1,7 +1,7 @@
-import {ITexture2D} from "../texture/ITexture2D";
-import {ISampler} from "../sampler/ISampler";
-import {IRenderPipeline} from "./IRenderPipeline";
-import {IUniformBuffer} from "../buffers/IUniformBuffer";
+import type { ITexture2D } from "../texture/ITexture2D.ts";
+import type { ISampler } from "../sampler/ISampler.ts";
+import type { IRenderPipeline } from "./IRenderPipeline.ts";
+import type { IUniformBuffer } from "../buffers/IUniformBuffer.ts";
 
 /**
  * The unlit render pipeline.

@@ -1,8 +1,8 @@
-import {Mesh} from "./Mesh";
-import {Rect} from "../data/Rect";
-import {IFramework} from "../IFramework";
+import {Mesh} from "./Mesh.ts";
+import {Rect} from "../data/Rect.ts";
+import type { IFramework } from "../IFramework.ts";
 import {vec2} from "gl-matrix";
-import {BufferUsage} from "../rendering/buffers/BufferUsage";
+import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
 
 /**
  * The mesh of a quad.

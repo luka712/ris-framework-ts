@@ -1,1 +1,1 @@
-export * from "./IBlendState";
+export * from "./IBlendState.ts";

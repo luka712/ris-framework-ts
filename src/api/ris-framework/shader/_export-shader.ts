@@ -1,3 +1,3 @@
-export * from "./ShaderStage";
-export * from "./IShaderModule";
-export * from "./IShaderModuleLoader";
+export * from "./ShaderStage.ts";
+export * from "./IShaderModule.ts";
+export * from "./IShaderModuleLoader.ts";

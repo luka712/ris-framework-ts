@@ -1,5 +1,5 @@
 import { vec2 } from "gl-matrix";
-import {type IGraphicsDevice, type ISwapChain, TextureFormat} from "ris-framework-api";
+import {type IGraphicsDevice, type ISwapChain, TextureFormat} from "../../api/index.ts";
 import type {WebGlGraphicsDevice} from "../WebGlGraphicsDevice.ts";
 
 /**

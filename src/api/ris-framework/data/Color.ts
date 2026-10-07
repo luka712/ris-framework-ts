@@ -211,9 +211,10 @@ export class Color implements Iterable<number>{
      * @param o - The color that receives value.
      */
     public lerp(a: Color, b: Color, t: number, o: Color) {
-
+        void a;
+        void b;
+        void t;
         o
-
     }
 }
 

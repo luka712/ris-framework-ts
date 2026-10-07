@@ -1,4 +1,4 @@
-import {RawImageData} from "../image/RawImageData";
+import {RawImageData} from "../image/RawImageData.ts";
 
 /**
  * The image loader interface.

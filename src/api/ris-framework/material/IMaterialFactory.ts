@@ -1,5 +1,5 @@
-import {InspectTextureMipsMaterial} from "./InspectTextureMipsMaterial";
-import {UnlitMaterial, UnlitMaterialDescriptor} from "./UnlitMaterial";
+import {InspectTextureMipsMaterial} from "./InspectTextureMipsMaterial.ts";
+import {UnlitMaterial, UnlitMaterialDescriptor} from "./UnlitMaterial.ts";
 
 /**
  * The material factory.

@@ -1,7 +1,7 @@
-import {IGraphicsDevice} from "./IGraphicsDevice";
-import {TextureFormat} from "./texture/TextureFormat";
-import {Color} from "../data/Color";
-import {RenderingBackend} from "./RenderingBackend";
+import type { IGraphicsDevice } from "./IGraphicsDevice.ts";
+import {TextureFormat} from "./texture/TextureFormat.ts";
+import {Color} from "../data/Color.ts";
+import {RenderingBackend} from "./RenderingBackend.ts";
 import {vec2} from "gl-matrix";
 
 

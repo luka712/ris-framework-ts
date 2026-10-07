@@ -7,7 +7,7 @@ import {
     KeyboardState,
     MouseButton,
     MouseState,
-} from "../src/index.ts";
+} from "../src/api/index.ts";
 
 describe("KeyboardState", () => {
     it("reports held and released keys from the frame maps", () => {

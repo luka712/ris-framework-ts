@@ -1,3 +1,3 @@
-export * from "./ISwapChain";
-export * from "./SurfacePresentMode";
-export * from "./SwapChainDescriptor";
+export * from "./ISwapChain.ts";
+export * from "./SurfacePresentMode.ts";
+export * from "./SwapChainDescriptor.ts";

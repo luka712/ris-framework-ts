@@ -1,8 +1,8 @@
 
-import {ITextureView} from "../texture/ITextureView";
-import {LoadAction} from "./LoadAction";
-import {ITexture2D} from "../texture/ITexture2D";
-import {StoreAction} from "./StoreAction";
+import type { ITextureView } from "../texture/ITextureView.ts";
+import {LoadAction} from "./LoadAction.ts";
+import type { ITexture2D } from "../texture/ITexture2D.ts";
+import {StoreAction} from "./StoreAction.ts";
 
 
 /**

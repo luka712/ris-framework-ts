@@ -1,5 +1,5 @@
-import {IBuffer} from "./IBuffer";
-import {IndexBufferType} from "./IndexBufferType";
+import type { IBuffer } from "./IBuffer.ts";
+import {IndexBufferType} from "./IndexBufferType.ts";
 
 /**
  * The index buffer.

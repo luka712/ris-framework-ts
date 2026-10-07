@@ -1,7 +1,7 @@
-import {IImageLoader} from "./IImageLoader";
-import {IFramework} from "../IFramework";
-import {TextureFormat} from "../rendering/texture/TextureFormat";
-import {RawImageData} from "../image/RawImageData";
+import type { IImageLoader } from "./IImageLoader.ts";
+import type { IFramework } from "../IFramework.ts";
+import {TextureFormat} from "../rendering/texture/TextureFormat.ts";
+import {RawImageData} from "../image/RawImageData.ts";
 
 /**
  * The image loader.
@@ -39,6 +39,7 @@ export class ImageLoader implements IImageLoader {
         path: string,
         preferredTextureFormat: TextureFormat,
     ): Promise<RawImageData> {
+        void preferredTextureFormat;
 
         return new Promise((resolve, reject) => {
             const image = new Image();

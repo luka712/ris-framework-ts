@@ -9,7 +9,7 @@ import {
     type IBuffer,
     type ITimeManager,
     type IVertexBufferLayout,
-} from "../src/index.ts";
+} from "../src/api/index.ts";
 
 describe("public entry", () => {
     it("re-exports buffer, input, and time symbols that public signatures already name", () => {

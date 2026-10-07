@@ -1,7 +1,7 @@
-import {IDisposable} from "../core/IDisposable";
+import type { IDisposable } from "../core/IDisposable.ts";
 import {mat4} from "gl-matrix"
-import {IUniformBuffer} from "../rendering/buffers/IUniformBuffer";
-import {GameTime} from "../time/GameTime";
+import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
+import {GameTime} from "../time/GameTime.ts";
 
 /** The camera interface. */
 export interface ICamera extends IDisposable {

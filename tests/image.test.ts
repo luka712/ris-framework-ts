@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { vec2 } from "gl-matrix";
-import { CpuImageProcessor, RawImageData } from "../src/index.ts";
+import { CpuImageProcessor, RawImageData } from "../src/api/index.ts";
 
 describe("RawImageData", () => {
     it("keeps one buffer per mip level", () => {

@@ -1,5 +1,5 @@
-import {TouchLocation} from "./TouchLocation";
-import {TouchLocationState} from "./TouchLocationState";
+import {TouchLocation} from "./TouchLocation.ts";
+import {TouchLocationState} from "./TouchLocationState.ts";
 
 /**
  * The touch locations for one frame.

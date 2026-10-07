@@ -1,7 +1,7 @@
 /**
  * The description of a swap chain, which is used to create a swap chain for the graphics device.
  */
-import {SurfacePresentMode} from "./SurfacePresentMode";
+import {SurfacePresentMode} from "./SurfacePresentMode.ts";
 
 export class SwapChainDescriptor {
 

@@ -1,6 +1,6 @@
 import { WebGlUtilities } from "../utilities/WebGlUtilities.ts";
 import type { WebGlGraphicsDevice } from "../WebGlGraphicsDevice.ts";
-import {AlignUtilities, type BufferUsage, type IFramework, type IUniformBuffer} from "ris-framework-api";
+import {AlignUtilities, type BufferUsage, type IFramework, type IUniformBuffer} from "../../api/index.ts";
 
 /**
  * The WebGL implementation of the uniform buffer.

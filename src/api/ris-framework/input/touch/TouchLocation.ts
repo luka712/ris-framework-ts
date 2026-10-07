@@ -1,5 +1,5 @@
 import {vec2} from "gl-matrix";
-import {TouchLocationState} from "./TouchLocationState";
+import {TouchLocationState} from "./TouchLocationState.ts";
 
 /**
  * A single touch contact.

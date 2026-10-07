@@ -11,7 +11,7 @@ import {
     TouchLocationState,
     type IFramework,
     type IInputManager,
-} from "../src/index.ts";
+} from "../src/api/index.ts";
 
 const framework = {} as IFramework;
 

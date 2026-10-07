@@ -1,4 +1,4 @@
-import {IGeometry} from "./IGeometry";
+import type { IGeometry } from "./IGeometry.ts";
 import {vec2} from "gl-matrix";
 
 /**

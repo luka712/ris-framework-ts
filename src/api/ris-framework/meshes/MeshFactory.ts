@@ -1,10 +1,10 @@
-import {IMeshFactory} from "./IMeshFactory";
-import {IGeometry} from "../geometry/IGeometry";
-import {GeometryFormat} from "../geometry/GeometryFormat";
-import {IMesh} from "./IMesh";
-import {QuadMesh} from "./QuadMesh";
-import {IFramework} from "../IFramework";
-import {Mesh} from "./Mesh";
+import type { IMeshFactory } from "./IMeshFactory.ts";
+import type { IGeometry } from "../geometry/IGeometry.ts";
+import {GeometryFormat} from "../geometry/GeometryFormat.ts";
+import type { IMesh } from "./IMesh.ts";
+import {QuadMesh} from "./QuadMesh.ts";
+import type { IFramework } from "../IFramework.ts";
+import {Mesh} from "./Mesh.ts";
 import {vec2} from "gl-matrix";
 
 /**

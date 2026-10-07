@@ -1,5 +1,3 @@
-import {vec2} from "gl-matrix";
-
 /**
  * The rectangle.
  */
@@ -85,6 +83,10 @@ export class Rect {
      * @param height The height.
      */
     public clone(x?: number, y?: number, width?: number, height?: number): Rect {
+        void x;
+        void y;
+        void width;
+        void height;
         return new Rect(this.x ?? 0, this.y ?? 0, this.width ?? 0, this.height ?? 0);
     }
 }

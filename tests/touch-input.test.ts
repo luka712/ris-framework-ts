@@ -4,7 +4,7 @@ import {
     TouchLocation,
     TouchLocationState,
     TouchPanelCapabilities,
-} from "../src/index.ts";
+} from "../src/api/index.ts";
 
 describe("TouchLocation", () => {
     it("keeps position, delta, and the previous sample on the same instances", () => {

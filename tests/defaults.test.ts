@@ -22,7 +22,7 @@ import {
     TextureViewDescriptor,
     TextureViewDimension,
     WindowBounds,
-} from "../src/index.ts";
+} from "../src/api/index.ts";
 
 describe("value defaults", () => {
     it("uses an 800 by 600 window when bounds are omitted", () => {

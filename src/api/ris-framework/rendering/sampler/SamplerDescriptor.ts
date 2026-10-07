@@ -1,6 +1,6 @@
-import {SamplerAddressMode} from "./SamplerAddressMode";
-import {SamplerFilter} from "./SamplerFilter";
-import {MipMapSamplerFilter} from "./MipMapSamplerFilter";
+import {SamplerAddressMode} from "./SamplerAddressMode.ts";
+import {SamplerFilter} from "./SamplerFilter.ts";
+import {MipMapSamplerFilter} from "./MipMapSamplerFilter.ts";
 
 /**
  * The descriptor for creating a sampler.

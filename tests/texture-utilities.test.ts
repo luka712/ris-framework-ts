@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { KtxTranscodeFormat, VkFormat } from "ris-ktx2-api";
-import { TextureFormat, TextureUtilities } from "../src/index.ts";
+import { TextureFormat, TextureUtilities } from "../src/api/index.ts";
 
 describe("TextureUtilities", () => {
     it("recognizes the compressed texture formats", () => {

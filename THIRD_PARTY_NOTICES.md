@@ -1,6 +1,6 @@
 # Third-party notices
 
-`ris-framework` is distributed under the MIT License (see `LICENSE`).
+`ris-framework` is distributed under the Apache License 2.0 (see `LICENSE` and `NOTICE`). Copyright 2026 Luka Erkapic.
 
 The published library bundles the browser build of [`ris-ktx2`](https://github.com/luka712/ris-ktx2-ts) so a consuming app does not import that package's Node loader. `ris-ktx2` is MIT licensed. Copyright (c) 2026 Luka Erkapic.
 

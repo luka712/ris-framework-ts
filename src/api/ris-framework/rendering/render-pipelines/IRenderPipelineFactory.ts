@@ -1,10 +1,10 @@
-import {ITexture2D} from "../texture/ITexture2D";
-import {IMainRenderTargetRenderPipeline} from "./IMainRenderTargetRenderPipeline";
-import {IUniformBuffer} from "../buffers/IUniformBuffer";
-import {ISpriteRenderPipeline} from "./ISpriteRenderPipeline";
-import {IInspectTextureMipsRenderPipeline} from "./IInspectTextureMipsRenderPipeline";
-import {IUnlitRenderPipeline} from "./IUnlitRenderPipeline";
-import {IPrimitiveState} from "../primitive/IPrimitiveState";
+import type { ITexture2D } from "../texture/ITexture2D.ts";
+import type { IMainRenderTargetRenderPipeline } from "./IMainRenderTargetRenderPipeline.ts";
+import type { IUniformBuffer } from "../buffers/IUniformBuffer.ts";
+import type { ISpriteRenderPipeline } from "./ISpriteRenderPipeline.ts";
+import type { IInspectTextureMipsRenderPipeline } from "./IInspectTextureMipsRenderPipeline.ts";
+import type { IUnlitRenderPipeline } from "./IUnlitRenderPipeline.ts";
+import type { IPrimitiveState } from "../primitive/IPrimitiveState.ts";
 
 /**
  * The pipeline factory.

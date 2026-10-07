@@ -1,6 +1,4 @@
-import {BufferUsage} from "./BufferUsage";
-import {IDisposable} from "../../core/IDisposable";
-import {IBuffer} from "./IBuffer";
+import type { IBuffer } from "./IBuffer.ts";
 
 /**
  * Create a new vertex buffer.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AlignUtilities } from "../src/index.ts";
+import { AlignUtilities } from "../src/api/index.ts";
 
 describe("AlignUtilities", () => {
     it("rounds a value up to a power-of-two alignment", () => {

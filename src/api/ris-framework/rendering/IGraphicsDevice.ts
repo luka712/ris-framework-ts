@@ -1,15 +1,15 @@
-import {IDisposable} from "../core/IDisposable";
-import {IGPUInfo} from "./IGPUInfo";
-import {IGraphicsDeviceFeatures} from "./IGraphicsDeviceFeatures";
-import {ISampler} from "./sampler/ISampler";
-import {IBlendState} from "./blending/IBlendState";
-import {IPrimitiveState} from "./primitive/IPrimitiveState";
-import {RenderPassDescriptor} from "./renderpass/RenderPassDescriptor";
-import {IRenderPass} from "./renderpass/IRenderPass";
-import {SwapChainDescriptor} from "./swapchain/SwapChainDescriptor";
-import {ISwapChain} from "./swapchain/ISwapChain";
-import {SamplerDescriptor} from "./sampler/SamplerDescriptor";
-import {PrimitiveStateDescriptor} from "./primitive/PrimitiveStateDescriptor";
+import type { IDisposable } from "../core/IDisposable.ts";
+import type { IGPUInfo } from "./IGPUInfo.ts";
+import type { IGraphicsDeviceFeatures } from "./IGraphicsDeviceFeatures.ts";
+import type { ISampler } from "./sampler/ISampler.ts";
+import type { IBlendState } from "./blending/IBlendState.ts";
+import type { IPrimitiveState } from "./primitive/IPrimitiveState.ts";
+import {RenderPassDescriptor} from "./renderpass/RenderPassDescriptor.ts";
+import type { IRenderPass } from "./renderpass/IRenderPass.ts";
+import {SwapChainDescriptor} from "./swapchain/SwapChainDescriptor.ts";
+import type { ISwapChain } from "./swapchain/ISwapChain.ts";
+import {SamplerDescriptor} from "./sampler/SamplerDescriptor.ts";
+import {PrimitiveStateDescriptor} from "./primitive/PrimitiveStateDescriptor.ts";
 
 /**
  * The interface for a graphics device.

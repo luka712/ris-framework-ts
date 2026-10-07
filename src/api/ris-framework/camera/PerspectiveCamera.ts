@@ -1,10 +1,10 @@
-import {ICamera} from "./ICamera";
+import type { ICamera } from "./ICamera.ts";
 import {mat4, vec3} from "gl-matrix";
-import {IFramework} from "../IFramework";
-import {MathHelper} from "../utilities/MathHelper";
-import {BufferUsage} from "../rendering/buffers/BufferUsage";
-import {IUniformBuffer} from "../rendering/buffers/IUniformBuffer";
-import {GameTime} from "../time/GameTime";
+import type { IFramework } from "../IFramework.ts";
+import {MathHelper} from "../utilities/MathHelper.ts";
+import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
+import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
+import {GameTime} from "../time/GameTime.ts";
 
 /**
  * The perspective camera.
@@ -183,6 +183,7 @@ export class PerspectiveCamera implements ICamera {
 
     /** @inheritDoc */
     public update(time: GameTime): void {
+        void time;
         this._updateMatrices();
         this.updateBuffers();
     }

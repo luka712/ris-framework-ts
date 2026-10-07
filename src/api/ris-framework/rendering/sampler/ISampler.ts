@@ -1,7 +1,7 @@
-import {SamplerFilter} from "./SamplerFilter";
-import {MipMapSamplerFilter} from "./MipMapSamplerFilter";
-import {IDisposable} from "../../core/IDisposable";
-import {SamplerAddressMode} from "./SamplerAddressMode";
+import {SamplerFilter} from "./SamplerFilter.ts";
+import {MipMapSamplerFilter} from "./MipMapSamplerFilter.ts";
+import type { IDisposable } from "../../core/IDisposable.ts";
+import {SamplerAddressMode} from "./SamplerAddressMode.ts";
 
 /**
  * The sampler is used to sample textures in shaders.

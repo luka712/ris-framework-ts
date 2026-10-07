@@ -1,5 +1,5 @@
-import {RenderingBackend} from "./RenderingBackend";
-import {TextureFormat} from "./texture/TextureFormat";
+import {RenderingBackend} from "./RenderingBackend.ts";
+import {TextureFormat} from "./texture/TextureFormat.ts";
 
 /**
  * The GPU information. Contains the information about the GPU, such as the name, vendor, etc.

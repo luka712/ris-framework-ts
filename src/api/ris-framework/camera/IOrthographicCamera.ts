@@ -1,4 +1,4 @@
-import {ICamera} from "./ICamera";
+import type { ICamera } from "./ICamera.ts";
 
 /**
  * The orthographic camera interface.

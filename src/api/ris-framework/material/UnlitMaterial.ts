@@ -1,19 +1,17 @@
 
-import {IMesh} from "../meshes/IMesh";
-import {ITexture2D} from "../rendering/texture/ITexture2D";
-import {IInspectTextureMipsRenderPipeline} from "../rendering/render-pipelines/IInspectTextureMipsRenderPipeline";
-import {ISampler} from "../rendering/sampler/ISampler";
+import type { IMesh } from "../meshes/IMesh.ts";
+import type { ITexture2D } from "../rendering/texture/ITexture2D.ts";
+import type { ISampler } from "../rendering/sampler/ISampler.ts";
 import {mat4} from "gl-matrix";
-import {GeometryFormat} from "../geometry/GeometryFormat";
-import {IMaterialFactory} from "./IMaterialFactory";
-import {IUniformBuffer} from "../rendering/buffers/IUniformBuffer";
-import {IIndexBuffer} from "../rendering/buffers/IIndexBuffer";
-import {IVertexBuffer} from "../rendering/buffers/IVertexBuffer";
-import {IFramework} from "../IFramework";
-import {BufferUsage} from "../rendering/buffers/BufferUsage";
-import {Color} from "../data/Color";
-import {IUnlitRenderPipeline} from "../rendering/render-pipelines/IUnlitRenderPipeline";
-import {IPrimitiveState} from "../rendering/primitive/IPrimitiveState";
+import {GeometryFormat} from "../geometry/GeometryFormat.ts";
+import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
+import type { IIndexBuffer } from "../rendering/buffers/IIndexBuffer.ts";
+import type { IVertexBuffer } from "../rendering/buffers/IVertexBuffer.ts";
+import type { IFramework } from "../IFramework.ts";
+import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
+import {Color} from "../data/Color.ts";
+import type { IUnlitRenderPipeline } from "../rendering/render-pipelines/IUnlitRenderPipeline.ts";
+import type { IPrimitiveState } from "../rendering/primitive/IPrimitiveState.ts";
 
 /** The additional material config options */
 export class UnlitMaterialDescriptor {
@@ -47,6 +45,7 @@ export class UnlitMaterial {
      */
     public constructor(framework: IFramework, config? :UnlitMaterialDescriptor) {
         this._framework = framework;
+        void this._framework;
         const usage = BufferUsage.UNIFORM | BufferUsage.COPY_DST;
         this._projectionViewBuffer = config?.projectionViewBuffer ?? framework.bufferFactory.createUniformBuffer(this._previousModelMatrix, usage);
         this._modelBuffer = framework.bufferFactory.createUniformBuffer(this._previousModelMatrix, usage);

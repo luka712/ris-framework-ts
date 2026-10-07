@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { GameTime, TimeManager } from "../src/index.ts";
+import { GameTime, TimeManager } from "../src/api/index.ts";
 
 describe("GameTime", () => {
     it("converts millisecond fields to seconds", () => {

@@ -1,7 +1,7 @@
 import { SamplerCompareFunction } from '../../common/sampler-enums';
 import { SpectorJSUtilities } from './spector-js-utilities';
 import { WebGlConverter } from './WebGlConverter.ts';
-import {MipMapSamplerFilter, SamplerAddressMode, SamplerFilter} from "ris-framework-api";
+import {MipMapSamplerFilter, SamplerAddressMode, SamplerFilter} from "../../api/index.ts";
 
 /**
  * The utility class for working with WebGLSampler object.

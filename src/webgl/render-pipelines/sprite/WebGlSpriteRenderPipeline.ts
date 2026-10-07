@@ -5,7 +5,7 @@ import type {
     ITexture2D,
     IUniformBuffer,
     IVertexBuffer
-} from "ris-framework-api";
+} from "../../../api/index.ts";
 import {VertexBufferLayout} from "../../../core/rendering/vertex-buffer-layout";
 import type {WebGlUniformBuffer} from "../../buffers/WebGlUniformBuffer.ts";
 import {asWebGLTexture2D, asWebGLUniformBuffer} from "../../cast/cast";
@@ -14,7 +14,7 @@ import {WebGlTexture2D} from "../../texture/WebGlTexture2D.ts";
 import {WebGlVertexBuffer} from '../../buffers/WebGlVertexBuffer.ts';
 import {AWebGlRenderPipeline} from "../AWebGlRenderPipeline.ts";
 import type {WebGLIndexBuffer} from "../../buffers/webgl-index-buffer";
-import {type IIndexBuffer, IndexBufferType} from "ris-framework-api";
+import {type IIndexBuffer, IndexBufferType} from "../../../api/index.ts";
 import type {WebGlSampler} from "../../sampler/webgl-sampler.ts";
 
 /**

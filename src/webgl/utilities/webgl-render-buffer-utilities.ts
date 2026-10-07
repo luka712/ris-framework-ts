@@ -1,4 +1,4 @@
-import type { TextureFormat } from "ris-framework-api";
+import type { TextureFormat } from "../../api/index.ts";
 import { WebGlConverter } from "./WebGlConverter.ts";
 
 export class WebGLRenderBufferUtilities {

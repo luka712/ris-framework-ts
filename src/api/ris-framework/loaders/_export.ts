@@ -1,2 +1,2 @@
-export * from "./IImageLoader"
-export * from "./ImageLoader"
+export * from "./IImageLoader.ts"
+export * from "./ImageLoader.ts"

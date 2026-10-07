@@ -1,9 +1,9 @@
-import {IBlendState} from "../blending/IBlendState";
-import {IDisposable} from "../../core/IDisposable";
-import {IPrimitiveState} from "../primitive/IPrimitiveState";
-import {IVertexBufferLayout} from "../buffers/IVertexBufferLayout";
-import {IIndexBuffer} from "../buffers/IIndexBuffer";
-import {IVertexBuffer} from "../buffers/IVertexBuffer";
+import type { IBlendState } from "../blending/IBlendState.ts";
+import type { IDisposable } from "../../core/IDisposable.ts";
+import type { IPrimitiveState } from "../primitive/IPrimitiveState.ts";
+import type { IVertexBufferLayout } from "../buffers/IVertexBufferLayout.ts";
+import type { IIndexBuffer } from "../buffers/IIndexBuffer.ts";
+import type { IVertexBuffer } from "../buffers/IVertexBuffer.ts";
 
 /**
  * The render pipeline interface.

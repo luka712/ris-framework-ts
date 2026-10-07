@@ -1,9 +1,9 @@
-import {IShaderModuleLoader} from "../shader/IShaderModuleLoader";
-import {IShaderModule} from "../shader/IShaderModule";
-import {ITexture2D} from "../rendering/texture/ITexture2D";
-import {TextureDescriptor} from "../rendering/texture/TextureDescriptor";
-import {ContentConfig} from "./ContentConfig";
-import {IKtx2Texture} from "ris-ktx2-api";
+import type { IShaderModuleLoader } from "../shader/IShaderModuleLoader.ts";
+import type { IShaderModule } from "../shader/IShaderModule.ts";
+import type { ITexture2D } from "../rendering/texture/ITexture2D.ts";
+import {TextureDescriptor} from "../rendering/texture/TextureDescriptor.ts";
+import {ContentConfig} from "./ContentConfig.ts";
+import type { IKtx2Texture } from "ris-ktx2-api";
 
 /**
  * The content manager.

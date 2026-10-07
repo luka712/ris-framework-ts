@@ -1,6 +1,6 @@
-import {TextureFormat} from "./TextureFormat";
-import {IDisposable} from "../../core/IDisposable";
-import {TextureViewDimension} from "./TextureViewDimension";
+import {TextureFormat} from "./TextureFormat.ts";
+import type { IDisposable } from "../../core/IDisposable.ts";
+import {TextureViewDimension} from "./TextureViewDimension.ts";
 
 /**
  * The interface for texture views.

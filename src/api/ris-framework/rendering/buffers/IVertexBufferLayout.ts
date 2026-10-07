@@ -1,5 +1,5 @@
-import {VertexStepMode} from "./VertexStepMode";
-import {VertexAttribute} from "./VertexAttribute";
+import {VertexStepMode} from "./VertexStepMode.ts";
+import {VertexAttribute} from "./VertexAttribute.ts";
 
 /**
  * The vertex buffer layout.

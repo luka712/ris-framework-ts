@@ -1,4 +1,4 @@
-import {MouseButton} from "./MouseButton";
+import {MouseButton} from "./MouseButton.ts";
 import {vec2} from "gl-matrix";
 
 /**

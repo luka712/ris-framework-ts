@@ -7,7 +7,7 @@ import {
     type IIndexBuffer,
     type IUniformBuffer,
     type IVertexBuffer
-} from "ris-framework-api";
+} from "../../api/index.ts";
 import {WebGlUniformBuffer} from "./WebGlUniformBuffer.ts";
 
 export class WebGlBuffersFactory implements IBufferFactory {

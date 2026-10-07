@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Rect } from "../src/index.ts";
+import { Rect } from "../src/api/index.ts";
 
 describe("Rect", () => {
     it("derives the edges from position and size", () => {

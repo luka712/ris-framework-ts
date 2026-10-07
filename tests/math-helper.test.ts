@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { vec2 } from "gl-matrix";
-import { MathHelper } from "../src/index.ts";
+import { MathHelper } from "../src/api/index.ts";
 
 describe("MathHelper", () => {
     it("converts between degrees and radians", () => {
