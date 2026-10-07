@@ -1,5 +1,5 @@
 import type { vec2 } from "gl-matrix";
-import {WindowBounds, type IWindowManager} from "ris-framework-api";
+import {WindowBounds, type IWindowManager} from "../../api/index.ts";
 
 /**
  * The implementation of the IWindowManager interface.

@@ -5,7 +5,7 @@ import type {
     IUniformBuffer,
     Color,
     IDisposable, ISampler
-} from "ris-framework-api";
+} from "../../api/index.ts";
 import {SpriteBatchMesh} from "./SpriteBatchMesh.ts";
 import type {vec2, vec3} from "gl-matrix";
 

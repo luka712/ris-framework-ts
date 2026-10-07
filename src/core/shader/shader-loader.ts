@@ -1,4 +1,4 @@
-import {RenderingBackend, type ShaderStage} from "ris-framework-api";
+import {RenderingBackend, type ShaderStage} from "../../api/index.ts";
 
 export class ShaderLoader {
 

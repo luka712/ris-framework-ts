@@ -7,7 +7,7 @@ import type {
     ISpriteRenderPipeline, ITexture2D,
     IUniformBuffer,
     IUnlitRenderPipeline
-} from "ris-framework-api";
+} from "../../api/index.ts";
 import {WebGlInspectTextureMipsRenderPipeline} from "./inspect/WebGlInspectTextureMipsRenderPipeline.ts";
 import {WebGlUnlitRenderPipeline} from "./material/WebGlUnlitRenderPipeline.ts";
 

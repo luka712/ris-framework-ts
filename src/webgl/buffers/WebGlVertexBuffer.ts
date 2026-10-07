@@ -1,6 +1,6 @@
 import {WebGlUtilities} from "../utilities/WebGlUtilities.ts";
 import type {WebGlGraphicsDevice} from "../WebGlGraphicsDevice.ts";
-import {BufferUsage, type IFramework, type IVertexBuffer} from "ris-framework-api";
+import {BufferUsage, type IFramework, type IVertexBuffer} from "../../api/index.ts";
 
 /**
  * The WebGL implementation of the vertex buffer.

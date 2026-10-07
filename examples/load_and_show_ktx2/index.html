@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Load and show KTX2</title>
+    <style>
+      :root {
+        font-family: system-ui, sans-serif;
+        color: #1a1a1a;
+        background: #f4f4f4;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      main {
+        padding: 16px;
+      }
+
+      canvas {
+        display: block;
+        margin-top: 12px;
+        background: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Load and show KTX2</h1>
+      <p id="status">Loading ktx_logo_200.ktx2…</p>
+      <canvas id="game-canvas" width="800" height="600"></canvas>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

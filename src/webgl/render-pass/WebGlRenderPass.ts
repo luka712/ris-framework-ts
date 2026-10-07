@@ -9,7 +9,7 @@ import {
     RenderPassDescriptor,
     StoreAction,
     TextureFormat
-} from "ris-framework-api"
+} from "../../api/index.ts"
 
 /**
  * The WeGL implementation of the IRenderPass interface. 

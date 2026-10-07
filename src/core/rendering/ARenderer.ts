@@ -9,8 +9,8 @@ import {
     RenderPassColorAttachment, RenderPassDepthStencilAttachment,
     RenderPassDescriptor, SwapChainDescriptor,
     TextureUsage
-} from "ris-framework-api";
-import {TextureFormat, Color} from "ris-framework-api";
+} from "../../api/index.ts";
+import {TextureFormat, Color} from "../../api/index.ts";
 
 export abstract class ARenderer implements ITempRenderer {
 

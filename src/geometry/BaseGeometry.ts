@@ -1,6 +1,6 @@
 import { GeometryFormat } from "./GeometryFormat.ts";
 import {VertexFormat} from "../VertexFormat.ts";
-import type {IGeometry} from "ris-framework-api";
+import type {IGeometry} from "../api/index.ts";
 
 export class BaseGeometry implements IGeometry {
 

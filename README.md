@@ -2,7 +2,7 @@
 
 `ris-framework` is a browser WebGL2 framework, published as an ES module. Version 0.1.0. An application imports the compiled package. This repository also contains a sample page that runs the framework.
 
-Open `index.html`. The module script is `src/main.ts`. That file builds the page, constructs a `Framework`, and starts the frame loop. Shared interfaces and value types (`IFramework`, `Color`, `Rect`, `TextureDescriptor`, and the rest) come from the `ris-framework-api` package. This repository implements them.
+Open `index.html`. The module script is `src/main.ts`. That file builds the page, constructs a `Framework`, and starts the frame loop. Shared interfaces and value types (`IFramework`, `Color`, `Rect`, `TextureDescriptor`, and the rest) ship from this package. They used to live in `ris-framework-api`. This repository implements them.
 
 ## Layout
 
@@ -10,13 +10,16 @@ Open `index.html`. The module script is `src/main.ts`. That file builds the page
 | --- | --- |
 | `index.html` | The page. It has `#app` and `<canvas id="game-canvas" width="800" height="600">`. |
 | `src/main.ts` | Application entry. |
+| `src/api` | Interfaces and value types formerly published as `ris-framework-api`, including input, textures, cameras, and `TextureUtilities`. |
 | `src/core` | `Framework`, `FrameworkConfig`, the window and input managers, content loading, the renderer base, and the sprite batch. |
 | `src/webgl` | The WebGL2 graphics device, renderer, textures, buffers, samplers, and render pipelines. |
 | `src/geometry` | `GeometryBuilder` and mesh geometry data. |
 | `src/content` | Built-in shader modules. GLSL is imported from `shaders/glsl`. |
 | `shaders/glsl` | Vertex and fragment shaders used by those built-in modules. |
+| `examples/load_and_show_ktx2` | Browser page that loads `ktx_logo_200.ktx2` and draws it with the sprite batch. `npm run dev` does not serve this page. |
+| `tests` | Vitest tests for the types under `src/api`. |
 
-Runtime dependencies are `ris-framework-api`, `ris-ktx2-api`, `gl-matrix`, `tsyringe`, and `reflect-metadata`. The library build also includes the browser portion of `ris-ktx2`, with its Node loader replaced by a stub, so the published entry does not import Node built-ins. TypeScript, Vite, and `ris-ktx2` are dev dependencies. Notices for the bundled KTX loader are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Runtime dependencies are `ris-ktx2`, `ris-ktx2-api`, `gl-matrix`, `tsyringe`, and `reflect-metadata`. The library build includes the browser portion of `ris-ktx2`, with its Node loader replaced by a stub, so the published entry does not import Node built-ins. TypeScript, Vite, and Vitest are dev dependencies. Notices for the bundled KTX loader are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The package license is Apache License 2.0. Copyright 2026 Luka Erkapic. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 ## Prerequisites
 
@@ -38,7 +41,13 @@ The published entry is compiled JavaScript and TypeScript declarations (`dist/in
 import { Framework, FrameworkConfig, TextureSamplerFilteringPreset } from "ris-framework";
 ```
 
-`Framework`, `FrameworkConfig`, and `TextureSamplerFilteringPreset` are that public surface. Built-in GLSL is compiled into `dist/index.js`, so a consumer does not load this repository's `shaders/` directory at runtime. The same file includes the browser KTX2 loader. A consuming Vite app can import the package and build without adding a Node stub of its own.
+The same entry re-exports the former `ris-framework-api` surface, so a consumer can import those names from `ris-framework`:
+
+```ts
+import { Color, Rect, TextureFormat, TextureUtilities, type IInputManager } from "ris-framework";
+```
+
+`Framework`, `FrameworkConfig`, `TextureSamplerFilteringPreset`, and that API surface are the public entry. Built-in GLSL is compiled into `dist/index.js`, so a consumer does not load this repository's `shaders/` directory at runtime. The same file includes the browser KTX2 loader. A consuming Vite app can import the package and build without adding a Node stub of its own.
 
 To work in this repository:
 
@@ -93,10 +102,11 @@ npm run dev
 npm run build
 ```
 
-`build` typechecks `src`, then writes two outputs:
+`build` typechecks `src` and `examples/load_and_show_ktx2/main.ts`, then writes:
 
-- The library, which is what `npm publish` ships. Vite compiles `src/index.ts` to `dist/index.js` and includes the built-in shader sources in that file. It also bundles `ris-ktx2` after replacing that package's Node loader with the browser stub from `vite.config.ts`. `gl-matrix`, `reflect-metadata`, `ris-framework-api`, `ris-ktx2-api`, and `tsyringe` stay as imports. `tsc` writes `dist/index.d.ts` and the declaration files it references. `package.json` `main`, `module`, `types`, and `exports` point at `dist`.
+- The library, which is what `npm publish` ships. Vite compiles `src/index.ts` to `dist/index.js` and includes the built-in shader sources in that file. It also bundles `ris-ktx2` after replacing that package's Node loader with the browser stub from `vite.config.ts`, and it bundles the former `ris-framework-api` sources from `src/api`. `gl-matrix`, `reflect-metadata`, `ris-ktx2-api`, and `tsyringe` stay as imports. `tsc` writes `dist/index.d.ts` and the declaration files it references, including the API types. `package.json` `main`, `module`, `types`, and `exports` point at `dist`.
 - The sample page. `vite build` writes it to `dist-app/`. The sample Vite config replaces `ris-ktx2`'s Node loader with a browser stub so that bundle does not import Node built-ins.
+- The KTX2 example. `build:load-and-show-ktx2` writes it to `examples/load_and_show_ktx2/dist/`.
 
 ```sh
 npm run preview
@@ -105,10 +115,22 @@ npm run preview
 `preview` runs `vite preview` and serves the `dist-app/` build.
 
 ```sh
+npm run dev:load-and-show-ktx2
+```
+
+Serves `examples/load_and_show_ktx2/index.html` on its own Vite root. That page sets `useKtx2`, waits for `ktx2Factory.initializeAsync()`, then calls `content.loadTexture2DAsync` with the bundled URL of `ktx_logo_200.ktx2` and draws the texture through `spriteBatch`. The root sample at `index.html` is unchanged.
+
+```sh
+npm run build:load-and-show-ktx2
+```
+
+Writes that page to `examples/load_and_show_ktx2/dist/`. `npm run build` runs this after the library and the root sample. The directory is gitignored with the other `dist/` outputs.
+
+```sh
 npm test
 ```
 
-`test` runs `tsc --noEmit`. It typechecks `src`.
+`test` typechecks `src`, `examples/load_and_show_ktx2/main.ts`, and `tests`, then runs the Vitest suite in `tests/`.
 
 ## From startup to the first frame
 
@@ -119,7 +141,7 @@ Register listeners before `initialize()`. Load-content and initialized listeners
 1. Starts KTX2 initialization when `useKtx2` is set, without awaiting it.
 2. Creates the WebGL2 context, swap chain, and default sampler, blend state, and primitive state.
 3. Initializes the sprite batch (a default orthographic camera and a 1×1 white texture).
-4. Initializes input. Mouse move, mouse buttons, and wheel events on the canvas update `framework.input.getMouseState()`.
+4. Initializes input. Mouse move, mouse buttons, and wheel events on the canvas update `framework.input.getMouseState()`. Touch start, move, end, and cancel events on the canvas update `framework.input.getTouchCollection()`, using the same viewport `clientX` / `clientY` coordinates as the mouse. A cancel is `TouchLocationState.CANCELLED`, which is not a finger lift. The canvas `touch-action` is set to `none`, and touch start and move call `preventDefault`, so the browser does not scroll or pinch-zoom that canvas.
 5. Prepares the time manager.
 6. Calls every `addOnLoadContentListener` callback. Async callbacks are not awaited.
 7. Calls every `addOnInitializedListener` callback.
@@ -140,7 +162,7 @@ import {
   TextureFormat,
   type ISampler,
   type ITexture2D,
-} from "ris-framework-api";
+} from "ris-framework";
 
 const rect = new Rect(200, 200, 200, 200);
 const texRect = new Rect(500, 200, 200, 200);
@@ -199,7 +221,7 @@ These throw, or they accept a call and do not do the work the name suggests:
 - `SpriteBatch.draw` and `drawRect` accept rotation arguments and do not use them. `layerDepth` is written as the sprite's z position.
 - Keyboard and gamepad queries return empty state. `getKeyboardState()` is an empty `KeyboardState`. `getGamePadState()` is a disconnected `GamePadState`. `thumbstickDeadZone` is stored and not applied.
 - A render pass that enables stencil without depth throws `Not implemented`.
-- Paths ending in `.ktx2` go through `content.loadKtx2Async`, which uses its own `Ktx2Factory` and does not call `initializeAsync`. `loadAsync` needs the KTX module that `useKtx2` starts, and `initialize()` does not wait for that call. The `.ktx2` branch of `loadTexture2DAsync` also drops `ContentConfig`. The current entry file does not load a `.ktx2` file.
+- Paths ending in `.ktx2` go through `content.loadKtx2Async`, which uses its own `Ktx2Factory` and does not call `initializeAsync`. `loadAsync` needs the KTX module that `useKtx2` starts, and `initialize()` does not wait for that call. The `.ktx2` branch of `loadTexture2DAsync` also drops `ContentConfig`. `src/main.ts` does not load a `.ktx2` file. `examples/load_and_show_ktx2/main.ts` awaits `ktx2Factory.initializeAsync()` before `initialize()` so the load listener can call `loadTexture2DAsync` on `ktx_logo_200.ktx2`.
 - The geometry and unlit-pipeline steps at the bottom of `src/main.ts` are comments. `geometryBuilder.quadGeometry()` can build quad data; the entry file does not upload it or draw it.
 
 ## Version

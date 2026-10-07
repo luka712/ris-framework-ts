@@ -2,7 +2,7 @@ import { SamplerCompareFunction } from "../../common/sampler-enums";
 import { SamplerDescriptor } from "../../core/rendering/sampler/sampler-descriptor";
 import { WebGlUtilities } from "../utilities/WebGlUtilities.ts";
 import type { WebGlGraphicsDevice } from "../WebGlGraphicsDevice.ts";
-import {type ISampler, MipMapSamplerFilter, SamplerAddressMode, SamplerFilter} from "ris-framework-api";
+import {type ISampler, MipMapSamplerFilter, SamplerAddressMode, SamplerFilter} from "../../api/index.ts";
 
 /**
  * The WebGL implementation of the ISampler interface.

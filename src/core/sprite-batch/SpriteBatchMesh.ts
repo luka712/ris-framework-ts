@@ -1,5 +1,5 @@
 import type {vec2, vec3} from "gl-matrix";
-import {BufferUsage, type Color, type IFramework, Mesh} from "ris-framework-api";
+import {BufferUsage, type Color, type IFramework, Mesh} from "../../api/index.ts";
 
 /**
  * The sprite batch mesh.

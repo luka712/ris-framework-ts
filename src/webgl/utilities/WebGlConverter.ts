@@ -2,7 +2,7 @@ import {Culling} from "../../core/renderer/enums";
 import {BlendFactor, BlendOperation} from "../../core/rendering/blending/enums";
 import {CullMode, FrontFace, PrimitiveTopology} from "../../core/rendering/primitive/enums";
 import {VertexFormat} from "../../VertexFormat.ts";
-import {BufferUsage, MipMapSamplerFilter, SamplerAddressMode, SamplerFilter, TextureFormat} from "ris-framework-api";
+import {BufferUsage, MipMapSamplerFilter, SamplerAddressMode, SamplerFilter, TextureFormat} from "../../api/index.ts";
 
 export class WebGlConverter {
 

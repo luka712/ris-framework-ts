@@ -1,4 +1,4 @@
-import type {IGraphicsDeviceFeatures} from "ris-framework-api";
+import type {IGraphicsDeviceFeatures} from "../api/index.ts";
 
 /**
  * The WebGL implementation of the IGraphicsDeviceFeatures interface.

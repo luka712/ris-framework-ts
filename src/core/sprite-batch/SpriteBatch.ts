@@ -7,7 +7,7 @@ import {
     type IOrthographicCamera,
     type IUniformBuffer,
     Color, Rect, type ISampler
-} from "ris-framework-api";
+} from "../../api/index.ts";
 
 /**
  * The implementation of sprite batch.
