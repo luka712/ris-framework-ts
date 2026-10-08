@@ -1,18 +1,18 @@
-import type { IRenderPass } from "../../core/rendering/render-pass/render-pass-interface";
 import { asWebGLTexture2D } from "../cast/cast";
 import { WebGlUtilities } from "../utilities/WebGlUtilities.ts";
 import type { WebGlGraphicsDevice } from "../WebGlGraphicsDevice.ts";
 import {
     Color,
+    type IRenderPass,
     LoadAction,
     RenderPassColorAttachment, RenderPassDepthStencilAttachment,
     RenderPassDescriptor,
     StoreAction,
     TextureFormat
-} from "ris-framework-api"
+} from "../../api/index.ts"
 
 /**
- * The WeGL implementation of the IRenderPass interface. 
+ * The WebGL implementation of the IRenderPass interface.
  */
 export class WebGlRenderPass implements IRenderPass {
 
@@ -20,6 +20,7 @@ export class WebGlRenderPass implements IRenderPass {
 
     private _colorAttachmentsCount = 0;
     private _clearColors: Color[] = [];
+    private _clearColorAttachment: boolean[] = [];
     private _frameBuffer: WebGLFramebuffer | null = null;
     private _depthStencilRenderBuffer: WebGLRenderbuffer | null = null;
     private _clearBufferMask: GLbitfield = 0;
@@ -46,11 +47,14 @@ export class WebGlRenderPass implements IRenderPass {
     private _setupFrameBuffer(colorAttachments: RenderPassColorAttachment[]): void {
         this._colorAttachmentsCount = colorAttachments.length;
         this._clearColors = [];
+        this._clearColorAttachment = [];
 
         for (let i = 0; i < this._colorAttachmentsCount; i++) {
             const colorAttachment = colorAttachments[i];
             this._clearColors.push(colorAttachment.clearColor);
-            if (colorAttachment.loadAction == LoadAction.CLEAR) {
+            const clear = colorAttachment.loadAction == LoadAction.CLEAR;
+            this._clearColorAttachment.push(clear);
+            if (clear) {
                 this._clearBufferMask |= this._gl.COLOR_BUFFER_BIT;
             }
             if (colorAttachment.storeAction == StoreAction.DISCARD) {
@@ -138,9 +142,6 @@ export class WebGlRenderPass implements IRenderPass {
         const gl = this._gl;
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer);
-        
-        // COLOR
-        gl.clear(this._clearBufferMask);
 
         if (this._enableDepthTest) {
             gl.enable(gl.DEPTH_TEST);
@@ -158,8 +159,16 @@ export class WebGlRenderPass implements IRenderPass {
             gl.disable(gl.STENCIL_TEST);
         }
 
+        // Clear after clearDepth and clearStencil are set, so gl.clear uses this pass's values.
+        if (this._clearBufferMask !== 0) {
+            gl.clear(this._clearBufferMask);
+        }
+
+        // COLOR. Attachments with LoadAction.LOAD keep their contents.
         for (let i = 0; i < this._colorAttachmentsCount; i++) {
-            gl.clearBufferfv(gl.COLOR, i, this._clearColors[i]);
+            if (this._clearColorAttachment[i]) {
+                gl.clearBufferfv(gl.COLOR, i, this._clearColors[i]);
+            }
         }
     }
 

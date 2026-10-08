@@ -1,4 +1,4 @@
-import {type IGPUInfo, RenderingBackend, TextureFormat} from "ris-framework-api";
+import {type IGPUInfo, RenderingBackend, TextureFormat} from "../api/index.ts";
 import type {WebGlGraphicsDevice} from "./WebGlGraphicsDevice.ts";
 
 /**

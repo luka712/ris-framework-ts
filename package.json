@@ -1,31 +1,51 @@
 {
   "name": "ris-framework",
   "version": "0.1.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/luka712/ris-framework-ts"
+  },
   "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc --noEmit && npm run build:lib && npm run build:app",
+    "build:lib": "rm -rf dist && vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json && node scripts/rewrite-declaration-extensions.mjs",
+    "build:app": "vite build",
     "preview": "vite preview",
-    "test": "tsc --noEmit"
+    "test": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit && vitest run"
   },
   "devDependencies": {
     "typescript": "~5.9.3",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "vitest": "^5.0.3"
   },
   "dependencies": {
     "gl-matrix": "^3.4.4",
     "reflect-metadata": "^0.2.2",
-    "ris-framework-api": "0.1.0-dev.5",
-    "ris-ktx2": "^0.1.0-dev.2",
+    "ris-ktx2": "^0.1.0",
     "tsyringe": "^4.10.0"
   },
   "files": [
     "dist",
     "src",
     "shaders",
+    "LICENSES",
     "LICENSE",
+    "NOTICE",
     "README.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "publishConfig": {
     "access": "public"

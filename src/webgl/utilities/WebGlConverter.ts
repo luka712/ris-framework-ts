@@ -1,8 +1,16 @@
-import {Culling} from "../../core/renderer/enums";
+import {Culling} from "../../api/rendering/enums.ts";
 import {BlendFactor, BlendOperation} from "../../core/rendering/blending/enums";
-import {CullMode, FrontFace, PrimitiveTopology} from "../../core/rendering/primitive/enums";
-import {VertexFormat} from "../../VertexFormat.ts";
-import {BufferUsage, MipMapSamplerFilter, SamplerAddressMode, SamplerFilter, TextureFormat} from "ris-framework-api";
+import {VertexFormat} from "../../api/geometry/VertexFormat.ts";
+import {
+    BufferUsage,
+    CullMode,
+    FrontFace,
+    MipMapSamplerFilter,
+    PrimitiveTopology,
+    SamplerAddressMode,
+    SamplerFilter,
+    TextureFormat
+} from "../../api/index.ts";
 
 export class WebGlConverter {
 
@@ -36,6 +44,8 @@ export class WebGlConverter {
                 return WebGL2RenderingContext.LINE_STRIP;
             case PrimitiveTopology.POINT_LIST:
                 return WebGL2RenderingContext.POINTS;
+            case PrimitiveTopology.TRIANGLE_STRIP:
+                return WebGL2RenderingContext.TRIANGLE_STRIP;
             default:
                 throw new Error("Method not implemented.");
         }
@@ -93,8 +103,8 @@ export class WebGlConverter {
         return bufferUsage;
     }
     /**
-     * Conversts BlendOperation to WebGL enum.
-     * @parma gl The WebGL2RenderingContext.
+     * Converts BlendOperation to WebGL enum.
+     * @param gl The WebGL2RenderingContext.
      * @param blendOperation The BlendOperation.
      * @return The WebGL enum.
      */
@@ -227,66 +237,12 @@ export class WebGlConverter {
     public static convertToTextureType(gl: WebGL2RenderingContext, textureFormat: TextureFormat): number {
         switch (textureFormat) {
             case TextureFormat.RGBA_8_UNORM:
+            case TextureFormat.RGBA_8_UNORM_SRGB:
                 return gl.UNSIGNED_BYTE;
             case TextureFormat.DEPTH_32_FLOAT:
                 return gl.FLOAT;
             case TextureFormat.DEPTH_24_STENCIL_8:
                 return gl.UNSIGNED_INT_24_8;
-            default:
-                throw new Error("NotImplementedException");
-        }
-    }
-
-    /**
-     * Converts SamplerMinFilter to WebGL enum.
-     * @param gl The WebGL2RenderingContext.
-     * @param minFilter The SamplerMinFilter.
-     * @param mipMapFilter The MipmapSamplerFilter.
-     * @returns The WebGL enum.
-     */
-    public static convertToMinFilter(gl: WebGL2RenderingContext,
-                                     minFilter: SamplerFilter,
-                                     mipMapFilter: MipMapSamplerFilter): number {
-        if (mipMapFilter == MipMapSamplerFilter.NONE) {
-            return this.convertMagFilter(gl, minFilter);
-        }
-
-        if (minFilter == SamplerFilter.NEAREST) {
-            switch (mipMapFilter) {
-                case MipMapSamplerFilter.NEAREST:
-                    return gl.NEAREST_MIPMAP_NEAREST;
-                case MipMapSamplerFilter.LINEAR:
-                    return gl.NEAREST_MIPMAP_LINEAR;
-                default:
-                    throw new Error("NotImplementedException");
-            }
-        }
-        else if (minFilter == SamplerFilter.LINEAR) {
-            switch (mipMapFilter) {
-                case MipMapSamplerFilter.NEAREST:
-                    return gl.LINEAR_MIPMAP_NEAREST;
-                case MipMapSamplerFilter.LINEAR:
-                    return gl.LINEAR_MIPMAP_LINEAR;
-                default:
-                    throw new Error("NotImplementedException");
-            }
-        }
-
-        throw new Error("NotImplementedException");
-    }
-
-    /**
-     * Converts SamplerMagFilter to WebGL enum.
-     * @param gl The WebGL2RenderingContext.
-     * @param magFilter The SamplerMagFilter.
-     * @returns The WebGL enum.
-     */
-    public static convertToMagFilter(gl: WebGL2RenderingContext, magFilter: SamplerFilter): number {
-        switch (magFilter) {
-            case SamplerFilter.NEAREST:
-                return gl.NEAREST;
-            case SamplerFilter.LINEAR:
-                return gl.LINEAR;
             default:
                 throw new Error("NotImplementedException");
         }
@@ -338,7 +294,7 @@ export class WebGlConverter {
      * @param mipMapFilter The MipmapSamplerFilter.
      * @returns The WebGL enum.
      */
-    public static convertMinFIlter(gl: WebGL2RenderingContext, filter: SamplerFilter, mipMapFilter: MipMapSamplerFilter): number {
+    public static convertMinFilter(gl: WebGL2RenderingContext, filter: SamplerFilter, mipMapFilter: MipMapSamplerFilter): number {
 
         if (mipMapFilter == MipMapSamplerFilter.NONE) {
             return this.convertMagFilter(gl, filter);
@@ -382,6 +338,7 @@ export class WebGlConverter {
             case SamplerAddressMode.MIRROR_REPEAT:
                 return gl.MIRRORED_REPEAT;
             case SamplerAddressMode.CLAMP_TO_BORDER:
+                // WebGL2 has no clamp-to-border wrap mode. Clamp to edge is the closest match.
                 return gl.CLAMP_TO_EDGE;
             default:
                 throw new Error("NotImplementedException");

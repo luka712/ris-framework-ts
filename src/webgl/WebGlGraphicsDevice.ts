@@ -1,25 +1,29 @@
-import type {IRenderPass} from "../core/rendering/render-pass/render-pass-interface";
 import {WebGlSampler} from "./sampler/webgl-sampler";
 import {WebGlRenderPass} from "./render-pass/WebGlRenderPass.ts";
-import {AGraphicsDevice, GraphicsDeviceDescriptor} from "../core/rendering/AGraphicsDevice.ts";
+import {AGraphicsDevice, type IGraphicsDeviceDescriptor} from "../core/rendering/AGraphicsDevice.ts";
 import {type BlendStateDescriptor} from "../core/rendering/blending/blend-state-descriptor";
 import {WebGlBlendState} from "./blending/webgl-blend-state";
 import {WebGlPrimitiveState} from "./primitive/WebGlPrimitiveState.ts";
-import {PrimitiveStateDescriptor} from "../core/rendering/primitive/PrimitiveStateDescriptor.ts";
 import {WebGLGraphicsDeviceFeatures} from "./WebGLGraphicsDeviceFeatures.ts";
 import {WebGlSwapChain} from "./swap-chain/WebGlSwapChain.ts";
 import {WebGlGpuInfo} from "./WebGlGpuInfo.ts";
-import type {
-    IBlendState,
-    IGPUInfo, IPrimitiveState,
-    ISampler,
-    ISwapChain,
-    IWindowManager,
+import type {SamplerDescriptor} from "../core/rendering/sampler/sampler-descriptor.ts";
+import {
+    type IBlendState,
+    type IGPUInfo, type IPrimitiveState,
+    type IRenderPass,
+    type ISampler,
+    type ISwapChain,
+    type IWindowManager,
+    PrimitiveStateDescriptor,
     RenderPassDescriptor,
     SwapChainDescriptor
-} from "ris-framework-api";
-import type {SamplerDescriptor} from "../core/rendering/sampler/sampler-descriptor.ts";
+} from "../api/index.ts";
 
+/**
+ * Creates WebGL2 enabled graphics device.
+ * @internal
+ */
 export class WebGlGraphicsDevice extends AGraphicsDevice {
 
 
@@ -39,7 +43,6 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
         throw new Error("Method not implemented.");
     }
 
-
     private readonly _windowManager: IWindowManager;
     private _canvas: HTMLCanvasElement = null!;
     private _gl: WebGL2RenderingContext = null!;
@@ -51,7 +54,7 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
      * @param windowManager The window manager that provides access to the canvas element and other window-related functionalities needed for initializing the graphics device and creating rendering contexts.
      * @param descriptor The descriptor for the graphics device. This is used to configure the graphics device during initialization.
      */
-    public constructor(windowManager: IWindowManager, descriptor: GraphicsDeviceDescriptor) {
+    public constructor(windowManager: IWindowManager, descriptor: IGraphicsDeviceDescriptor) {
 
         super(descriptor);
         this._windowManager = windowManager;
@@ -74,15 +77,16 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
         return this._gpuInfo;
     }
 
-
     /** @inheritdoc */
     public initialize(): void {
 
         this._canvas = this._windowManager.canvas;
 
+        debugger;
         const contextOptions: WebGLContextAttributes = {
             antialias: false,
-            powerPreference: "high-performance", // TODO: Make configurable.
+            alpha: this._descriptor.alpha,
+            powerPreference:  this._descriptor.powerPreference,
         };
 
         this._gl = this._canvas.getContext(

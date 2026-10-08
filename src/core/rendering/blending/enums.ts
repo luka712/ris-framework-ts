@@ -28,13 +28,13 @@ export enum BlendOperation {
     MAX,
 }
 
-/// <summary>
-/// The blend factor.
-/// </summary>
+/**
+ * The blend factor.
+ */
 export enum BlendFactor {
 
     /**
-     * <c>1.0</c>
+     * `1.0`
      */
     ONE,
 
@@ -44,7 +44,7 @@ export enum BlendFactor {
     SRC_ALPHA,
 
     /**
-    * <c>1.0 - Source.Alpha</c>, where Source is the color being drawn.
+    * `1.0 - Source.Alpha`, where Source is the color being drawn.
     */
     ONE_MINUS_SRC_ALPHA,
 }

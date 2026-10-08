@@ -1,4 +1,4 @@
-import {MipMapSamplerFilter, SamplerAddressMode, SamplerFilter} from "ris-framework-api";
+import {MipMapSamplerFilter, SamplerAddressMode, SamplerFilter} from "../../../api/index.ts";
 
 export class SamplerDescriptor {
     /**

@@ -1,7 +1,7 @@
-import type {IFramework} from "ris-framework-api";
+import type {IFramework} from "../../api/index.ts";
 import {asWebGLGraphicsDevice} from "../cast/cast";
 import {WebGlUtilities} from "../utilities/WebGlUtilities.ts";
-import {BufferUsage, type IIndexBuffer, IndexBufferType} from "ris-framework-api";
+import {BufferUsage, type IIndexBuffer, IndexBufferType} from "../../api/index.ts";
 
 /**
  * The WebGLIndexBuffer class is an implementation of the IIndexBuffer interface for WebGL.

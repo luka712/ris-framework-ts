@@ -7,15 +7,15 @@ import {
     TextureFormat,
     TextureUsage,
     TextureUtilities
-} from "ris-framework-api"
+} from "../../api/index.ts"
 import {WebGlTexture2D} from "./WebGlTexture2D.ts";
-import {type IKtx2Texture, KtxTranscodeFlags, KtxTranscodeFormat, TextureFormatInfo, VkFormat} from "ris-ktx2-api";
+import {type IKtx2Texture, KtxTranscodeFlags, KtxTranscodeFormat, TextureFormatInfo, VkFormat} from "ris-ktx2";
 import {vec2} from "gl-matrix";
 
 export class WebGlTextureFactory implements ITextureFactory {
 
     /**
-     * The constructor for the WebGLTextureFactory class.
+     * The constructor for the WebGlTextureFactory class.
      * @param _framework The framework instance.
      */
     constructor(private readonly _framework: IFramework) {
@@ -65,7 +65,7 @@ export class WebGlTextureFactory implements ITextureFactory {
             }
 
             ktxTexture.transcodeBasis(transcodeFormat, KtxTranscodeFlags.HIGH_QUALITY);
-            texFormatInfo = ktxTexture.getTextureFormatInfo(transcodeFormat);
+            texFormatInfo = ktxTexture.getTextureFormatInfo(TextureUtilities.convertKtxTranscodeFormatToVkFormat(transcodeFormat));
         }
         else {
             // No transcoding path, but still get info about the texture format.
@@ -168,14 +168,14 @@ export class WebGlTextureFactory implements ITextureFactory {
             return texture;
         }
 
-        // Fill CPU-side pixels (BGRA layout to match TextureFormat.BGRA_8_Unorm usage elsewhere).
+        // Fill CPU-side pixels in RGBA order. WebGL uploads these bytes as gl.RGBA.
         const byteSize = width * height * 4;
         const bytes = new Uint8Array(byteSize);
 
         for (let i = 0; i < byteSize; i += 4) {
-            bytes[i + 0] = color.b * 255;
+            bytes[i] = color.r * 255;
             bytes[i + 1] = color.g * 255;
-            bytes[i + 2] = color.r * 255;
+            bytes[i + 2] = color.b * 255;
             bytes[i + 3] = color.a * 255;
         }
 
