@@ -1,6 +1,6 @@
 import {vec2} from "gl-matrix";
 import type {WebGlVertexBuffer} from "../buffers/WebGlVertexBuffer.ts";
-import {GeometryFormat} from "../../geometry/GeometryFormat.ts";
+import {GeometryFormat} from "../../api/geometry/GeometryFormat.ts";
 import type {WebGLIndexBuffer} from "../buffers/webgl-index-buffer";
 import {VertexBufferLayout} from "../../core/rendering/vertex-buffer-layout";
 import type {WebGlTexture2D} from "../texture/WebGlTexture2D.ts";
@@ -91,5 +91,13 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
         this._gl.bindSampler(0, this._defaultTextureSampler.glSampler);
 
         this._gl.drawElements(this._gl.TRIANGLES, this._indexBuffer.indicesCount, this._gl.UNSIGNED_SHORT, 0);
+    }
+
+    /** @inheritdoc */
+    public override dispose(): void {
+        // ARenderer recreates this pipeline on every resize, so release the quad buffers too.
+        this._vertexBuffer?.dispose();
+        this._indexBuffer?.dispose();
+        super.dispose();
     }
 }

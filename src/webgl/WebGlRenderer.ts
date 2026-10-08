@@ -1,4 +1,4 @@
-import { type RenderConfiguration } from "../core/renderer/renderer-interface";
+import { type IRendererConfiguration } from "../api/rendering/renderer-interface.ts";
 import { ARenderer } from "../core/rendering/ARenderer.ts";
 import { WebGlGraphicsDevice } from "./WebGlGraphicsDevice.ts";
 import type {IFramework, IGraphicsDevice} from "../api/index.ts";
@@ -8,7 +8,7 @@ import type {IFramework, IGraphicsDevice} from "../api/index.ts";
  */
 export class WebGlRenderer extends ARenderer {
 
-  private _renderConfiguration: RenderConfiguration;
+  private _renderConfiguration: IRendererConfiguration;
 
   /**
    * The constructor.
@@ -17,7 +17,7 @@ export class WebGlRenderer extends ARenderer {
    */
   constructor(
      framework: IFramework,
-     renderConfiguration: RenderConfiguration) {
+     renderConfiguration: IRendererConfiguration) {
     super(framework);
     this._renderConfiguration = renderConfiguration;
   }
@@ -25,7 +25,9 @@ export class WebGlRenderer extends ARenderer {
   /** @inheritdoc */
   protected createGraphicsDevice(): IGraphicsDevice {
     return new WebGlGraphicsDevice(this._framework.windowManager, {
-      samplerFilteringPreset: this._renderConfiguration.textureFiltering
+      samplerFilteringPreset: this._renderConfiguration.textureFiltering,
+      alpha: this._renderConfiguration.alpha,
+      powerPreference: this._renderConfiguration.powerPreference,
     });
   }
 }

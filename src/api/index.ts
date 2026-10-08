@@ -1,1 +1,1 @@
-export * from "./ris-framework/_export.ts";
+export * from "./_export.ts";

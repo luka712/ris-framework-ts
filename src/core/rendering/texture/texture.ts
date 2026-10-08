@@ -66,9 +66,10 @@ export abstract class ATexture2D implements ITexture2D {
     /** @inheritDoc */
     public removeOnDisposedListener(event: (sender: ITexture2D) => void): void {
 
-        let index = this._disposedListeners.indexOf(event);
+        const index = this._disposedListeners.indexOf(event);
         if (index > -1) {
-            this._disposedListeners = this._disposedListeners.splice(index, 1);
+            // splice removes in place. Its return value is the removed listener, not the remaining list.
+            this._disposedListeners.splice(index, 1);
         }
     }
 

@@ -1,7 +1,7 @@
 import type {WebGlGraphicsDevice} from "../WebGlGraphicsDevice.ts";
 import {WebGlUtilities} from "../utilities/WebGlUtilities.ts";
 import {type IFramework, type IShaderModule, ShaderStage} from "../../api/index.ts";
-import {ShaderModuleContent} from "../../content/ShaderModuleContent.ts";
+import {ShaderModuleContent} from "../../api/content/ShaderModuleContent.ts";
 
 interface WebGlInternalShader {
     vertex: string;

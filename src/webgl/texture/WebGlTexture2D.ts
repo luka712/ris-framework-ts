@@ -78,8 +78,9 @@ export class WebGlTexture2D extends ATexture2D {
 
         for (let i = 0; i < this.mipLevels; i++) {
             this._size += TextureUtilities.getVRamSize(this.textureFormat, width, height);
-            width /= 2;
-            height /= 2;
+            // Each mip is at least 1x1 and has whole-pixel dimensions.
+            width = Math.max(1, Math.floor(width / 2));
+            height = Math.max(1, Math.floor(height / 2));
         }
     }
 
@@ -100,7 +101,8 @@ export class WebGlTexture2D extends ATexture2D {
         this._glTexture = null;
         this._state = State.DISPOSED;
 
-        for (const listener of this._disposedListeners) {
+        // Iterate a copy. A listener may remove itself while this loop runs.
+        for (const listener of this._disposedListeners.slice()) {
             listener(this);
         }
     }

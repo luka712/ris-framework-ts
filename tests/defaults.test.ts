@@ -91,7 +91,7 @@ describe("value defaults", () => {
 
         expect(attachment.loadAction).toBe(LoadAction.CLEAR);
         expect(attachment.storeAction).toBe(StoreAction.STORE);
-        expect(attachment.clearColor.equals(Color.black())).toBe(true);
+        expect(attachment.clearColor.equals(Color.transparent())).toBe(true);
         expect(attachment.texture).toBeUndefined();
         expect(attachment.view).toBeUndefined();
     });

@@ -1,6 +1,10 @@
-import { type PrimitiveTopology, CullMode, type FrontFace } from "../../core/rendering/primitive/enums";
-import type { PrimitiveStateDescriptor } from "../../core/rendering/primitive/PrimitiveStateDescriptor.ts";
-import type { IPrimitiveState } from "../../api/index.ts";
+import {
+    CullMode,
+    type FrontFace,
+    type IPrimitiveState,
+    type PrimitiveStateDescriptor,
+    type PrimitiveTopology
+} from "../../api/index.ts";
 import { WebGlConverter } from "../utilities/WebGlConverter.ts";
 
 /**

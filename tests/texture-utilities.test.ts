@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { KtxTranscodeFormat, VkFormat } from "ris-ktx2-api";
+import { KtxTranscodeFormat, VkFormat } from "ris-ktx2";
 import { TextureFormat, TextureUtilities } from "../src/api/index.ts";
 
 describe("TextureUtilities", () => {

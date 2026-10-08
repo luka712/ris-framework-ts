@@ -18,11 +18,11 @@ export class WebGlVertexBuffer implements IVertexBuffer {
 
     /**
      * The constructor.
-     * @param _framework
-     * @param dataOrVertexCount
-     * @param _byteStride
-     * @param _bufferUsage
-     * @param _label
+     * @param _framework The framework.
+     * @param dataOrVertexCount The vertex data, or the number of vertices to allocate.
+     * @param _byteStride The size of one vertex in bytes.
+     * @param _bufferUsage The buffer usage.
+     * @param _label The optional label of the buffer.
      */
     constructor(private readonly _framework: IFramework,
                 dataOrVertexCount: ArrayLike<number> | number,
@@ -35,7 +35,8 @@ export class WebGlVertexBuffer implements IVertexBuffer {
         if (typeof dataOrVertexCount === "number") {
             this._vertexCount = dataOrVertexCount;
             this._byteSize = dataOrVertexCount * this._byteStride;
-            this._data = new Float32Array(dataOrVertexCount);
+            // Allocate the whole buffer, not one float per vertex.
+            this._data = new Float32Array(this._byteSize / Float32Array.BYTES_PER_ELEMENT);
         }
         // Is iterable
         else {
