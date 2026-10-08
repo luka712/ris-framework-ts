@@ -1,7 +1,5 @@
 import {BlendStateDescriptor} from "./blending/blend-state-descriptor";
 import {TextureSamplerFilteringPreset} from "./enums";
-import type {PrimitiveStateDescriptor} from "./primitive/PrimitiveStateDescriptor.ts";
-import type {IRenderPass} from "./render-pass/render-pass-interface";
 import {SamplerDescriptor} from "./sampler/sampler-descriptor";
 import {
     type IGPUInfo,
@@ -10,20 +8,28 @@ import {
     type IBlendState,
     type IPrimitiveState,
     type IGraphicsDevice, SwapChainDescriptor, type RenderPassDescriptor, SamplerFilter, MipMapSamplerFilter,
-    type ISwapChain
+    type ISwapChain, type IRenderPass, type PrimitiveStateDescriptor
 } from "../../api/index.ts";
+import {PowerPreferenceType} from "../../api/rendering/PowerPreference.ts";
 
 /**
  * The descriptor for the graphics device. This is used to configure the graphics device during initialization.
+ * @internal
  */
-export class GraphicsDeviceDescriptor {
+export interface IGraphicsDeviceDescriptor {
+
+    /** Should back buffer use alpha. */
+    alpha: boolean;
+
+    /** The preference when it comes to selecting GPU device. Only makes sense to set on multi-GPU devices. */
+    powerPreference: PowerPreferenceType;
 
     /**
      * Defines the preset for texture sampler filtering.
      * This is used to configure the default texture sampler in the graphics device.
      *  The default texture sampler is used when a texture is sampled without a specific sampler being bound.
      */
-    public samplerFilteringPreset = TextureSamplerFilteringPreset.BILINEAR;
+    samplerFilteringPreset: TextureSamplerFilteringPreset;
 }
 
 /**
@@ -31,7 +37,7 @@ export class GraphicsDeviceDescriptor {
  */
 export abstract class AGraphicsDevice implements IGraphicsDevice {
 
-    protected readonly _descriptor: GraphicsDeviceDescriptor;
+    protected readonly _descriptor: IGraphicsDeviceDescriptor;
     protected _defaultTextureSampler: ISampler = null!;
     protected _defaultBlendState: IBlendState = null!;
     protected _defaultPrimitiveState: IPrimitiveState = null!;
@@ -40,7 +46,7 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
      * The constructor.
      * @param descriptor The descriptor for the graphics device. This is used to configure the graphics device during initialization.
      */
-    protected constructor(descriptor: GraphicsDeviceDescriptor) {
+    protected constructor(descriptor: IGraphicsDeviceDescriptor) {
         this._descriptor = descriptor;
     }
 
@@ -70,7 +76,7 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
      * @returns The default texture sampler configured according to the sampler filtering preset specified in the graphics device descriptor.
      */
     protected configureAndCreateDefaultSampler(): ISampler {
-        var samplerDescriptor = new SamplerDescriptor();
+        const samplerDescriptor = new SamplerDescriptor();
         samplerDescriptor.minFilter = this._descriptor.samplerFilteringPreset == TextureSamplerFilteringPreset.POINT ? SamplerFilter.NEAREST : SamplerFilter.LINEAR;
         samplerDescriptor.magFilter = this._descriptor.samplerFilteringPreset == TextureSamplerFilteringPreset.POINT ? SamplerFilter.NEAREST : SamplerFilter.LINEAR;
         samplerDescriptor.mipMapFilter = this._descriptor.samplerFilteringPreset == TextureSamplerFilteringPreset.TRILINEAR ? MipMapSamplerFilter.LINEAR : MipMapSamplerFilter.NONE;

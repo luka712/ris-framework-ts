@@ -1,4 +1,4 @@
-import { SamplerCompareFunction } from "../../common/sampler-enums";
+import { SamplerCompareFunction } from "../../api/rendering/sampler/sampler-enums";
 import { SamplerDescriptor } from "../../core/rendering/sampler/sampler-descriptor";
 import { WebGlUtilities } from "../utilities/WebGlUtilities.ts";
 import type { WebGlGraphicsDevice } from "../WebGlGraphicsDevice.ts";

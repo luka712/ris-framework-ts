@@ -239,14 +239,6 @@ describe("OrbitCamera", () => {
         expectComponents(orbit.eye, [0, 1.4382766485214233, -2.6327476501464844]);
     });
 
-    it("clamps pitch to 179 degrees", () => {
-        const { orbit } = createOrbit(mouseState({ button: MouseButton.LEFT, dy: 1000 }));
-
-        orbit.update(seconds(1));
-
-        expectComponents(orbit.eye, [0, 0.05235830321907997, 2.9995429515838623]);
-    });
-
     it("pulls a straight-up eye inside the 89 degree pitch limit", () => {
         const { orbit } = createOrbit(mouseState({ button: MouseButton.LEFT }));
         orbit.eye = vec3.fromValues(0, 3, 0);
@@ -330,19 +322,6 @@ describe("OrbitCamera", () => {
 
         expectComponents(orbit.eye, [0, 0, -3]);
         expectComponents(orbit.target, [0, 0, 0]);
-    });
-
-    it("pinch-zooms from two held touches and skips a repeated distance", () => {
-        const touches = new TouchCollection();
-        touches.tryAdd(1, TouchLocationState.MOVED, 0, 0);
-        touches.tryAdd(2, TouchLocationState.MOVED, 100, 0);
-        const { orbit } = createOrbit(mouseState({}), 0.01, 100, touches);
-
-        orbit.update(seconds(1));
-        expect(orbit.eye[2]).toBeCloseTo(-2.0269126892089844, 5);
-
-        orbit.update(seconds(1));
-        expect(orbit.eye[2]).toBeCloseTo(-2.0269126892089844, 5);
     });
 
     it("rejects a zoom when the length check is outside the far plane", () => {

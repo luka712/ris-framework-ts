@@ -10,16 +10,15 @@ Open `index.html`. The module script is `src/main.ts`. That file builds the page
 | --- | --- |
 | `index.html` | The page. It has `#app` and `<canvas id="game-canvas" width="800" height="600">`. |
 | `src/main.ts` | Application entry. |
-| `src/api` | Interfaces and value types formerly published as `ris-framework-api`, including input, textures, cameras, and `TextureUtilities`. |
-| `src/core` | `Framework`, `FrameworkConfig`, the window and input managers, content loading, the renderer base, and the sprite batch. |
+| `src/index.ts` | Package entry. Exports `Framework`, `FrameworkConfiguration`, `TextureSamplerFilteringPreset`, and everything under `src/api`. |
+| `src/Framework.ts` | `Framework`, which wires the renderer, factories, managers, and the frame loop together. |
+| `src/api` | Interfaces and value types formerly published as `ris-framework-api` (input, textures, cameras, `TextureUtilities`, and the rest). It also holds `FrameworkConfiguration` and the backend-independent implementations: `WindowManager`, `InputManager`, `ContentManager`, `SpriteBatch`, `GeometryBuilder`, and `BaseGeometry`. `src/api/content/ShaderModuleContent.ts` maps the built-in shader module ids to GLSL from `shaders/glsl`. |
+| `src/core` | Renderer and graphics-device base classes (`ARenderer`, `AGraphicsDevice`), the texture base class, blend and sampler descriptors, `VertexBufferLayout`, and `TextureSamplerFilteringPreset`. |
 | `src/webgl` | The WebGL2 graphics device, renderer, textures, buffers, samplers, and render pipelines. |
-| `src/geometry` | `GeometryBuilder` and mesh geometry data. |
-| `src/content` | Built-in shader modules. GLSL is imported from `shaders/glsl`. |
-| `shaders/glsl` | Vertex and fragment shaders used by those built-in modules. |
-| `examples/load_and_show_ktx2` | Browser page that loads `ktx_logo_200.ktx2` and draws it with the sprite batch. `npm run dev` does not serve this page. |
+| `shaders/glsl` | Vertex and fragment shaders used by the built-in shader modules. |
 | `tests` | Vitest tests for the types under `src/api`. |
 
-Runtime dependencies are `ris-ktx2`, `ris-ktx2-api`, `gl-matrix`, `tsyringe`, and `reflect-metadata`. The library build includes the browser portion of `ris-ktx2`, with its Node loader replaced by a stub, so the published entry does not import Node built-ins. TypeScript, Vite, and Vitest are dev dependencies. Notices for the bundled KTX loader are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The package license is Apache License 2.0. Copyright 2026 Luka Erkapic. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Runtime dependencies are `ris-ktx2`, `gl-matrix`, `tsyringe`, and `reflect-metadata`. The KTX2 types (`IKtx2Texture`, `VkFormat`, `KtxTranscodeFormat`, and the rest) are imported from `ris-ktx2`. The library build includes the browser portion of `ris-ktx2`, with its Node loader replaced by a stub, so the published entry does not import Node built-ins. TypeScript, Vite, and Vitest are dev dependencies. Notices for the bundled KTX loader are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The package license is Apache License 2.0. Copyright 2026 Luka Erkapic. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 ## Prerequisites
 
@@ -38,7 +37,7 @@ npm install ris-framework
 The published entry is compiled JavaScript and TypeScript declarations (`dist/index.js` and `dist/index.d.ts`). Import the public surface by package name:
 
 ```ts
-import { Framework, FrameworkConfig, TextureSamplerFilteringPreset } from "ris-framework";
+import { Framework, FrameworkConfiguration, TextureSamplerFilteringPreset } from "ris-framework";
 ```
 
 The same entry re-exports the former `ris-framework-api` surface, so a consumer can import those names from `ris-framework`:
@@ -47,7 +46,7 @@ The same entry re-exports the former `ris-framework-api` surface, so a consumer 
 import { Color, Rect, TextureFormat, TextureUtilities, type IInputManager } from "ris-framework";
 ```
 
-`Framework`, `FrameworkConfig`, `TextureSamplerFilteringPreset`, and that API surface are the public entry. Built-in GLSL is compiled into `dist/index.js`, so a consumer does not load this repository's `shaders/` directory at runtime. The same file includes the browser KTX2 loader. A consuming Vite app can import the package and build without adding a Node stub of its own.
+`Framework`, `FrameworkConfiguration`, `TextureSamplerFilteringPreset`, and that API surface are the public entry. Built-in GLSL is compiled into `dist/index.js`, so a consumer does not load this repository's `shaders/` directory at runtime. The same file includes the browser KTX2 loader. A consuming Vite app can import the package and build without adding a Node stub of its own.
 
 To work in this repository:
 
@@ -59,27 +58,29 @@ Import `reflect-metadata` before constructing the framework. `src/main.ts` keeps
 
 ## Create a framework instance
 
-Construct `FrameworkConfig`, then pass it to `Framework`. The constructor is `constructor(options: FrameworkConfig | null = null)`. Omitting the argument, or passing `null`, uses `new FrameworkConfig()`.
+Construct `FrameworkConfiguration`, then pass it to `Framework`. The constructor is `constructor(options?: IFrameworkConfiguration)`. Omitting the argument uses `new FrameworkConfiguration()`. The constructor writes the resolved `backBufferSize` back onto the object you pass.
 
-Another project imports that public entry by package name: `import { Framework, FrameworkConfig, TextureSamplerFilteringPreset } from "ris-framework"`.
+Another project imports that public entry by package name: `import { Framework, FrameworkConfiguration, TextureSamplerFilteringPreset } from "ris-framework"`.
 
 No config field is required. Each field has a default.
 
 | Field | Default | What the code does with it |
 | --- | --- | --- |
-| `canvas` | `null` | The canvas the WebGL2 context is created from. `null` makes `WindowManager` create a canvas and append it to `document.body`. `src/main.ts` sets this to `#game-canvas`. |
-| `backBufferSize` | `vec2.fromValues(800, 600)` | Copied onto an internal `RenderConfiguration`. `WebGlRenderer` leaves that copy unused. The main render target starts at the canvas element's `width` and `height`. The canvas in `index.html` is 800 by 600. |
+| `canvas` | `undefined` | The canvas the WebGL2 context is created from. When unset, `Framework` logs a warning and `WindowManager` creates a canvas and appends it to `document.body`. `src/main.ts` sets this to `#game-canvas`. |
+| `backBufferSize` | `undefined` (the constructor uses `vec2.fromValues(800, 600)`) | Copied onto an internal `IRendererConfiguration`. `WebGlRenderer` leaves that copy unused. The main render target starts at the canvas element's `width` and `height`. The canvas in `index.html` is 800 by 600. |
 | `textureFiltering` | `TextureSamplerFilteringPreset.BILINEAR` | Preset for the graphics device's default texture sampler. `POINT` is nearest filtering with no mipmaps. `BILINEAR` is linear filtering with no mipmaps. `TRILINEAR` is linear filtering with linear mipmaps. `undefined` is treated as `BILINEAR`. |
 | `useKtx2` | `false` | When `true`, the constructor sets `framework.ktx2Factory` to a `Ktx2Factory`. `initialize()` then calls `initializeAsync()` on it and does not wait. When `false`, `ktx2Factory` stays unset. |
+| `alpha` | `false` | Passed as the WebGL2 context's `alpha` attribute, so it decides whether the canvas back buffer has an alpha channel. |
+| `powerPreference` | `PowerPreferenceType.DEFAULT` | Passed as the WebGL2 context's `powerPreference` (`"default"`, `"low-power"`, or `"high-performance"`). It only matters on machines with more than one GPU. |
 
-`textureFiltering` is declared optional on `FrameworkConfig`. The other three fields are always present on a new config object.
+Every field is optional on `IFrameworkConfiguration`. A new `FrameworkConfiguration` sets `useKtx2`, `textureFiltering`, `alpha`, and `powerPreference`. `canvas` and `backBufferSize` start unset.
 
 ```ts
 import "reflect-metadata";
 
-import { Framework, FrameworkConfig, TextureSamplerFilteringPreset } from "ris-framework";
+import { Framework, FrameworkConfiguration, TextureSamplerFilteringPreset } from "ris-framework";
 
-const config = new FrameworkConfig();
+const config = new FrameworkConfiguration();
 config.canvas = document.getElementById("game-canvas") as HTMLCanvasElement;
 config.textureFiltering = TextureSamplerFilteringPreset.BILINEAR;
 
@@ -90,51 +91,10 @@ const framework = new Framework(config);
 
 `framework.renderingBackend` is `RenderingBackend.WEB_GL`. After `initialize()`, `framework.graphicsDevice` is the renderer's WebGL2 device.
 
-## Run, build, and preview
-
-```sh
-npm run dev
-```
-
-`dev` runs Vite. The served page is `index.html`. The sample imports the framework from `src/`.
-
-```sh
-npm run build
-```
-
-`build` typechecks `src` and `examples/load_and_show_ktx2/main.ts`, then writes:
-
-- The library, which is what `npm publish` ships. Vite compiles `src/index.ts` to `dist/index.js` and includes the built-in shader sources in that file. It also bundles `ris-ktx2` after replacing that package's Node loader with the browser stub from `vite.config.ts`, and it bundles the former `ris-framework-api` sources from `src/api`. `gl-matrix`, `reflect-metadata`, `ris-ktx2-api`, and `tsyringe` stay as imports. `tsc` writes `dist/index.d.ts` and the declaration files it references, including the API types. `package.json` `main`, `module`, `types`, and `exports` point at `dist`.
-- The sample page. `vite build` writes it to `dist-app/`. The sample Vite config replaces `ris-ktx2`'s Node loader with a browser stub so that bundle does not import Node built-ins.
-- The KTX2 example. `build:load-and-show-ktx2` writes it to `examples/load_and_show_ktx2/dist/`.
-
-```sh
-npm run preview
-```
-
-`preview` runs `vite preview` and serves the `dist-app/` build.
-
-```sh
-npm run dev:load-and-show-ktx2
-```
-
-Serves `examples/load_and_show_ktx2/index.html` on its own Vite root. That page sets `useKtx2`, waits for `ktx2Factory.initializeAsync()`, then calls `content.loadTexture2DAsync` with the bundled URL of `ktx_logo_200.ktx2` and draws the texture through `spriteBatch`. The root sample at `index.html` is unchanged.
-
-```sh
-npm run build:load-and-show-ktx2
-```
-
-Writes that page to `examples/load_and_show_ktx2/dist/`. `npm run build` runs this after the library and the root sample. The directory is gitignored with the other `dist/` outputs.
-
-```sh
-npm test
-```
-
-`test` typechecks `src`, `examples/load_and_show_ktx2/main.ts`, and `tests`, then runs the Vitest suite in `tests/`.
 
 ## From startup to the first frame
 
-`src/main.ts` is the current startup path. It still fills `#app` with the Vite starter page (logos and a counter) and then starts the framework on `#game-canvas`.
+`src/main.ts` is the current startup path. It still fills `#app` with the Vite starter page (logos and a heading) and then starts the framework on `#game-canvas`.
 
 Register listeners before `initialize()`. Load-content and initialized listeners run only inside that call. Update and render listeners stay on the loop, so a listener added later still runs on a following frame. `initialize()` does this:
 
@@ -221,7 +181,7 @@ These throw, or they accept a call and do not do the work the name suggests:
 - `SpriteBatch.draw` and `drawRect` accept rotation arguments and do not use them. `layerDepth` is written as the sprite's z position.
 - Keyboard and gamepad queries return empty state. `getKeyboardState()` is an empty `KeyboardState`. `getGamePadState()` is a disconnected `GamePadState`. `thumbstickDeadZone` is stored and not applied.
 - A render pass that enables stencil without depth throws `Not implemented`.
-- Paths ending in `.ktx2` go through `content.loadKtx2Async`, which uses its own `Ktx2Factory` and does not call `initializeAsync`. `loadAsync` needs the KTX module that `useKtx2` starts, and `initialize()` does not wait for that call. The `.ktx2` branch of `loadTexture2DAsync` also drops `ContentConfig`. `src/main.ts` does not load a `.ktx2` file. `examples/load_and_show_ktx2/main.ts` awaits `ktx2Factory.initializeAsync()` before `initialize()` so the load listener can call `loadTexture2DAsync` on `ktx_logo_200.ktx2`.
+- Paths ending in `.ktx2` go through `content.loadKtx2Async`, which uses its own `Ktx2Factory` and does not call `initializeAsync`. The libktx module is shared by every `Ktx2Factory`, so `loadAsync` works only after some factory has finished `initializeAsync()`. `useKtx2` starts that call in `initialize()` but does not wait for it. To load a `.ktx2` file, set `useKtx2`, await `framework.ktx2Factory.initializeAsync()` before `initialize()`, and then call `loadTexture2DAsync` from a load-content listener. `src/main.ts` does not load a `.ktx2` file.
 - The geometry and unlit-pipeline steps at the bottom of `src/main.ts` are comments. `geometryBuilder.quadGeometry()` can build quad data; the entry file does not upload it or draw it.
 
 ## Version

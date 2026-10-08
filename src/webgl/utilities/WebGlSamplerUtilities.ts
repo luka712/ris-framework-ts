@@ -1,4 +1,4 @@
-import { SamplerCompareFunction } from '../../common/sampler-enums';
+import { SamplerCompareFunction } from '../../api/rendering/sampler/sampler-enums';
 import { SpectorJSUtilities } from './spector-js-utilities';
 import { WebGlConverter } from './WebGlConverter.ts';
 import {MipMapSamplerFilter, SamplerAddressMode, SamplerFilter} from "../../api/index.ts";
@@ -20,7 +20,7 @@ export class WebGlSamplerUtilities {
      * @param compareFunction The compare function of the sampler. This is used for shadow samplers.
      * @param _anisotropy The anisotropy level of the sampler. This is used for anisotropic filtering. The default value is 1, which means no anisotropic filtering.
      * @param label The label of the sampler. This is used for debugging purposes and can be viewed in graphics debuggers like SpectorJS.
-     * @returns
+     * @returns The created WebGLSampler.
      */
     public create(gl: WebGL2RenderingContext,
                   minFilter: SamplerFilter = SamplerFilter.LINEAR,
@@ -35,7 +35,7 @@ export class WebGlSamplerUtilities {
     {
         const sampler = gl.createSampler();
 
-        const glMinFilter = WebGlConverter.convertMinFIlter(gl, minFilter, mipMapFilter);
+        const glMinFilter = WebGlConverter.convertMinFilter(gl, minFilter, mipMapFilter);
         const glMagFilter = WebGlConverter.convertMagFilter(gl, magFilter);
         const glAddressModeU = WebGlConverter.convertAddressMode(gl, addressModeU);
         const glAddressModeV = WebGlConverter.convertAddressMode(gl, addressModeV);

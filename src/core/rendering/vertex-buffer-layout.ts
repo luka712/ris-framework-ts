@@ -1,11 +1,10 @@
-import { VertexStepMode } from "../../api/index.ts";
-import type {  VertexAttribute } from "./vertex-attribute";
-import {VertexFormat} from "../../VertexFormat.ts";
+import {type IVertexBufferLayout, type VertexAttribute, VertexStepMode} from "../../api/index.ts";
+import {VertexFormat} from "../../api/geometry/VertexFormat.ts";
 
 /**
  * Describes the layout of a vertex buffer, including the stride, step mode, and attributes.
  */
-export class VertexBufferLayout {
+export class VertexBufferLayout implements IVertexBufferLayout {
     /**
      * Stride in bytes (size of one vertex)
      */

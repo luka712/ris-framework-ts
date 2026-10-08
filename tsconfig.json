@@ -30,7 +30,6 @@
     "sourceMap": true
   },
   "include": [
-    "src",
-    "examples/load_and_show_ktx2/main.ts"
+    "src"
   ]
 }

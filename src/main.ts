@@ -3,9 +3,8 @@ import "reflect-metadata";
 
 import typescriptLogo from './typescript.svg'
 import viteLogo from '/vite.svg'
-import {setupCounter} from './counter.ts'
-import {Framework} from './core/Framework.ts';
-import {FrameworkConfig} from "./core/FrameworkConfig.ts";
+import {Framework} from './Framework.ts';
+import {FrameworkConfiguration} from "./api/FrameworkConfiguration.ts";
 import {TextureSamplerFilteringPreset} from "./core/rendering/enums.ts";
 import {
   Color,
@@ -26,18 +25,14 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
     </a>
     <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
     <p class="read-the-docs">
       Click on the Vite and TypeScript logos to learn more
     </p>
   </div>
 `
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
 
-const frameworkConfig = new FrameworkConfig();
+const frameworkConfig = new FrameworkConfiguration();
 frameworkConfig.canvas = document.getElementById("game-canvas") as HTMLCanvasElement;
 frameworkConfig.textureFiltering = TextureSamplerFilteringPreset.BILINEAR;
 const framework : IFramework = new Framework(frameworkConfig);
@@ -71,7 +66,7 @@ framework.addOnInitializedListener(() => {
 
 framework.addOnRenderListener(() =>
 {
-  let spriteBatch = framework.spriteBatch;
+  const spriteBatch = framework.spriteBatch;
 
   spriteBatch.begin(undefined, sampler);
   spriteBatch.drawRect(rect, color);

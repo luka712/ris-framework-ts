@@ -12,7 +12,7 @@ export class WebGLFilterAnisotropicUtilities {
     /**
      * Gets the max anisotropy.
      * @param gl The WebGL2 rendering context.
-     * @returns The maximum supported level of anisotropic filtering. <c>0</c> if not supported. 
+     * @returns The maximum supported level of anisotropic filtering. `0` if not supported.
      */
     public getMaxAnisotropy(gl: WebGL2RenderingContext): number {
         this._extension = gl.getExtension(this.MAX_ANISOTROPY_EXT);

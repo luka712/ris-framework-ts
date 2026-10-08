@@ -1,9 +1,8 @@
-import type { ITempRenderer } from "../renderer/renderer-interface.ts";
-import type { IRenderPass } from "./render-pass/render-pass-interface.ts";
+import type { ITempRenderer } from "../../api/rendering/renderer-interface.ts";
 import type { vec2 } from "gl-matrix";
-import type { RenderingLimits } from "../renderer/rendering-limits.ts";
+import type { RenderingLimits } from "../../api/rendering/rendering-limits.ts";
 import {
-    type IFramework, type IGraphicsDevice, type IMainRenderTargetRenderPipeline, type ISwapChain,
+    type IFramework, type IGraphicsDevice, type IMainRenderTargetRenderPipeline, type IRenderPass, type ISwapChain,
     type ITexture2D, type IWindowManager,
     RenderingBackend,
     RenderPassColorAttachment, RenderPassDepthStencilAttachment,
@@ -148,6 +147,7 @@ export abstract class ARenderer implements ITempRenderer {
 
         let colorAttachment = new RenderPassColorAttachment();
         colorAttachment.swapChain = this._swapChain;
+        colorAttachment.clearColor = Color.transparent();
         this._swapChainRenderPass = this._graphicsDevice.createRenderPass({
             colorAttachments: [colorAttachment],
         });
@@ -164,7 +164,7 @@ export abstract class ARenderer implements ITempRenderer {
         // Create a main frame buffer.
         this._mainRenderTarget = this._framework.textureFactory.createEmpty(
             this.backBufferSize[0], this.backBufferSize[1],
-            undefined,
+            Color.transparent(),
             TextureUsage.TEXTURE_BINDING | TextureUsage.RENDER_ATTACHMENT,
             this.preferredTextureFormat
         );

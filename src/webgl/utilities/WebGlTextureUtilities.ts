@@ -1,5 +1,5 @@
 import {WebGlConverter} from "./WebGlConverter.ts";
-import {TextureFormat} from "../../api/index.ts";
+import {AlignUtilities, TextureFormat} from "../../api/index.ts";
 import {vec2} from "gl-matrix";
 
 /**
@@ -13,7 +13,7 @@ export class WebGlTextureUtilities {
      * @param width The width of the texture.
      * @param height The height of the texture.
      * @param data The texture data. If null, an uninitialized texture will be created.
-     * @param textureFormat The format of the texture. If not specified, BGRA_8_UNORM will be used.
+     * @param textureFormat The format of the texture. If not specified, RGBA_8_UNORM will be used.
      * @param useMipMaps True to generate mipmaps for the texture, false otherwise. By default, it is false.
      * @param anisotropy The level of anisotropic filtering to use when sampling the texture. A value of 1 means no anisotropic filtering, while higher values (e.g., 4, 8, 16) indicate increasing levels of anisotropic filtering. By default, it is 1 (no anisotropic filtering).
      * @param label The label for the texture. This can be used for debugging purposes to identify the texture in graphics debuggers.
@@ -92,9 +92,9 @@ export class WebGlTextureUtilities {
      * @param dimension The dimensions of the texture.
      * @param blockSize The block size of a compressed format.
      * @param data The texture data. If null, an uninitialized texture will be created.
-     * @param textureFormat The format of the texture. If not specified, BGRA_8_UNORM will be used.
-     * @param anisotropy The level of anisotropic filtering to use when sampling the texture. A value of 1 means no anisotropic filtering, while higher values (e.g., 4, 8, 16) indicate increasing levels of anisotropic filtering. By default, it is 1 (no anisotropic filtering).
      * @param label The label for the texture. This can be used for debugging purposes to identify the texture in graphics debuggers.
+     * @param textureFormat The format of the texture. If not specified, RGBA_8_UNORM will be used.
+     * @param anisotropy The level of anisotropic filtering to use when sampling the texture. A value of 1 means no anisotropic filtering, while higher values (e.g., 4, 8, 16) indicate increasing levels of anisotropic filtering. By default, it is 1 (no anisotropic filtering).
      * @returns The created WebGL texture.
      */
     public createCompressedTexture2D(
@@ -109,10 +109,6 @@ export class WebGlTextureUtilities {
         const baseWidth = dimension[0];
         const baseHeight = dimension[1];
         const mipLevels = data?.length ?? 1;
-
-        // To be able to use tex storage API, we need to be block aligned.
-        const useTexStorage = dimension[0] % blockSize[0] == 0 && dimension[1] % blockSize[1] == 0;
-
         const texture = gl.createTexture();
 
         if (label != null) {
@@ -125,9 +121,11 @@ export class WebGlTextureUtilities {
 
         const internalFormat = WebGlConverter.convertInternalFormat(gl, textureFormat);
 
+        const useTexStorage = baseWidth % blockSize[0] == 0 && baseHeight % blockSize[1] == 0;
         if (useTexStorage) {
             gl.texStorage2D(gl.TEXTURE_2D, mipLevels, internalFormat, baseWidth, baseHeight);
         }
+
         if (data && data.length > 0) {
 
             let width = baseWidth;
@@ -141,7 +139,9 @@ export class WebGlTextureUtilities {
                     if (useTexStorage) {
                         gl.compressedTexSubImage2D(gl.TEXTURE_2D, i, 0, 0, width, height, internalFormat, mipLevelData, 0);
                     } else {
-                        gl.compressedTexImage2D(gl.TEXTURE_2D, i, internalFormat, width, height, 0,mipLevelData);
+                        const alignedWidth = AlignUtilities.align(width, blockSize[0]);
+                        const alignedHeight = AlignUtilities.align(height, blockSize[1]);
+                        gl.compressedTexImage2D(gl.TEXTURE_2D, i, internalFormat, alignedWidth, alignedHeight, 0, mipLevelData, 0);
                     }
                 } else {
                     throw new Error("unsupported data type");
@@ -152,15 +152,18 @@ export class WebGlTextureUtilities {
             }
         }
 
-        // Generate mipmaps.
-        if (mipLevels > 1) {
-            gl.generateMipmap(gl.TEXTURE_2D);
-        }
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
         // Set anisotropy.
         if (anisotropy > 1.0) {
             throw new Error("Not implemented yet.");
             //OpenGLESUtilities.Anisotropy.SetAnisotropy(gl, texture, anisotropy);
+        }
+
+        const error = gl.getError();
+        if (error != gl.NO_ERROR) {
+            throw new Error("WebGlTextureUtilities error " + error.toString());
         }
 
         return texture;

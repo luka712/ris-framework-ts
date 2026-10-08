@@ -19,11 +19,9 @@
   },
   "scripts": {
     "dev": "vite",
-    "dev:load-and-show-ktx2": "vite --config examples/load_and_show_ktx2/vite.config.ts",
-    "build": "tsc --noEmit && npm run build:lib && npm run build:app && npm run build:load-and-show-ktx2",
+    "build": "tsc --noEmit && npm run build:lib && npm run build:app",
     "build:lib": "rm -rf dist && vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json && node scripts/rewrite-declaration-extensions.mjs",
     "build:app": "vite build",
-    "build:load-and-show-ktx2": "vite build --config examples/load_and_show_ktx2/vite.config.ts",
     "preview": "vite preview",
     "test": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit && vitest run"
   },
@@ -35,8 +33,7 @@
   "dependencies": {
     "gl-matrix": "^3.4.4",
     "reflect-metadata": "^0.2.2",
-    "ris-ktx2": "^0.1.0-dev.2",
-    "ris-ktx2-api": "^0.1.0-dev.2.4",
+    "ris-ktx2": "^0.1.0",
     "tsyringe": "^4.10.0"
   },
   "files": [
