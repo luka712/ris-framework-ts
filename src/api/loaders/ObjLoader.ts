@@ -20,31 +20,31 @@ export class ObjLoader {
         for (const line of lines) {
 
             const data = line.split(' ');
-            const identifier = data[0];
+            const identifier = data[0].trim();
 
             switch (identifier) {
                 // Typically value as 'v 0.0 1.0 2.0'
                 case 'v':
                     for (let i = 1; i < data.length; ++i) {
-                        vertices.push(parseFloat(data[i]));
+                        vertices.push(parseFloat(data[i].trim()));
                     }
                     break;
                 case 'vt':
                     for (let i = 1; i < data.length; ++i) {
-                        textureCoords.push(parseFloat(data[i]));
+                        textureCoords.push(parseFloat(data[i].trim()));
                     }
                     break;
                 case 'vn':
                     for (let i = 1; i < data.length; ++i) {
-                        normals.push(parseFloat(data[i]));
+                        normals.push(parseFloat(data[i].trim()));
                     }
                     break;
                 case 'f':
                     for (let i = 1; i < data.length; ++i) {
                         let faceData = data[i].split('/');
-                        indices.push(parseInt(faceData[0]) - 1);
-                        indices.push(parseInt(faceData[1]) - 1);
-                        indices.push(parseInt(faceData[2]) - 1);
+                        indices.push(parseInt(faceData[0].trim()) - 1);
+                        indices.push(parseInt(faceData[1].trim()) - 1);
+                        indices.push(parseInt(faceData[2].trim()) - 1);
 
                     }
                     break;
