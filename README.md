@@ -168,6 +168,15 @@ The first `begin` / `drawRect` / `end` runs inside `initialize()`, before the te
 
 Setting `framework.renderer.clearColor` after `initialize()` updates later frames. The first frame has already cleared with the default light pink.
 
+## Examples
+
+Browser examples live in [`examples/`](examples/), one folder per example. See [`examples/README.md`](examples/README.md).
+
+```sh
+npm run dev:examples      # serve the examples index, e.g. /sprite_batch/
+npm run build:examples    # build every example into examples/dist/
+```
+
 ## What is still unfinished
 
 These throw, or they accept a call and do not do the work the name suggests:

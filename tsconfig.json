@@ -30,6 +30,7 @@
     "sourceMap": true
   },
   "include": [
-    "src"
+    "src",
+    "examples/*/*.ts"
   ]
 }

@@ -140,17 +140,18 @@ describe("OrthographicCamera", () => {
         expect(camera.bottom).toBe(-1);
         expect(camera.nearPlane).toBe(0);
         expect(camera.farPlane).toBe(1);
-        expectComponents(camera.eye, [0, 0, -1]);
+        expectComponents(camera.eye, [0, 0, 1]);
         expectComponents(camera.projectionMatrix, [
             1, 0, 0, 0,
             0, 1, 0, 0,
             0, 0, -2, 0,
             0, 0, -1, 1,
         ]);
+        // Eye at +z looking at the origin: no mirroring of x, so screen-space sprites stay on screen.
         expectComponents(camera.viewMatrix, [
-            -1, 0, 0, 0,
+            1, 0, 0, 0,
             0, 1, 0, 0,
-            0, 0, -1, 0,
+            0, 0, 1, 0,
             0, 0, -1, 1,
         ]);
     });

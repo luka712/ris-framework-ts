@@ -22,6 +22,8 @@
     "build": "tsc --noEmit && npm run build:lib && npm run build:app",
     "build:lib": "rm -rf dist && vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json && node scripts/rewrite-declaration-extensions.mjs",
     "build:app": "vite build",
+    "dev:examples": "vite --config examples/vite.config.ts",
+    "build:examples": "vite build --config examples/vite.config.ts",
     "preview": "vite preview",
     "test": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit && vitest run"
   },

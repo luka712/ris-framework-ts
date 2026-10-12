@@ -69,7 +69,7 @@ export class OrthographicCamera implements IOrthographicCamera {
         this._near = near;
         this._far = far;
 
-        this._eye = vec3.fromValues(0, 0, -1);
+        this._eye = vec3.fromValues(0, 0, 1);
         this._target = vec3.fromValues(0, 0, 0);
 
         this._zSpaceLength = 2; // For WebGL2 it is 2, WebGPU it is 1.
