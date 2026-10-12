@@ -27,6 +27,9 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
         this._mainRenderTarget = mainRenderTarget as WebGlTexture2D;
     }
 
+    /** @inheritDoc */
+    public readonly geometryFormat = GeometryFormat.POS3_COLOR4_TEXTURECOORDS2;
+
     /** @inheritdoc */
     protected _provideBuffers(): WebGLBuffer[] {
         return [this._vertexBuffer.buffer!];

@@ -4,16 +4,18 @@ import {
     BufferUsage,
     GeometryFormat,
     Mesh,
+    MeshFactory,
     QuadMesh,
     Rect,
     State,
     type IFramework,
     type IGeometry,
+    type IMaterial,
 } from "../src/api/index.ts";
 
 class InspectableQuad extends QuadMesh {
     public constructor(framework: IFramework, isUpdatable: boolean, scale?: vec2) {
-        super(framework, isUpdatable, scale);
+        super(framework, material, isUpdatable, scale);
     }
 
     public get bufferUsage(): number {
@@ -26,10 +28,12 @@ class InspectableQuad extends QuadMesh {
 }
 
 const framework = {} as IFramework;
+/** Stub material; these tests never render, they only need a geometry format. */
+const material = { geometryFormat: GeometryFormat.POS3_COLOR4_TEXTURECOORDS2 } as IMaterial;
 
 describe("Mesh", () => {
     it("starts created and refuses to build buffers without positions", () => {
-        const mesh = new Mesh(framework);
+        const mesh = new Mesh(framework, material);
 
         expect(mesh.state).toBe(State.CREATED);
         expect(mesh.positions).toBeUndefined();
@@ -39,17 +43,17 @@ describe("Mesh", () => {
     });
 
     it("refuses geometry that reports no vertices", () => {
-        const mesh = new Mesh(framework);
+        const mesh = new Mesh(framework, material);
         const geometry = { vertexCount: 0 } as IGeometry;
 
-        expect(() => mesh.setGeometry(geometry, GeometryFormat.POS3_COLOR4_TEXTURECOORDS2))
+        expect(() => mesh.setGeometry(geometry))
             .toThrow("geometry.vertexCount is set");
     });
 });
 
 describe("QuadMesh", () => {
     it("builds a unit quad in xy before any buffer upload", () => {
-        const mesh = new QuadMesh(framework, false);
+        const mesh = new QuadMesh(framework, material, false);
 
         expect(mesh.positions).toEqual([
             -0.5, -0.5, 0,
@@ -77,7 +81,7 @@ describe("QuadMesh", () => {
     });
 
     it("scales the quad positions from the center", () => {
-        const mesh = new QuadMesh(framework, false, vec2.fromValues(2, 4));
+        const mesh = new QuadMesh(framework, material, false, vec2.fromValues(2, 4));
 
         expect(mesh.positions).toEqual([
             -1, -2, 0,
@@ -118,5 +122,14 @@ describe("QuadMesh", () => {
                 expect(value).toBe(0);
             }
         });
+    });
+});
+
+describe("MeshFactory", () => {
+    // createQuadMesh is not implemented yet in the material refactor; this pins the current behavior.
+    it("createQuadMesh currently throws until quad meshes are reimplemented", () => {
+        const factory = new MeshFactory(framework);
+
+        expect(() => factory.createQuadMesh(false)).toThrow("Meshes not implemented.");
     });
 });

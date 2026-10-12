@@ -1,12 +1,12 @@
 import type {
     IFramework,
-    ISpriteRenderPipeline,
     ITexture2D,
     IUniformBuffer,
     Color,
     IDisposable, ISampler
 } from "../index.ts";
 import {SpriteBatchMesh} from "./SpriteBatchMesh.ts";
+import type {SpriteMaterial} from "../material/SpriteMaterial.ts";
 import type {vec2, vec3} from "gl-matrix";
 
 /**
@@ -19,7 +19,7 @@ export class SpriteBatchDrawable implements IDisposable {
     private readonly _sampler: ISampler;
     private _maxBatchSize: number;
     private _drawingMesh: SpriteBatchMesh = null!;
-    private _renderPipeline: ISpriteRenderPipeline = null!;
+    private _material: SpriteMaterial = null!;
 
     private _needsResize = false;
 
@@ -54,13 +54,13 @@ export class SpriteBatchDrawable implements IDisposable {
 
     /** Initialize the drawable */
     public initialize(): void {
-        this._renderPipeline = this._framework
-            .renderPipelineFactory
-            .createSpriteRenderPipeline(this.projectionViewBuffer);
-        this._renderPipeline.spriteTexture = this._texture;
-        this._renderPipeline.textureSampler = this._sampler;
+        this._material = this._framework.materialFactory.createSpriteMaterial({
+            projectionViewBuffer: this.projectionViewBuffer,
+            texture: this._texture,
+            sampler: this._sampler,
+        });
 
-        this._drawingMesh = new SpriteBatchMesh(this._framework, this._maxBatchSize);
+        this._drawingMesh = new SpriteBatchMesh(this._framework, this._material, this._maxBatchSize);
         this._drawingMesh.initialize();
     }
 
@@ -115,14 +115,10 @@ export class SpriteBatchDrawable implements IDisposable {
         }
 
         // Draw mesh.
-        const indicesOffset = this._fromInstance * 6;
-        const indicesCount = this._toInstance * 6 - indicesOffset;
+        this._drawingMesh.indicesOffset = this._fromInstance * 6;
+        this._drawingMesh.indicesCount = this._toInstance * 6 - this._drawingMesh.indicesOffset;
         this._drawingMesh.applyChanges();
-        this._renderPipeline.render(
-            this._drawingMesh.vertexBuffer!,
-            this._drawingMesh.indexBuffer!,
-            indicesCount,
-            indicesOffset);
+        this._drawingMesh.draw();
         this._fromInstance = this._toInstance;
     }
 
@@ -140,7 +136,7 @@ export class SpriteBatchDrawable implements IDisposable {
 
     /** @inheritDoc */
     public dispose(): void {
-        this._renderPipeline.dispose();
+        this._material.dispose();
         this._drawingMesh.dispose();
     }
 }

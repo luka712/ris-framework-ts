@@ -8,16 +8,15 @@ import type { IFramework } from "../IFramework.ts";
 import type { IMesh } from "./IMesh.ts";
 import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
 import type { IGeometry } from "../geometry/IGeometry.ts";
-import {GeometryFormat} from "../geometry/GeometryFormat.ts";
 import {MeshParameters} from "./MeshParameters.ts";
 import {GeometryUtilities} from "../utilities/GeometryUtilities.ts";
+import type { IMaterial } from "../material/IMaterial.ts";
 
 /**
  * The mesh.
  */
 export class Mesh implements IMesh {
 
-    protected readonly _framework: IFramework;
     protected _bufferUsage = BufferUsage.VERTEX;
     protected _state = State.CREATED;
     protected _vertexData?: number[];
@@ -31,10 +30,20 @@ export class Mesh implements IMesh {
 
     /**
      * The constructor.
-     * @param framework The framework.
+     * @param _framework The framework.
+     * @param _material The material.
      */
-    public constructor(framework: IFramework) {
-        this._framework = framework;
+    public constructor(protected readonly _framework: IFramework, protected _material: IMaterial) {
+    }
+
+    /** The material. */
+    public get material(): IMaterial {
+        return this._material;
+    }
+
+    /** Sets the material. */
+    public set material(material: IMaterial) {
+        this._material = material;
     }
 
     /**
@@ -201,11 +210,11 @@ export class Mesh implements IMesh {
      * Sets the mesh from a geometry.
      *
      * This will create vertex buffer and index buffer from geometry.
-     * Positions, Colors, TextureCoordinates  and Normals will be ignored.
      * @param geometry - The geometry.
-     * @param format - The format for geometry.
      */
-    public setGeometry(geometry: IGeometry, format: GeometryFormat): void {
+    public setGeometry(geometry: IGeometry ): void {
+
+        const format = this._material.geometryFormat;
         if (geometry.vertexCount == 0)
         {
             const message =

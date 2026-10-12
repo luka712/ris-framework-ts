@@ -1,9 +1,10 @@
-import type {
-    IFramework, IPrimitiveState,
-    ISampler,
-    ITexture2D,
-    IUniformBuffer,
-    IVertexBuffer
+import {
+    GeometryFormat,
+    type IFramework, type IPrimitiveState,
+    type ISampler,
+    type ITexture2D,
+    type IUniformBuffer,
+    type IVertexBuffer
 } from "../../../api/index.ts";
 import {VertexBufferLayout} from "../../../core/rendering/vertex-buffer-layout";
 import type {WebGlUniformBuffer} from "../../buffers/WebGlUniformBuffer.ts";
@@ -58,6 +59,8 @@ export class WebGlInspectTextureMipsRenderPipeline extends AWebGlRenderPipeline 
         this._textureConstantsBuffer = textureConstantsBuffer as WebGlUniformBuffer;
     }
 
+    /** @inheritDoc */
+    public readonly geometryFormat = GeometryFormat.POS3_COLOR4_TEXTURECOORDS2;
 
     /** @inheritdoc */
     public get projectionViewBuffer(): IUniformBuffer {

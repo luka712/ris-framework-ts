@@ -7,6 +7,7 @@ import type { IIndexBuffer } from "../rendering/buffers/IIndexBuffer.ts";
 
 /**
  * The material interface.
+ * @public
  */
 export interface IMaterial extends IDisposable {
 
@@ -15,9 +16,7 @@ export interface IMaterial extends IDisposable {
      */
     modelMatrix: mat4;
 
-    /**
-     * The geometry format required by the material.
-     */
+    /** The geometry format required by the material.*/
     readonly geometryFormat: GeometryFormat;
 
     /**

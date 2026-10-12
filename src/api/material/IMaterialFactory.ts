@@ -1,4 +1,5 @@
 import {InspectTextureMipsMaterial} from "./InspectTextureMipsMaterial.ts";
+import type {SpriteMaterial, SpriteMaterialDescriptor} from "./SpriteMaterial.ts";
 import {UnlitMaterial, UnlitMaterialDescriptor} from "./UnlitMaterial.ts";
 
 /**
@@ -14,8 +15,15 @@ export interface IMaterialFactory {
 
     /**
      * Creates an unlit material.
-     * @param config The optional additional configuration options for material, such as rendering options.
+     * @param descriptor The optional additional configuration options for material, such as rendering options.
      * @returns The Unlit Material.
      */
-    createUnlitMaterial(config?: UnlitMaterialDescriptor): UnlitMaterial;
+    createUnlitMaterial(descriptor?: UnlitMaterialDescriptor): UnlitMaterial;
+
+    /**
+     * Creates a sprite material.
+     * @param descriptor The sprite material descriptor with projection view buffer, texture and sampler.
+     * @returns The Sprite Material.
+     */
+    createSpriteMaterial(descriptor: SpriteMaterialDescriptor): SpriteMaterial;
 }
