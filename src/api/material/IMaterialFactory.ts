@@ -1,6 +1,7 @@
 import {InspectTextureMipsMaterial} from "./InspectTextureMipsMaterial.ts";
 import type {SpriteMaterial, SpriteMaterialDescriptor} from "./SpriteMaterial.ts";
 import {UnlitMaterial, UnlitMaterialDescriptor} from "./UnlitMaterial.ts";
+import type {ForwardBlinnPhongMaterial, ForwardBlinnPhongMaterialDescriptor} from "./ForwardBlinnPhongMaterial.ts";
 
 /**
  * The material factory.
@@ -26,4 +27,11 @@ export interface IMaterialFactory {
      * @returns The Sprite Material.
      */
     createSpriteMaterial(descriptor: SpriteMaterialDescriptor): SpriteMaterial;
+
+    /**
+     * Creates a Blinn-Phong material with forward calculated lighting.
+     * @param descriptor The optional configuration, such as camera and primitive state.
+     * @returns The Forward Blinn-Phong Material.
+     */
+    createForwardBlinnPhongMaterial(descriptor?: ForwardBlinnPhongMaterialDescriptor): ForwardBlinnPhongMaterial;
 }

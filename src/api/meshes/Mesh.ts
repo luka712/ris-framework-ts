@@ -11,6 +11,8 @@ import type { IGeometry } from "../geometry/IGeometry.ts";
 import {MeshParameters} from "./MeshParameters.ts";
 import {GeometryUtilities} from "../utilities/GeometryUtilities.ts";
 import type { IMaterial } from "../material/IMaterial.ts";
+import type { GeometryFormat } from "../geometry/GeometryFormat.ts";
+import {SubMesh} from "./SubMesh.ts";
 
 /**
  * The mesh.
@@ -27,23 +29,42 @@ export class Mesh implements IMesh {
     protected _normals?: number[];
     protected _vertexBuffer?: IVertexBuffer;
     protected _indexBuffer?: IIndexBuffer;
+    protected _subMeshes: SubMesh[] = [];
 
     /**
      * The constructor.
      * @param _framework The framework.
-     * @param _material The material.
+     * @param _material The material. Optional for a mesh that only holds submeshes.
      */
-    public constructor(protected readonly _framework: IFramework, protected _material: IMaterial) {
+    public constructor(protected readonly _framework: IFramework, protected _material?: IMaterial) {
     }
 
-    /** The material. */
-    public get material(): IMaterial {
+    /** The material. Undefined for a mesh drawn through its submeshes. */
+    public get material(): IMaterial | undefined {
         return this._material;
     }
 
     /** Sets the material. */
-    public set material(material: IMaterial) {
+    public set material(material: IMaterial | undefined) {
         this._material = material;
+    }
+
+    /** The submeshes. They share this mesh's vertex and index buffers. */
+    public get subMeshes(): SubMesh[] {
+        return this._subMeshes;
+    }
+
+    /**
+     * Adds a submesh that draws a range of this mesh's index buffer with its own material.
+     * @param material The material of the submesh.
+     * @param indexStart The first index of the range.
+     * @param indexCount The number of indices in the range.
+     * @returns The submesh.
+     */
+    public addSubMesh(material: IMaterial, indexStart: number, indexCount: number): SubMesh {
+        const subMesh = new SubMesh(this, material, indexStart, indexCount);
+        this._subMeshes.push(subMesh);
+        return subMesh;
     }
 
     /**
@@ -211,10 +232,14 @@ export class Mesh implements IMesh {
      *
      * This will create vertex buffer and index buffer from geometry.
      * @param geometry - The geometry.
+     * @param geometryFormat - The vertex layout. Defaults to the material's geometry format.
      */
-    public setGeometry(geometry: IGeometry ): void {
+    public setGeometry(geometry: IGeometry, geometryFormat?: GeometryFormat): void {
 
-        const format = this._material.geometryFormat;
+        const format = geometryFormat ?? this._material?.geometryFormat;
+        if (format === undefined) {
+            throw new Error("Cannot create buffers for a Mesh without a material or geometry format.");
+        }
         if (geometry.vertexCount == 0)
         {
             const message =
@@ -257,6 +282,7 @@ export class Mesh implements IMesh {
      * Dispose of the mesh.
      */
     public dispose(): void {
+        this._subMeshes.length = 0;
         this._vertexBuffer?.dispose();
         this._vertexBuffer = undefined;
         this._indexBuffer?.dispose();

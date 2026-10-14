@@ -67,7 +67,7 @@ export class SpriteMaterial implements IMaterial {
 
     /** @inheritDoc */
     public renderMesh(mesh: IMesh): void {
-        this.render(mesh.vertexBuffer!, mesh.indexBuffer!);
+        this.render(mesh.vertexBuffer!, mesh.indexBuffer!, mesh.indexCount ?? -1, mesh.indexStart ?? 0);
     }
 
     /**

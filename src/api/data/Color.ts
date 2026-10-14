@@ -222,7 +222,13 @@ export class Color implements Iterable<number>{
         o
     }
 
-
+    /**
+     * Copy self and return new instance with same values.
+     * @return Color
+     * */
+    public copy(): Color {
+        return new Color(this.r, this.g, this.b, this.a);
+    }
 }
 
 

@@ -3,6 +3,7 @@ import type { IFramework } from "../IFramework.ts";
 import type { IMaterialFactory } from "./IMaterialFactory.ts";
 import {SpriteMaterial, type SpriteMaterialDescriptor} from "./SpriteMaterial.ts";
 import {UnlitMaterial, UnlitMaterialDescriptor} from "./UnlitMaterial.ts";
+import {ForwardBlinnPhongMaterial, type ForwardBlinnPhongMaterialDescriptor} from "./ForwardBlinnPhongMaterial.ts";
 
 /**
  * The material factory.
@@ -29,5 +30,10 @@ export class MaterialFactory implements IMaterialFactory {
     /** @inheritDoc */
     public createSpriteMaterial(descriptor: SpriteMaterialDescriptor): SpriteMaterial {
         return new SpriteMaterial(this._framework, descriptor);
+    }
+
+    /** @inheritDoc */
+    public createForwardBlinnPhongMaterial(descriptor?: ForwardBlinnPhongMaterialDescriptor): ForwardBlinnPhongMaterial {
+        return new ForwardBlinnPhongMaterial(this._framework, descriptor);
     }
 }

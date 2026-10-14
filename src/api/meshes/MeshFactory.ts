@@ -6,6 +6,7 @@ import type { IFramework } from "../IFramework.ts";
 import {Mesh} from "./Mesh.ts";
 import {vec2} from "gl-matrix";
 import type { IMaterial } from "../material/IMaterial.ts";
+import type { SubMeshDescriptor } from "./IMeshFactory.ts";
 
 /**
  * The implementation of the mesh factory interface.
@@ -23,6 +24,24 @@ export class MeshFactory implements IMeshFactory {
     public create(geometry: IGeometry, material: IMaterial): IMesh {
         const mesh = new Mesh(this._framework, material);
         mesh.setGeometry(geometry);
+        return mesh;
+    }
+
+    /** @inheritDoc */
+    public createWithSubMeshes(geometry: IGeometry, subMeshes: SubMeshDescriptor[]): IMesh {
+        if (subMeshes.length == 0) {
+            throw new Error("createWithSubMeshes needs at least one submesh.");
+        }
+        const format = subMeshes[0].material.geometryFormat;
+        if (subMeshes.some(s => s.material.geometryFormat != format)) {
+            throw new Error("All submesh materials must use the same geometry format, as they share one vertex buffer.");
+        }
+
+        const mesh = new Mesh(this._framework);
+        mesh.setGeometry(geometry, format);
+        for (const subMesh of subMeshes) {
+            mesh.addSubMesh(subMesh.material, subMesh.indexStart, subMesh.indexCount);
+        }
         return mesh;
     }
 

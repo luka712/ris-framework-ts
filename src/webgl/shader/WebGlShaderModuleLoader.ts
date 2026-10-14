@@ -17,11 +17,8 @@ export class WebGlShaderModuleLoader {
         this._framework = framework;
     }
 
-    /**
-     * The content types provided by this content module.
-     * @param assetFilePathOrIdentifier The asset file path or identifier of the content to load.
-     */
-    public load(assetFilePathOrIdentifier: string): IShaderModule {
+    /** @inheritDoc */
+    public load(assetFilePathOrIdentifier: string, keyValueDictionary?: {[id:string]: number} ): IShaderModule {
 
         // Here something like 'sprite' is provided, we must resolve it.
 
@@ -30,7 +27,7 @@ export class WebGlShaderModuleLoader {
         if (!shaderModule) {
 
             // If it does not exist create one and set it.
-            shaderModule = new WebGlShaderModule(this._framework, assetFilePathOrIdentifier);
+            shaderModule = new WebGlShaderModule(this._framework, assetFilePathOrIdentifier, keyValueDictionary);
             this._shaderModules.set(assetFilePathOrIdentifier, shaderModule);
         }
         return shaderModule;

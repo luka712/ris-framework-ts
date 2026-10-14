@@ -1,9 +1,18 @@
 # Unlit mesh
 
-Loads a cube from `assets/cube.obj` with `ObjLoader`, builds a mesh with `meshFactory.create` and draws it with an unlit material through a perspective camera. The cube rotates at a fixed speed in radians per second, scaled by the frame's delta time.
+Loads a cube from `assets/cube.obj` with `framework.content.loadMesh(url, camera, options)` and draws it through a perspective camera. The cube rotates at a fixed speed in radians per second, scaled by the frame's delta time.
 
-`ObjLoader` returns the raw OBJ lists, with `indices` as `position/texcoord/normal` triplets. `main.ts` expands those into one vertex per face corner in the unlit material's `POS3_COLOR4_TEXTURECOORDS2` format. It gives each face its own colour so the cube is readable without lighting. Normals are kept on the geometry for a lit material later.
+`assets/cube.obj` is a hand-written unit cube: 8 positions, 4 texture coordinates, 6 normals and 12 triangles. It references `assets/cube.mtl` with `mtllib`, and each face picks one of six materials with `usemtl`.
 
-`assets/cube.obj` is a hand-written unit cube: 8 positions, 4 texture coordinates, 6 normals and 12 triangles.
+How `loadMesh` builds the mesh:
+
+1. `ObjLoader`, in the framework-independent `src/api/loaders/obj/`, parses the OBJ and MTL into plain data: an `ObjGeometryDefinition` with `materialRanges`, plus `ObjMaterialDefinition`s.
+2. `ObjGeometryMapper.toDescriptor` maps the geometry onto a framework `GeometryDescriptor`, and `geometryBuilder.create` turns that into geometry.
+3. `meshFactory.createWithSubMeshes` creates one mesh with a single vertex buffer and a single index buffer. It has one `SubMesh` per `usemtl` range, here 6 faces and so 6 submeshes, and each submesh draws its own index range.
+4. Each OBJ material gets an unlit material with `Kd` as its diffuse colour and `d` as alpha. Ranges that use the same material share one. Pass `createMaterial` in the options to create other materials, such as a lit one later.
+
+The model matrix lives on each material, so `main.ts` copies the rotation into every submesh's material and draws each submesh with `material.renderMesh(subMesh)`.
+
+Vite can inline small assets as `data:` URLs, and a relative `mtllib` can't be resolved against those. So the example passes `resolveMaterialUrl` pointing at the bundled `cube.mtl`.
 
 Run `npm run dev:examples` and open `/unlit_mesh/`.

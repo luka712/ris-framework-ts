@@ -6,10 +6,13 @@ import type {
     IMainRenderTargetRenderPipeline, IPrimitiveState, IRenderPipelineFactory,
     ISpriteRenderPipeline, ITexture2D,
     IUniformBuffer,
-    IUnlitRenderPipeline
-} from "../../api/index.ts";
+    IUnlitRenderPipeline,
+    IForwardBlinnPhongRenderPipeline,
+    ForwardBlinnPhongRenderPipelineDescriptor,
+} from "../../api";
 import {WebGlInspectTextureMipsRenderPipeline} from "./inspect/WebGlInspectTextureMipsRenderPipeline.ts";
 import {WebGlUnlitRenderPipeline} from "./material/WebGlUnlitRenderPipeline.ts";
+import {WebGlForwardBlinnPhongRenderPipeline} from "./material/WebGlBlinnPhongRenderPipeline.ts";
 
 /**
  * The WebGL implementation of the IRenderPipelineFactory interface.
@@ -32,6 +35,19 @@ export class WebGlRenderPipelineFactory implements IRenderPipelineFactory {
                                      ): IUnlitRenderPipeline {
         const pipeline = new WebGlUnlitRenderPipeline(this._framework,
             projectionViewBuffer, modelBuffer, materialBuffer, primitiveState
+            );
+        pipeline.initialize();
+        return pipeline;
+    }
+
+    /** @inheritDoc */
+    public createForwardBlinnPhongRenderPipeline(descriptor: ForwardBlinnPhongRenderPipelineDescriptor): IForwardBlinnPhongRenderPipeline {
+        const pipeline = new WebGlForwardBlinnPhongRenderPipeline(this._framework,
+            descriptor.projectionViewBuffer,
+            descriptor.modelBuffer,
+            descriptor.materialBuffer,
+            descriptor.lightsBuffer,
+            descriptor.primitiveState
             );
         pipeline.initialize();
         return pipeline;

@@ -1,4 +1,5 @@
 import {container, type DependencyContainer} from "tsyringe";
+import {WebGlAmbientLightFactory} from "./webgl/lights/WebGlAmbientLightFactory.ts";
 import {WindowManager} from "./api/window/WindowManager.ts";
 import {FrameworkConfiguration} from "./api/FrameworkConfiguration.ts";
 import {type IRendererConfiguration, RenderConfigurationSymbol} from "./api/rendering/renderer-interface.ts";
@@ -26,6 +27,7 @@ import {
     type IInputManager,
     ImageLoader,
     type IMaterialFactory,
+    type AmbientLightFactory,
     type IMeshFactory,
     type ISpriteBatch,
     type ITextureFactory,
@@ -92,6 +94,7 @@ export class Framework implements IFramework {
         this._contentManager = new ContentManager(this, new WebGlShaderModuleLoader(this));
         this._meshFactory = new MeshFactory(this);
         this.materialFactory = new MaterialFactory(this);
+        this.ambientLightFactory = new WebGlAmbientLightFactory(this);
 
         this._buffersFactory = new WebGlBuffersFactory(this);
         this.spriteBatch = new SpriteBatch(this);
@@ -215,6 +218,9 @@ export class Framework implements IFramework {
 
     /** @inheritDoc */
     public readonly materialFactory: IMaterialFactory;
+
+    /** @inheritDoc */
+    public readonly ambientLightFactory: AmbientLightFactory;
 
     /** @inheritDoc */
     public readonly timeManager: ITimeManager;

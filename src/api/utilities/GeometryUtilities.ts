@@ -13,6 +13,8 @@ export class GeometryUtilities {
         switch (geometryFormat) {
             case GeometryFormat.POS3_COLOR4_TEXTURECOORDS2:
                 return (3 + 4 + 2) * Float32Array.BYTES_PER_ELEMENT;
+            case GeometryFormat.POS3_COLOR4_TEXTURECOORDS2_NORMAL3:
+                return (3 + 4 + 2 + 3) * Float32Array.BYTES_PER_ELEMENT;
             default:
                 throw new Error("Unknown geometryFormat");
         }

@@ -95,12 +95,12 @@ export class InspectTextureMipsMaterial {
 
     /** @inheritDoc */
     public renderMesh(mesh: IMesh): void {
-        this.render(mesh.vertexBuffer!, mesh.indexBuffer!);
+        this.render(mesh.vertexBuffer!, mesh.indexBuffer!, mesh.indexCount ?? -1, mesh.indexStart ?? 0);
     }
 
     /** @inheritDoc */
-    public render(vertexBuffer: IVertexBuffer, indexBuffer: IIndexBuffer): void {
-        this._pipeline.render(vertexBuffer, indexBuffer);
+    public render(vertexBuffer: IVertexBuffer, indexBuffer: IIndexBuffer, indicesCount?: number, indicesOffset?: number): void {
+        this._pipeline.render(vertexBuffer, indexBuffer, indicesCount, indicesOffset);
     }
 
     /** @inheritDoc */

@@ -12,6 +12,7 @@ import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
 import {Color} from "../data/Color.ts";
 import type { IUnlitRenderPipeline } from "../rendering/render-pipelines/IUnlitRenderPipeline.ts";
 import type { IPrimitiveState } from "../rendering/primitive/IPrimitiveState.ts";
+import type {ICamera} from "../camera/ICamera.ts";
 
 /** The additional material config options */
 export class UnlitMaterialDescriptor {
@@ -19,8 +20,8 @@ export class UnlitMaterialDescriptor {
     /** The primitive state. */
     public primitiveState?: IPrimitiveState;
 
-    /** The projection view buffer to use */
-    public projectionViewBuffer?: IUniformBuffer;
+    /** The camera used to render this material. */
+    public camera?: ICamera;
 }
 
 
@@ -49,8 +50,8 @@ export class UnlitMaterial {
         this._framework = framework;
         void this._framework;
         const usage = BufferUsage.UNIFORM | BufferUsage.COPY_DST;
-        this._ownsProjectionViewBuffer = !config?.projectionViewBuffer;
-        this._projectionViewBuffer = config?.projectionViewBuffer ?? framework.bufferFactory.createUniformBuffer(this._previousModelMatrix, usage);
+        this._ownsProjectionViewBuffer = !config?.camera?.projectionViewBuffer;
+        this._projectionViewBuffer = config?.camera?.projectionViewBuffer ?? framework.bufferFactory.createUniformBuffer(this._previousModelMatrix, usage);
         this._modelBuffer = framework.bufferFactory.createUniformBuffer(this._previousModelMatrix, usage);
         this._materialBuffer = framework.bufferFactory.createUniformBuffer(this._materialData, usage);
         this._pipeline = framework.renderPipelineFactory.createUnlitRenderPipeline(
@@ -123,12 +124,12 @@ export class UnlitMaterial {
 
     /** @inheritDoc */
     public renderMesh(mesh: IMesh): void {
-        this.render(mesh.vertexBuffer!, mesh.indexBuffer!);
+        this.render(mesh.vertexBuffer!, mesh.indexBuffer!, mesh.indexCount ?? -1, mesh.indexStart ?? 0);
     }
 
     /** @inheritDoc */
-    public render(vertexBuffer: IVertexBuffer, indexBuffer: IIndexBuffer): void {
-        this._pipeline.render(vertexBuffer, indexBuffer);
+    public render(vertexBuffer: IVertexBuffer, indexBuffer: IIndexBuffer, indicesCount?: number, indicesOffset?: number): void {
+        this._pipeline.render(vertexBuffer, indexBuffer, indicesCount, indicesOffset);
     }
 
     /** @inheritDoc */
