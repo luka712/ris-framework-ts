@@ -34,9 +34,7 @@
   },
   "dependencies": {
     "gl-matrix": "^3.4.4",
-    "reflect-metadata": "^0.2.2",
-    "ris-ktx2": "^0.1.0",
-    "tsyringe": "^4.10.0"
+    "ris-ktx2": "^0.1.0"
   },
   "files": [
     "dist",

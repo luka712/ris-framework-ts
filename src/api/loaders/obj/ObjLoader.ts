@@ -203,6 +203,10 @@ export class ObjLoader {
         }
         closeRange();
 
+        if(positions.length == 0){
+            throw new Error("Invalid obj file.");
+        }
+
         return {
             geometry: {
                 positions, textureCoords, normals, colors, indices,

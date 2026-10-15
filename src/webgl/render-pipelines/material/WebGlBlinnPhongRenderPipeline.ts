@@ -8,13 +8,18 @@ import {
 } from "../../../api";
 import {VertexBufferLayout} from "../../../core/rendering/vertex-buffer-layout";
 import type {WebGlUniformBuffer} from "../../buffers/WebGlUniformBuffer.ts";
-import { asWebGLUniformBuffer} from "../../cast/cast";
+import {asWebGLUniformBuffer} from "../../cast/cast";
 import WebGlShaderModule from "../../shader/WebGlShaderModule.ts";
 import {WebGlTexture2D} from "../../texture/WebGlTexture2D.ts";
 import {WebGlVertexBuffer} from '../../buffers/WebGlVertexBuffer.ts';
 import {AWebGlRenderPipeline} from "../AWebGlRenderPipeline.ts";
 import type {WebGLIndexBuffer} from "../../buffers/webgl-index-buffer";
-import {type IIndexBuffer, IndexBufferType, DEFAULT_DIRECTIONAL_LIGHTS_COUNT} from "../../../api";
+import {
+    type IIndexBuffer,
+    IndexBufferType,
+    DEFAULT_DIRECTIONAL_LIGHTS_COUNT,
+    DEFAULT_POINT_LIGHTS_COUNT
+} from "../../../api";
 import type {WebGlSampler} from "../../sampler/webgl-sampler.ts";
 import type {
     IForwardBlinnPhongRenderPipeline
@@ -26,12 +31,11 @@ import type {
  **/
 export class WebGlForwardBlinnPhongRenderPipeline extends AWebGlRenderPipeline implements IForwardBlinnPhongRenderPipeline {
 
-    private static readonly DEFAULT_DIRECTIONAL_LIGHT_COUNT = DEFAULT_DIRECTIONAL_LIGHTS_COUNT;
-
     private static readonly CAMERA_BINDING_POINT = 0;
-    private static readonly  MODEL_BINDING_POINT = 1;
+    private static readonly MODEL_BINDING_POINT = 1;
     private static readonly MATERIAL_BINDING_POINT = 2;
     private static readonly LIGHTS_BINDING_POINT = 3;
+    private static readonly CAMERA_POSITION_BINDING_POINT = 4;
 
     private _texture: WebGlTexture2D = null!;
     private _sampler?: WebGlSampler;
@@ -43,6 +47,11 @@ export class WebGlForwardBlinnPhongRenderPipeline extends AWebGlRenderPipeline i
     private _modelBlockIndex = -1;
     private _materialBlockIndex = -1;
     private _lightsBlockIndex = -1;
+    private _cameraPositionBuffer: WebGlUniformBuffer;
+    private _cameraPositionBlockIndex = -1;
+    private _maxDirectionalLights = DEFAULT_DIRECTIONAL_LIGHTS_COUNT;
+    private _maxPointLights = DEFAULT_POINT_LIGHTS_COUNT;
+    private _initialized = false;
     private _buffersArray: WebGLBuffer[] = [null!];
     private _lastVertexBuffer: WebGlVertexBuffer | null = null;
 
@@ -53,20 +62,27 @@ export class WebGlForwardBlinnPhongRenderPipeline extends AWebGlRenderPipeline i
      * @param modelBuffer The model buffer.
      * @param materialBuffer The material buffer.
      * @param lightsBuffer The lights buffer (`LightsBuffer.buffer`). May be set later.
+     * @param cameraPositionBuffer The camera position buffer (world-space eye).
      * @param primitiveState The primitive state.
      */
     public constructor(framework: IFramework,
-                projectionViewBuffer: IUniformBuffer,
-                modelBuffer: IUniformBuffer,
-                materialBuffer: IUniformBuffer,
-                lightsBuffer: IUniformBuffer | undefined,
-                primitiveState?: IPrimitiveState,
+                       projectionViewBuffer: IUniformBuffer,
+                       modelBuffer: IUniformBuffer,
+                       materialBuffer: IUniformBuffer,
+                       lightsBuffer: IUniformBuffer | undefined,
+                       cameraPositionBuffer: IUniformBuffer,
+                       primitiveState?: IPrimitiveState,
     ) {
+        // Validated before super(), which touches WebGL.
+        if (!modelBuffer) {
+            throw new Error("WebGlForwardBlinnPhongRenderPipeline: modelBuffer is required (the mesh's model buffer, std140 mat4).");
+        }
         super(framework, primitiveState);
         this._projectionViewBuffer = projectionViewBuffer as WebGlUniformBuffer;
         this._modelBuffer = modelBuffer as WebGlUniformBuffer;
         this._materialBuffer = materialBuffer as WebGlUniformBuffer;
         this._lightsBuffer = lightsBuffer as WebGlUniformBuffer;
+        this._cameraPositionBuffer = cameraPositionBuffer as WebGlUniformBuffer;
     }
 
     /** @inheritDoc */
@@ -89,6 +105,9 @@ export class WebGlForwardBlinnPhongRenderPipeline extends AWebGlRenderPipeline i
 
     /** @inheritdoc */
     public set modelBuffer(value: IUniformBuffer) {
+        if (!value) {
+            throw new Error("WebGlForwardBlinnPhongRenderPipeline: modelBuffer is required (the mesh's model buffer, std140 mat4).");
+        }
         this._modelBuffer = asWebGLUniformBuffer(value);
     }
 
@@ -113,12 +132,45 @@ export class WebGlForwardBlinnPhongRenderPipeline extends AWebGlRenderPipeline i
     }
 
     /** @inheritdoc */
-    public get diffuseTexture(): ITexture2D  {
+    public get maxDirectionalLights(): number {
+        return this._maxDirectionalLights;
+    }
+
+    /** @inheritdoc */
+    public get maxPointLights(): number {
+        return this._maxPointLights;
+    }
+
+    /** @inheritdoc */
+    public setLightCounts(maxDirectionalLights: number, maxPointLights: number): void {
+        if (maxDirectionalLights === this._maxDirectionalLights && maxPointLights === this._maxPointLights) {
+            return;
+        }
+        this._maxDirectionalLights = maxDirectionalLights;
+        this._maxPointLights = maxPointLights;
+        if (this._initialized) {
+            // The vertex array object only depends on the vertex layout, so only the program and block bindings change.
+            this._loadProgram();
+        }
+    }
+
+    /** @inheritdoc */
+    public get cameraPositionBuffer(): IUniformBuffer {
+        return this._cameraPositionBuffer;
+    }
+
+    /** @inheritdoc */
+    public set cameraPositionBuffer(value: IUniformBuffer) {
+        this._cameraPositionBuffer = asWebGLUniformBuffer(value);
+    }
+
+    /** @inheritdoc */
+    public get diffuseTexture(): ITexture2D {
         return this._texture;
     }
 
     /** @inheritdoc */
-    public set diffuseTexture(value: ITexture2D ) {
+    public set diffuseTexture(value: ITexture2D) {
         this._texture = value as WebGlTexture2D;
     }
 
@@ -134,13 +186,20 @@ export class WebGlForwardBlinnPhongRenderPipeline extends AWebGlRenderPipeline i
     /** @inheritdoc */
     public override initialize(): void {
 
+        this._loadProgram();
+        this.vertexBufferLayouts = [VertexBufferLayout.createFloat3Float4Float2Float3Layout()];
+        super.initialize();
+        this._initialized = true;
+    }
+
+    /** Loads the shader variant for the current light counts (cached per counts by the shader loader). */
+    private _loadProgram(): void {
         const module = this._framework.content.loadShaderModule("forward_blinn_phong_material", {
-            "DIRECTIONAL_LIGHTS_COUNT" : WebGlForwardBlinnPhongRenderPipeline.DEFAULT_DIRECTIONAL_LIGHT_COUNT
+            "DIRECTIONAL_LIGHTS_COUNT": this._maxDirectionalLights,
+            "POINT_LIGHTS_COUNT": this._maxPointLights,
         }) as WebGlShaderModule;
         this._program = module.program!;
         this._createResources();
-        this.vertexBufferLayouts = [VertexBufferLayout.createFloat3Float4Float2Float3Layout()];
-        super.initialize();
     }
 
     private _createResources(): void {
@@ -158,6 +217,9 @@ export class WebGlForwardBlinnPhongRenderPipeline extends AWebGlRenderPipeline i
 
             this._lightsBlockIndex = this._gl.getUniformBlockIndex(this._program, "LightsBuffer");
             this._gl.uniformBlockBinding(this._program, this._lightsBlockIndex, WebGlForwardBlinnPhongRenderPipeline.LIGHTS_BINDING_POINT);
+
+            this._cameraPositionBlockIndex = this._gl.getUniformBlockIndex(this._program, "CameraPositionBuffer");
+            this._gl.uniformBlockBinding(this._program, this._cameraPositionBlockIndex, WebGlForwardBlinnPhongRenderPipeline.CAMERA_POSITION_BINDING_POINT);
         }
     }
 
@@ -203,14 +265,20 @@ export class WebGlForwardBlinnPhongRenderPipeline extends AWebGlRenderPipeline i
         this._gl.bindBufferBase(this._gl.UNIFORM_BUFFER,
             WebGlForwardBlinnPhongRenderPipeline.MODEL_BINDING_POINT,
             this._modelBuffer.glBuffer!);
-        this._gl.bindBufferBase(this._gl.UNIFORM_BUFFER,
-            WebGlForwardBlinnPhongRenderPipeline.MATERIAL_BINDING_POINT,
-            this._materialBuffer.glBuffer!);
+
+        if (this.materialBuffer) {
+            this._gl.bindBufferBase(this._gl.UNIFORM_BUFFER,
+                WebGlForwardBlinnPhongRenderPipeline.MATERIAL_BINDING_POINT,
+                this._materialBuffer.glBuffer!);
+        }
         if (this._lightsBuffer) {
             this._gl.bindBufferBase(this._gl.UNIFORM_BUFFER,
                 WebGlForwardBlinnPhongRenderPipeline.LIGHTS_BINDING_POINT,
                 this._lightsBuffer.glBuffer!);
         }
+        this._gl.bindBufferBase(this._gl.UNIFORM_BUFFER,
+            WebGlForwardBlinnPhongRenderPipeline.CAMERA_POSITION_BINDING_POINT,
+            this._cameraPositionBuffer.glBuffer!);
         this._gl.activeTexture(this._gl.TEXTURE0);
         this._gl.bindTexture(this._gl.TEXTURE_2D, this._texture!.glTexture);
         this._gl.bindSampler(0, webGlSampler.glSampler);

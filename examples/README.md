@@ -5,8 +5,8 @@ Each example lives in its own folder with an `index.html` and `main.ts`, and imp
 | Example | What it shows |
 | --- | --- |
 | [`sprite_batch`](sprite_batch/) | Texture loading and drawing a single sprite with the sprite batch. |
-| [`unlit_mesh`](unlit_mesh/) | OBJ/MTL loading with content.loadMesh, submeshes with one unlit material each, and a rotating perspective camera view. |
-| [`blinn_phong_mesh`](blinn_phong_mesh/) | ForwardBlinnPhongMaterial from the material factory, submeshes, and a lights buffer (ambient + directional) from `ambientLightFactory.createLightsBuffer`. |
+| [`unlit_mesh`](unlit_mesh/) | OBJ/MTL loading into a `Scene` with `content.loadMeshAsync`, drawn by `scene.render()`, submeshes with one unlit material each, and a rotating perspective camera view. |
+| [`blinn_phong_mesh`](blinn_phong_mesh/) | ForwardBlinnPhongMaterial from the material factory, submeshes, loaded with `content.loadBlinnPhongMeshAsync` into a `Scene` holding the lights (ambient, directional and orbiting point lights with intensity) via `scene.addLight`, drawn by `scene.render()`. |
 
 ```sh
 npm run dev:examples      # serve all examples

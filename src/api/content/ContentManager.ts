@@ -18,7 +18,10 @@ import {
     type SubMeshDescriptor,
     type ObjLoadResult,
     type ObjGeometryDefinition,
-    type IGeometry
+    type IGeometry,
+    type LightsBuffer,
+    type Scene,
+    type IDisposable,
 } from "../index.ts";
 import {Ktx2Factory} from "ris-ktx2";
 import type {IKtx2Texture} from "ris-ktx2";
@@ -54,6 +57,17 @@ export class ContentManager implements IContentManager {
             this._ktx2TextureCache[path] = ktx2Texture;
         }
         return ktx2Texture;
+    }
+
+    /**
+     * Disposes the cached shader modules (their GL programs) and forgets cached KTX2 data.
+     * Called from `Framework.dispose()`.
+     */
+    public dispose(): void {
+        (this.shaderModuleLoader as Partial<IDisposable>).dispose?.();
+        for (const key of Object.keys(this._ktx2TextureCache)) {
+            delete this._ktx2TextureCache[key];
+        }
     }
 
     /** @inheritDoc */
@@ -100,12 +114,34 @@ export class ContentManager implements IContentManager {
     }
 
     /** @inheritDoc */
-    public async loadMesh(path: string, camera: ICamera): Promise<IMesh> {
+    public async loadMeshAsync(path: string, scene: Scene): Promise<IMesh> {
+
         const objResult = await this._loadObj(path);
         const geometry = this._createGeometry(objResult.geometry);
-        const subMeshes = this._createSubMeshDescriptors(objResult, camera);
+        const subMeshes = this._createSubMeshDescriptors(objResult,
+            definition => this._createUnlitMaterial(definition, scene.camera));
 
-        return this._framework.meshFactory.createWithSubMeshes(geometry, subMeshes);
+        return this._framework.meshFactory.createWithSubMeshes(scene, geometry, subMeshes);
+    }
+
+    /** @inheritDoc */
+    public async loadBlinnPhongMeshAsync(path: string, scene: Scene): Promise<IMesh> {
+        // Checked before loading, so a missing camera fails fast.
+        const camera = scene.camera;
+        if (!camera) {
+            throw new Error(`loadBlinnPhongMeshAsync("${path}"): the scene has no camera. Set scene.camera (or pass the scene to createPerspectiveCamera) before loading a Blinn-Phong mesh.`);
+        }
+        if (!camera.positionBuffer || !camera.projectionViewBuffer) {
+            const what = [camera.projectionViewBuffer ? undefined : "projectionViewBuffer", camera.positionBuffer ? undefined : "positionBuffer"]
+                .filter(x => x !== undefined).join(" and ");
+            throw new Error(`loadBlinnPhongMeshAsync("${path}"): the scene camera has no ${what}. Call camera.initialize() first (the camera factory does).`);
+        }
+        const objResult = await this._loadObj(path);
+        const geometry = this._createGeometry(objResult.geometry);
+        const subMeshes = this._createSubMeshDescriptors(objResult,
+            definition => this._createBlinnPhongMaterial(definition, camera, scene.__forwardLightsBuffer));
+
+        return this._framework.meshFactory.createWithSubMeshes(scene, geometry, subMeshes);
     }
 
     /**
@@ -133,9 +169,12 @@ export class ContentManager implements IContentManager {
      * Creates one submesh descriptor per material range.
      * Ranges that use the same material name share one material instance.
      * @param objResult The loaded OBJ data.
+     * @param createMaterial Creates the material for a definition (undefined without `usemtl` or .mtl entry).
      * @returns The submesh descriptors, in file order.
      */
-    private _createSubMeshDescriptors(objResult: ObjLoadResult, camera: ICamera): SubMeshDescriptor[] {
+    private _createSubMeshDescriptors(
+        objResult: ObjLoadResult,
+        createMaterial: (definition: ObjMaterialDefinition | undefined) => IMaterial): SubMeshDescriptor[] {
 
         const definitionsByName = this._indexMaterialDefinitions(objResult.materials);
         const materialsByName = new Map<string | undefined, IMaterial>();
@@ -145,7 +184,7 @@ export class ContentManager implements IContentManager {
             let material = materialsByName.get(range.materialName);
             if (material === undefined) {
                 const definition = this._findMaterialDefinition(definitionsByName, range.materialName);
-                material =  this._createUnlitMaterial(definition, camera);
+                material = createMaterial(definition);
                 materialsByName.set(range.materialName, material);
             }
 
@@ -191,10 +230,10 @@ export class ContentManager implements IContentManager {
      * Creates the default unlit material for an OBJ material definition.
      * The diffuse colour is the definition's `Kd` with `d` as alpha; white when there is no definition.
      * @param definition The material definition, or undefined.
-     * @param camera The camera used to render the material.
+     * @param camera The scene's current camera, or undefined; the scene assigns it on update.
      * @returns The unlit material.
      */
-    private _createUnlitMaterial(definition: ObjMaterialDefinition | undefined, camera: ICamera): IMaterial {
+    private _createUnlitMaterial(definition: ObjMaterialDefinition | undefined, camera: ICamera | undefined): IMaterial {
         const material = this._framework.materialFactory.createUnlitMaterial({
             camera: camera,
         });
@@ -202,6 +241,43 @@ export class ContentManager implements IContentManager {
         const diffuse = definition?.diffuseColor ?? [1, 1, 1];
         const opacity = definition?.opacity ?? 1;
         material.diffuseColor = new Color(diffuse[0], diffuse[1], diffuse[2], opacity);
+        return material;
+    }
+
+    /**
+     * Creates a Blinn-Phong material for an OBJ material definition.
+     * `Kd` (with `d` as alpha) becomes the diffuse colour, white when missing.
+     * `Ka` becomes the ambient colour; when missing the diffuse colour is used, so ambient light tints by the surface colour.
+     * `Ks` and `Ns` become specular colour and shininess; when missing the material defaults stay (0.5 grey, 32).
+     * @param definition The material definition, or undefined.
+     * @param camera The scene's camera; its projection view and position buffers are bound.
+     * @param lightsBuffer The optional lights buffer; the shader is compiled for its light counts.
+     * @returns The Blinn-Phong material.
+     */
+    private _createBlinnPhongMaterial(
+        definition: ObjMaterialDefinition | undefined,
+        camera: ICamera,
+        lightsBuffer: LightsBuffer | undefined): IMaterial {
+
+        const material = this._framework.materialFactory.createForwardBlinnPhongMaterial({
+            projectionViewBuffer: camera.projectionViewBuffer,
+            cameraPositionBuffer: camera.positionBuffer,
+            lightsBuffer: lightsBuffer,
+        });
+        // Matches the scene camera, so Scene.update() does not rebind.
+        material.camera = camera;
+
+        const diffuse = definition?.diffuseColor ?? [1, 1, 1];
+        const ambient = definition?.ambientColor ?? diffuse;
+        material.diffuseColor = new Color(diffuse[0], diffuse[1], diffuse[2], definition?.opacity ?? 1);
+        material.ambientColor = new Color(ambient[0], ambient[1], ambient[2]);
+        if (definition?.specularColor) {
+            const specular = definition.specularColor;
+            material.specularColor = new Color(specular[0], specular[1], specular[2]);
+        }
+        if (definition?.specularExponent !== undefined) {
+            material.shininess = definition.specularExponent;
+        }
         return material;
     }
 }

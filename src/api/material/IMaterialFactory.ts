@@ -30,8 +30,9 @@ export interface IMaterialFactory {
 
     /**
      * Creates a Blinn-Phong material with forward calculated lighting.
-     * @param descriptor The optional configuration, such as camera and primitive state.
+     * @param descriptor The configuration: the required projection view and camera position buffers, plus optional lights buffer and primitive state.
+     * @throws Error when a required buffer is missing.
      * @returns The Forward Blinn-Phong Material.
      */
-    createForwardBlinnPhongMaterial(descriptor?: ForwardBlinnPhongMaterialDescriptor): ForwardBlinnPhongMaterial;
+    createForwardBlinnPhongMaterial(descriptor: ForwardBlinnPhongMaterialDescriptor): ForwardBlinnPhongMaterial;
 }

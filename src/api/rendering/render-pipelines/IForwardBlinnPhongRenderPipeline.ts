@@ -34,13 +34,33 @@ export interface IForwardBlinnPhongRenderPipeline extends IRenderPipeline {
      * The material buffer that contains the material properties.
      * - vec3 ambientColor
      * - vec3 diffuseColor
+     * - vec3 specularColor
+     * - float shininess
      */
     materialBuffer: IUniformBuffer;
+
+    /** The camera position buffer: std140 `vec3` world-space eye, e.g. `camera.positionBuffer`. */
+    cameraPositionBuffer: IUniformBuffer;
 
     /**
      * The lights buffer, `LightsBuffer.buffer`, bound to the shader's `LightsBuffer` block.
      * - vec3 ambientLight
      * - DirectionalLight[DIRECTIONAL_LIGHTS_COUNT] { vec3 light; vec3 direction; }
+     * - PointLight[POINT_LIGHTS_COUNT] { vec3 light; float constant; vec3 position; float linear; float quadratic; }
      */
     lightsBuffer: IUniformBuffer;
+
+    /** The directional light slots the shader was compiled with. */
+    readonly maxDirectionalLights: number;
+
+    /** The point light slots the shader was compiled with. */
+    readonly maxPointLights: number;
+
+    /**
+     * Sets the light slot counts. They must match the lights buffer (`LightsBuffer.maxDirectionalLights`/`maxPointLights`).
+     * When they change after initialization the shader variant for the new counts is loaded.
+     * @param maxDirectionalLights The directional light slots.
+     * @param maxPointLights The point light slots.
+     */
+    setLightCounts(maxDirectionalLights: number, maxPointLights: number): void;
 }

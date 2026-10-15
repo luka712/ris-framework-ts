@@ -4,6 +4,7 @@ import type { IFramework } from "../IFramework.ts";
 import {vec2} from "gl-matrix";
 import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
 import type {IMaterial} from "../material/IMaterial.ts";
+import type {Scene} from "../scene/Scene.ts";
 
 /**
  * The mesh of a quad.
@@ -17,12 +18,13 @@ export class QuadMesh extends Mesh {
     /**
      * The constructor.
      * @param framework The framework.
+     * @param scene The scene the quad adds itself to.
      * @param material The material.
      * @param _isUpdatable Makes mesh updatable.
      * @param scale The scale factor for geometry. If not set, it is set to (1,1).
      */
-    public constructor(framework: IFramework, material: IMaterial, private _isUpdatable: boolean, scale?: vec2) {
-    super(framework, material);
+    public constructor(framework: IFramework, scene: Scene, material: IMaterial, private _isUpdatable: boolean, scale?: vec2) {
+    super(framework, scene, material);
         if(_isUpdatable) {
             this._bufferUsage = BufferUsage.VERTEX | BufferUsage.COPY_DST;
         }

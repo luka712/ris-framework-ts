@@ -1,9 +1,10 @@
-import {mat4} from "gl-matrix";
 import type { IDisposable } from "../core/IDisposable.ts";
 import {GeometryFormat} from "../geometry/GeometryFormat.ts";
 import type { IMesh } from "../meshes/IMesh.ts";
 import type { IVertexBuffer } from "../rendering/buffers/IVertexBuffer.ts";
 import type { IIndexBuffer } from "../rendering/buffers/IIndexBuffer.ts";
+import type { ICamera } from "../camera/ICamera.ts";
+import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
 
 /**
  * The material interface.
@@ -12,9 +13,17 @@ import type { IIndexBuffer } from "../rendering/buffers/IIndexBuffer.ts";
 export interface IMaterial extends IDisposable {
 
     /**
-     * The model matrix.
+     * The camera this material renders with, for materials that use one (unlit, Blinn-Phong).
+     * A `Scene` assigns its camera to the materials of its meshes in `scene.update()`.
      */
-    modelMatrix: mat4;
+    camera?: ICamera;
+
+    /**
+     * The model buffer (std140 `mat4`) for materials that use one (unlit, Blinn-Phong, inspect mips).
+     * A mesh owns it and assigns it before drawing, like the scene assigns its camera; materials never dispose it.
+     * Materials without the property (e.g. the sprite material) are left alone.
+     */
+    modelBuffer?: IUniformBuffer;
 
     /** The geometry format required by the material.*/
     readonly geometryFormat: GeometryFormat;

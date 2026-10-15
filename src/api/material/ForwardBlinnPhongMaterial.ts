@@ -1,7 +1,6 @@
 import type {IMesh} from "../meshes/IMesh.ts";
 import type {ITexture2D} from "../rendering/texture/ITexture2D.ts";
 import type {ISampler} from "../rendering/sampler/ISampler.ts";
-import {mat4} from "gl-matrix";
 import {GeometryFormat} from "../geometry/GeometryFormat.ts";
 import type {IUniformBuffer} from "../rendering/buffers/IUniformBuffer.ts";
 import type {IIndexBuffer} from "../rendering/buffers/IIndexBuffer.ts";
@@ -23,8 +22,14 @@ export class ForwardBlinnPhongMaterialDescriptor {
     /** The primitive state. */
     public primitiveState?: IPrimitiveState;
 
-    /** The camera used to render this material. */
-    public camera?: ICamera;
+    /** The projection view buffer. */
+    public projectionViewBuffer!: IUniformBuffer;
+
+    /** The camera position buffer. */
+    public cameraPositionBuffer!: IUniformBuffer;
+
+    /** The lights buffer. The shader is compiled for its light counts. Can also be set later through `material.lightsBuffer`. */
+    public lightsBuffer?: LightsBuffer;
 }
 
 
@@ -39,42 +44,80 @@ export class ForwardBlinnPhongMaterial {
     private _lightsBuffer?: LightsBuffer;
     private _diffuseColorCache: Color;
     private _ambientColorCache: Color;
+    private _specularColorCache: Color;
+    private _shininessCache: number;
 
     // std140: each vec3 starts on a 16-byte boundary, so pad each colour to 4 floats.
     private _materialData = [
         0.1, 0.1, 0.1, 0, // Ambient
         0.8, 0.8, 0.8, 0, // Diffuse
+        0.5, 0.5, 0.5, 32, // Specular, shininess (the float fills the vec3's padding)
     ];
 
-    private _pipeline: IForwardBlinnPhongRenderPipeline;
+    /** Created when the model buffer is assigned (the pipeline requires one). */
+    private _pipeline?: IForwardBlinnPhongRenderPipeline;
+    private readonly _primitiveState?: IPrimitiveState;
+    /** Texture and sampler set before the pipeline exists; applied when it is created. */
+    private _pendingTexture?: ITexture2D;
+    private _pendingSampler?: ISampler;
+    private _samplerSet = false;
     private _projectionViewBuffer: IUniformBuffer;
-    /** False when the projection view buffer came from the descriptor. The caller owns that one. */
-    private readonly _ownsProjectionViewBuffer: boolean;
+    private _camera?: ICamera;
+    private _cameraPositionBuffer: IUniformBuffer;
     private _materialBuffer: IUniformBuffer;
-    private _modelBuffer: IUniformBuffer;
-    private _previousModelMatrix = mat4.create();
+    private _modelBuffer?: IUniformBuffer;
 
     /**
      * The constructor.
      * @param framework The framework.
-     * @param descriptor The optional material descriptor. A projection view buffer passed here is shared and is not disposed by this material.
+     * @param descriptor The material descriptor. Its projection view and camera position buffers are shared and are not disposed by this material.
+     * @throws Error when `descriptor`, `descriptor.projectionViewBuffer` or `descriptor.cameraPositionBuffer` is missing.
      */
-    public constructor(framework: IFramework, descriptor?: ForwardBlinnPhongMaterialDescriptor) {
+    public constructor(framework: IFramework, descriptor: ForwardBlinnPhongMaterialDescriptor) {
+
+        // Runtime check: JavaScript callers can omit the required buffers.
+        const missing = [
+            descriptor?.projectionViewBuffer ? undefined : "descriptor.projectionViewBuffer",
+            descriptor?.cameraPositionBuffer ? undefined : "descriptor.cameraPositionBuffer",
+        ].filter(x => x !== undefined);
+        if (missing.length > 0) {
+            throw new Error(`ForwardBlinnPhongMaterial: ${missing.join(" and ")} ${missing.length > 1 ? "are" : "is"} required (e.g. camera.projectionViewBuffer and camera.positionBuffer).`);
+        }
+
         this._framework = framework;
-        void this._framework;
         const usage = BufferUsage.UNIFORM | BufferUsage.COPY_DST;
         this._diffuseColorCache = this.diffuseColor.copy();
         this._ambientColorCache = this.ambientColor.copy();
-        this._ownsProjectionViewBuffer = !descriptor?.camera?.projectionViewBuffer;
-        this._projectionViewBuffer = descriptor?.camera?.projectionViewBuffer ?? framework.bufferFactory.createUniformBuffer(this._previousModelMatrix, usage);
-        this._modelBuffer = framework.bufferFactory.createUniformBuffer(this._previousModelMatrix, usage);
+        this._specularColorCache = this.specularColor.copy();
+        this._shininessCache = this.shininess;
+        this._projectionViewBuffer = descriptor.projectionViewBuffer;
+        this._cameraPositionBuffer = descriptor.cameraPositionBuffer;
         this._materialBuffer = framework.bufferFactory.createUniformBuffer(this._materialData, usage);
-        this._pipeline = framework.renderPipelineFactory.createForwardBlinnPhongRenderPipeline({
+        this._primitiveState = descriptor.primitiveState;
+        this._lightsBuffer = descriptor.lightsBuffer;
+        // The pipeline is created once a model buffer is assigned (see modelBuffer).
+    }
+
+    /** Creates the pipeline with the current bindings. */
+    private _createPipeline(modelBuffer: IUniformBuffer): IForwardBlinnPhongRenderPipeline {
+        const pipeline = this._framework.renderPipelineFactory.createForwardBlinnPhongRenderPipeline({
             projectionViewBuffer: this._projectionViewBuffer,
-            modelBuffer: this._modelBuffer,
+            modelBuffer,
             materialBuffer: this._materialBuffer,
-            primitiveState: descriptor?.primitiveState,
+            cameraPositionBuffer: this._cameraPositionBuffer,
+            lightsBuffer: this._lightsBuffer?.buffer,
+            maxDirectionalLights: this._lightsBuffer?.maxDirectionalLights,
+            maxPointLights: this._lightsBuffer?.maxPointLights,
+            primitiveState: this._primitiveState,
         });
+        if (this._pendingTexture) {
+            pipeline.diffuseTexture = this._pendingTexture;
+        }
+        if (this._samplerSet) {
+            pipeline.diffuseTextureSampler = this._pendingSampler;
+        }
+        this._pipeline = pipeline;
+        return pipeline;
     }
 
     /**
@@ -89,15 +132,60 @@ export class ForwardBlinnPhongMaterial {
      */
     public diffuseColor: Color = new Color(0.8, 0.8, 0.8);
 
-    /** The lights buffer with the scene's ambient and directional lights. Shared, not disposed by this material. */
+    /**
+     * The specular color of this material (MTL `Ks`).
+     * Alpha is ignored. By default, it is (0.5,0.5,0.5).
+     */
+    public specularColor: Color = new Color(0.5, 0.5, 0.5);
+
+    /**
+     * The specular exponent (MTL `Ns`). Higher values give smaller, sharper highlights. By default, it is 32.
+     */
+    public shininess = 32;
+
+    /**
+     * The camera. Setting it binds the camera's projection view and position buffers to the pipeline
+     * (used by the scene when its camera changes). Setting undefined keeps the last bound buffers.
+     * Undefined until set: the constructor only takes the buffers.
+     */
+    public get camera(): ICamera | undefined {
+        return this._camera;
+    }
+
+    /** @inheritDoc */
+    public set camera(camera: ICamera | undefined) {
+        if (camera === this._camera) {
+            return;
+        }
+        this._camera = camera;
+        if (!camera) {
+            return;
+        }
+        if (this._projectionViewBuffer !== camera.projectionViewBuffer) {
+            this._projectionViewBuffer = camera.projectionViewBuffer;
+            if (this._pipeline) {
+                this._pipeline.projectionViewBuffer = this._projectionViewBuffer;
+            }
+        }
+        if (this._cameraPositionBuffer !== camera.positionBuffer) {
+            this._cameraPositionBuffer = camera.positionBuffer;
+            if (this._pipeline) {
+                this._pipeline.cameraPositionBuffer = this._cameraPositionBuffer;
+            }
+        }
+    }
+
+    /** The lights buffer with the scene's lights. Shared, not disposed by this material. */
     public get lightsBuffer(): LightsBuffer | undefined {
         return this._lightsBuffer;
     }
 
-    /** The lights buffer with the scene's ambient and directional lights. Shared, not disposed by this material. */
+    /** The lights buffer with the scene's lights. Shared, not disposed by this material. */
     public set lightsBuffer(lightsBuffer: LightsBuffer | undefined) {
         this._lightsBuffer = lightsBuffer;
-        if (lightsBuffer) {
+        if (lightsBuffer && this._pipeline) {
+            // Switches to the shader variant for this buffer's light counts when they differ.
+            this._pipeline.setLightCounts(lightsBuffer.maxDirectionalLights, lightsBuffer.maxPointLights);
             this._pipeline.lightsBuffer = lightsBuffer.buffer;
         }
     }
@@ -106,34 +194,60 @@ export class ForwardBlinnPhongMaterial {
      * The texture to inspect.
      */
     public get diffuseTexture(): ITexture2D {
-        return this._pipeline.diffuseTexture;
+        return this._pipeline?.diffuseTexture ?? this._pendingTexture!;
     }
 
     /**
      * The texture to inspect.
      */
     public set diffuseTexture(value: ITexture2D) {
-        this._pipeline.diffuseTexture = value;
+        this._pendingTexture = value;
+        if (this._pipeline) {
+            this._pipeline.diffuseTexture = value;
+        }
     }
 
     /**
      * The texture sampler.
      */
     public get diffuseTextureSampler(): ISampler | undefined {
-        return this._pipeline.diffuseTextureSampler;
+        return this._pipeline ? this._pipeline.diffuseTextureSampler : this._pendingSampler;
     }
 
     /**
      * The texture sampler.
      */
     public set diffuseTextureSampler(value: ISampler | undefined) {
-        this._pipeline.diffuseTextureSampler = value;
+        this._pendingSampler = value;
+        this._samplerSet = true;
+        if (this._pipeline) {
+            this._pipeline.diffuseTextureSampler = value;
+        }
     }
 
     /**
-     * The model matrix.
+     * The model buffer (std140 `mat4`). Owned by the mesh, which assigns it before drawing; never disposed by this material.
+     * Undefined until assigned: rendering without one throws.
      */
-    public modelMatrix: mat4 = mat4.create();
+    public get modelBuffer(): IUniformBuffer | undefined {
+        return this._modelBuffer;
+    }
+
+    /** Binds the model buffer to the pipeline. */
+    public set modelBuffer(value: IUniformBuffer | undefined) {
+        if (value === this._modelBuffer) {
+            return;
+        }
+        this._modelBuffer = value;
+        if (!value) {
+            return;
+        }
+        if (this._pipeline) {
+            this._pipeline.modelBuffer = value;
+        } else {
+            this._createPipeline(value);
+        }
+    }
 
     /**
      * The geometry format.
@@ -144,21 +258,25 @@ export class ForwardBlinnPhongMaterial {
     public beforeRender(): void {
 
 
-        if (!this._diffuseColorCache.equals(this.diffuseColor) || !this._ambientColorCache.equals(this.ambientColor)) {
+        if (!this._diffuseColorCache.equals(this.diffuseColor)
+            || !this._ambientColorCache.equals(this.ambientColor)
+            || !this._specularColorCache.equals(this.specularColor)
+            || this._shininessCache !== this.shininess) {
             this._ambientColorCache.set(this.ambientColor);
             this._diffuseColorCache.set(this.diffuseColor);
+            this._specularColorCache.set(this.specularColor);
+            this._shininessCache = this.shininess;
             this._materialData[0] = this._ambientColorCache.r;
             this._materialData[1] = this._ambientColorCache.g;
             this._materialData[2] = this._ambientColorCache.b;
             this._materialData[4] = this._diffuseColorCache.r;
             this._materialData[5] = this._diffuseColorCache.g;
             this._materialData[6] = this._diffuseColorCache.b;
+            this._materialData[8] = this._specularColorCache.r;
+            this._materialData[9] = this._specularColorCache.g;
+            this._materialData[10] = this._specularColorCache.b;
+            this._materialData[11] = this._shininessCache;
             this._materialBuffer.update(this._materialData);
-        }
-
-        if (!mat4.equals(this._previousModelMatrix, this.modelMatrix)) {
-            mat4.copy(this._previousModelMatrix, this.modelMatrix);
-            this._modelBuffer.update(this._previousModelMatrix);
         }
     }
 
@@ -169,16 +287,16 @@ export class ForwardBlinnPhongMaterial {
 
     /** @inheritDoc */
     public render(vertexBuffer: IVertexBuffer, indexBuffer: IIndexBuffer, indicesCount?: number, indicesOffset?: number): void {
-        this._pipeline.render(vertexBuffer, indexBuffer, indicesCount, indicesOffset);
+        if (!this._modelBuffer) {
+            throw new Error("ForwardBlinnPhongMaterial: no modelBuffer. Render it through a mesh (the mesh assigns its model buffer) or set material.modelBuffer.");
+        }
+        (this._pipeline ?? this._createPipeline(this._modelBuffer)).render(vertexBuffer, indexBuffer, indicesCount, indicesOffset);
     }
 
     /** @inheritDoc */
     public dispose(): void {
-        this._pipeline.dispose();
-        if (this._ownsProjectionViewBuffer) {
-            this._projectionViewBuffer.dispose();
-        }
-        this._modelBuffer.dispose();
+        this._pipeline?.dispose();
+        this._pipeline = undefined;
         this._materialBuffer.dispose();
     }
 }

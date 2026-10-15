@@ -33,13 +33,19 @@ export class UnlitMaterial {
     private readonly _framework: IFramework;
     private _color = Color.white();
     private _materialData = [1,1,1,1];
-    private _pipeline: IUnlitRenderPipeline;
+    /** Created when the model buffer is assigned (the pipeline requires one). */
+    private _pipeline?: IUnlitRenderPipeline;
+    private readonly _primitiveState?: IPrimitiveState;
+    /** Texture and sampler set before the pipeline exists; applied when it is created. */
+    private _pendingTexture?: ITexture2D;
+    private _pendingSampler?: ISampler;
+    private _samplerSet = false;
     private _projectionViewBuffer: IUniformBuffer;
     /** False when the projection view buffer came from the descriptor. The caller owns that one. */
-    private readonly _ownsProjectionViewBuffer: boolean;
+    private _ownsProjectionViewBuffer: boolean;
+    private _camera?: ICamera;
     private _materialBuffer: IUniformBuffer;
-    private _modelBuffer: IUniformBuffer;
-    private _previousModelMatrix = mat4.create();
+    private _modelBuffer?: IUniformBuffer;
 
     /**
      * The constructor.
@@ -48,18 +54,59 @@ export class UnlitMaterial {
      */
     public constructor(framework: IFramework, config? :UnlitMaterialDescriptor) {
         this._framework = framework;
-        void this._framework;
         const usage = BufferUsage.UNIFORM | BufferUsage.COPY_DST;
+        this._camera = config?.camera;
+        // Without a camera an own zero buffer is bound, so rendering before the scene assigns one does not crash.
         this._ownsProjectionViewBuffer = !config?.camera?.projectionViewBuffer;
-        this._projectionViewBuffer = config?.camera?.projectionViewBuffer ?? framework.bufferFactory.createUniformBuffer(this._previousModelMatrix, usage);
-        this._modelBuffer = framework.bufferFactory.createUniformBuffer(this._previousModelMatrix, usage);
+        this._projectionViewBuffer = config?.camera?.projectionViewBuffer ?? framework.bufferFactory.createUniformBuffer(mat4.create(), usage);
         this._materialBuffer = framework.bufferFactory.createUniformBuffer(this._materialData, usage);
-        this._pipeline = framework.renderPipelineFactory.createUnlitRenderPipeline(
+        this._primitiveState = config?.primitiveState;
+        // The pipeline is created once a model buffer is assigned (see modelBuffer).
+    }
+
+    /** Creates the pipeline with the current bindings. */
+    private _createPipeline(modelBuffer: IUniformBuffer): IUnlitRenderPipeline {
+        const pipeline = this._framework.renderPipelineFactory.createUnlitRenderPipeline(
             this._projectionViewBuffer,
-            this._modelBuffer,
+            modelBuffer,
             this._materialBuffer,
-            config?.primitiveState
+            this._primitiveState
         );
+        if (this._pendingTexture) {
+            pipeline.diffuseTexture = this._pendingTexture;
+        }
+        if (this._samplerSet) {
+            pipeline.diffuseTextureSampler = this._pendingSampler;
+        }
+        this._pipeline = pipeline;
+        return pipeline;
+    }
+
+    /**
+     * The camera. Setting it binds the camera's projection view buffer to the pipeline
+     * (the material's own placeholder buffer is disposed). Setting undefined keeps the last bound buffer.
+     */
+    public get camera(): ICamera | undefined {
+        return this._camera;
+    }
+
+    /** @inheritDoc */
+    public set camera(camera: ICamera | undefined) {
+        if (camera === this._camera) {
+            return;
+        }
+        this._camera = camera;
+        if (!camera) {
+            return;
+        }
+        if (this._ownsProjectionViewBuffer) {
+            this._projectionViewBuffer.dispose();
+            this._ownsProjectionViewBuffer = false;
+        }
+        this._projectionViewBuffer = camera.projectionViewBuffer;
+        if (this._pipeline) {
+            this._pipeline.projectionViewBuffer = this._projectionViewBuffer;
+        }
     }
 
     /**
@@ -71,34 +118,60 @@ export class UnlitMaterial {
      * The texture to inspect.
      */
     public get diffuseTexture(): ITexture2D {
-        return this._pipeline.diffuseTexture;
+        return this._pipeline?.diffuseTexture ?? this._pendingTexture!;
     }
 
     /**
      * The texture to inspect.
      */
     public set diffuseTexture(value: ITexture2D) {
-        this._pipeline.diffuseTexture = value;
+        this._pendingTexture = value;
+        if (this._pipeline) {
+            this._pipeline.diffuseTexture = value;
+        }
     }
 
     /**
      * The texture sampler.
      */
     public get diffuseTextureSampler(): ISampler | undefined {
-        return this._pipeline.diffuseTextureSampler;
+        return this._pipeline ? this._pipeline.diffuseTextureSampler : this._pendingSampler;
     }
 
     /**
      * The texture sampler.
      */
     public set diffuseTextureSampler(value: ISampler | undefined) {
-        this._pipeline.diffuseTextureSampler = value;
+        this._pendingSampler = value;
+        this._samplerSet = true;
+        if (this._pipeline) {
+            this._pipeline.diffuseTextureSampler = value;
+        }
     }
 
     /**
-     * The model matrix.
+     * The model buffer (std140 `mat4`). Owned by the mesh, which assigns it before drawing; never disposed by this material.
+     * Undefined until assigned: rendering without one throws.
      */
-    public modelMatrix: mat4 = mat4.create();
+    public get modelBuffer(): IUniformBuffer | undefined {
+        return this._modelBuffer;
+    }
+
+    /** Binds the model buffer to the pipeline. */
+    public set modelBuffer(value: IUniformBuffer | undefined) {
+        if (value === this._modelBuffer) {
+            return;
+        }
+        this._modelBuffer = value;
+        if (!value) {
+            return;
+        }
+        if (this._pipeline) {
+            this._pipeline.modelBuffer = value;
+        } else {
+            this._createPipeline(value);
+        }
+    }
 
     /**
      * The geometry format.
@@ -115,11 +188,6 @@ export class UnlitMaterial {
             this._materialData[3] = this._color.a;
             this._materialBuffer.update(this._materialData);
         }
-
-        if (!mat4.equals(this._previousModelMatrix, this.modelMatrix)) {
-            mat4.copy(this._previousModelMatrix, this.modelMatrix);
-            this._modelBuffer.update(this._previousModelMatrix);
-        }
     }
 
     /** @inheritDoc */
@@ -129,16 +197,19 @@ export class UnlitMaterial {
 
     /** @inheritDoc */
     public render(vertexBuffer: IVertexBuffer, indexBuffer: IIndexBuffer, indicesCount?: number, indicesOffset?: number): void {
-        this._pipeline.render(vertexBuffer, indexBuffer, indicesCount, indicesOffset);
+        if (!this._modelBuffer) {
+            throw new Error("UnlitMaterial: no modelBuffer. Render it through a mesh (the mesh assigns its model buffer) or set material.modelBuffer.");
+        }
+        (this._pipeline ?? this._createPipeline(this._modelBuffer)).render(vertexBuffer, indexBuffer, indicesCount, indicesOffset);
     }
 
     /** @inheritDoc */
     public dispose(): void {
-        this._pipeline.dispose();
+        this._pipeline?.dispose();
+        this._pipeline = undefined;
         if (this._ownsProjectionViewBuffer) {
             this._projectionViewBuffer.dispose();
         }
-        this._modelBuffer.dispose();
         this._materialBuffer.dispose();
     }
 }

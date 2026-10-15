@@ -1,6 +1,3 @@
-import "reflect-metadata";
-
-import {mat4} from "gl-matrix";
 import {
     Color,
     Framework,
@@ -9,6 +6,7 @@ import {
     type IFramework,
     type IMesh,
     type PerspectiveCamera,
+    Scene,
 } from "../../src";
 import cubeUrl from "./assets/cube.obj?url";
 
@@ -21,19 +19,22 @@ config.canvas = canvas;
 const framework: IFramework = new Framework(config);
 
 let camera: PerspectiveCamera | undefined;
+let scene: Scene | undefined;
 let cube: IMesh | undefined;
 let angle = 0;
 /** Radians per second, so the speed does not depend on the frame rate. */
 const rotationSpeed = 0.6;
-const modelMatrix = mat4.create();
 
 framework.addOnLoadContentListener(async () => {
     try {
-        camera = framework.cameraFactory.createPerspectiveCamera(60, canvas.width / canvas.height, 0.1, 100);
-        camera.eye = [0, 0, 3];
-        // Vite may inline small assets as data: URLs, so point mtllib at the bundled .mtl explicitly.
         // One submesh per usemtl range (6 faces -> 6 submeshes), each with an unlit material coloured by its Kd.
-        cube = await framework.content.loadMesh(cubeUrl, camera);
+        // The mesh adds itself to the scene, and scene.render() draws it.
+        scene = new Scene(framework);
+        // Passing the scene makes the camera the scene's camera.
+        camera = framework.cameraFactory.createPerspectiveCamera({
+            fov: 60, aspectRatio: canvas.width / canvas.height, near: 0.1, far: 100, eye: [0, 0, 3],
+        }, scene);
+        cube = await framework.content.loadMeshAsync(cubeUrl, scene);
         status.textContent = `Loaded cube.obj: ${cube.subMeshes?.length ?? 0} submeshes, unlit materials.`;
     } catch (error) {
         status.textContent = error instanceof Error ? error.message : String(error);
@@ -46,26 +47,16 @@ framework.addOnUpdateListener((time: GameTime) => {
     }
 
     angle += rotationSpeed * time.deltaTimeSec;
-    mat4.identity(modelMatrix);
-    mat4.rotateY(modelMatrix, modelMatrix, angle);
-    mat4.rotateX(modelMatrix, modelMatrix, angle * 0.7);
-    // Each submesh has its own material, and the model matrix lives on the material.
-    for (const subMesh of cube.subMeshes ?? []) {
-        mat4.copy(subMesh.material!.modelMatrix, modelMatrix);
-    }
+    // The mesh pushes its model matrix into each submesh material when it renders.
+    cube.rotation = [angle * 0.7, angle, 0];
 
     camera.update(time);
+    // Assigns the scene camera to the mesh materials (only when it changed).
+    scene?.update(time);
 });
 
 framework.addOnRenderListener(() => {
-    if (cube == null) {
-        return;
-    }
-
-    for (const subMesh of cube.subMeshes ?? []) {
-        subMesh.material!.beforeRender();
-        subMesh.material!.renderMesh(subMesh);
-    }
+    scene?.render();
 });
 
 framework.initialize();

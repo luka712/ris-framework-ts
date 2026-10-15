@@ -6,6 +6,7 @@ import {
     type IFramework,
     type LightsBuffer,
     type LightsBufferDescriptor,
+    type Scene,
 } from "../../api/index.ts";
 import {WebGlLightsBuffer} from "./WebGlLightsBuffer.ts";
 
@@ -13,9 +14,7 @@ import {WebGlLightsBuffer} from "./WebGlLightsBuffer.ts";
 export class WebGlAmbientLightFactory implements AmbientLightFactory {
 
     /** The colour used when no descriptor is given. */
-    public static readonly DEFAULT_VALUE = new Color(0.1, 0.1, 0.1);
-
-    private _nextId = 1;
+    public static readonly DEFAULT_COLOR = new Color(0.1, 0.1, 0.1);
 
     /**
      * The constructor.
@@ -25,15 +24,12 @@ export class WebGlAmbientLightFactory implements AmbientLightFactory {
     }
 
     /** @inheritDoc */
-    public createAmbientLight(desc?: AmbientLightDescriptor): AmbientLight {
-        const value = desc?.value ?? WebGlAmbientLightFactory.DEFAULT_VALUE;
-        const id = this._nextId;
-        this._nextId++;
-        return new AmbientLight(id, value.copy(), desc?.name);
+    public createAmbientLight(desc?: AmbientLightDescriptor, scene?: Scene): AmbientLight {
+        return new AmbientLight({...desc, color: desc?.color ?? WebGlAmbientLightFactory.DEFAULT_COLOR}, scene);
     }
 
     /** @inheritDoc */
-    public createLightsBuffer(desc?: LightsBufferDescriptor): LightsBuffer {
+    public __createLightsBuffer(desc?: LightsBufferDescriptor): LightsBuffer {
         return new WebGlLightsBuffer(this._framework, desc);
     }
 }

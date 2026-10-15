@@ -1,24 +1,16 @@
-import "reflect-metadata";
-
-import {mat4} from "gl-matrix";
 import {
     Color,
     Framework,
     FrameworkConfiguration,
-    ObjGeometryMapper,
-    ObjLoader,
-    type LightsBuffer,
-    type ForwardBlinnPhongMaterial,
+    DirectionalLight,
+    PointLight,
+    Scene,
     type GameTime,
     type IFramework,
     type IMesh,
-    type ObjMaterialDefinition,
     type PerspectiveCamera,
-    type SubMeshDescriptor,
 } from "../../src";
-// Imported as text so the .mtl is always found, also when Vite inlines small assets.
-import cubeObj from "./assets/cube.obj?raw";
-import cubeMtl from "./assets/cube.mtl?raw";
+import cubeUrl from "./assets/cube.obj?url";
 
 const status = document.querySelector<HTMLParagraphElement>("#status")!;
 const canvas = document.querySelector<HTMLCanvasElement>("#game-canvas")!;
@@ -29,85 +21,69 @@ config.canvas = canvas;
 const framework: IFramework = new Framework(config);
 
 let camera: PerspectiveCamera | undefined;
-let lights: LightsBuffer | undefined;
+let scene: Scene | undefined;
 let cube: IMesh | undefined;
-let materials: ForwardBlinnPhongMaterial[] = [];
 let angle = 0;
 /** Radians per second, so the speed does not depend on the frame rate. */
 const rotationSpeed = 0.6;
-const modelMatrix = mat4.create();
 
-/** Creates a Blinn-Phong material coloured by the OBJ material's Kd. */
-function createMaterial(definition: ObjMaterialDefinition | undefined): ForwardBlinnPhongMaterial {
-    const material = framework.materialFactory.createForwardBlinnPhongMaterial({camera});
-    const kd = definition?.diffuseColor ?? [1, 1, 1];
-    material.ambientColor = new Color(kd[0], kd[1], kd[2]);
-    material.diffuseColor = new Color(kd[0] * 0.6, kd[1] * 0.6, kd[2] * 0.6);
-    material.lightsBuffer = lights;
-    return material;
-}
-
-framework.addOnLoadContentListener(() => {
+framework.addOnLoadContentListener(async () => {
     try {
-        camera = framework.cameraFactory.createPerspectiveCamera(60, canvas.width / canvas.height, 0.1, 100);
-        camera.eye = [0, 0, 3];
-        // The lights buffer owns the uniform buffer; lights are plain data put into it.
-        const ambientLight = framework.ambientLightFactory.createAmbientLight({name: "ambient", value: new Color(0.4, 0.4, 0.4)});
-        lights = framework.ambientLightFactory.createLightsBuffer({
-            ambientLight,
-            directionalLights: [{id: 1, name: "sun", value: new Color(0.8, 0.8, 0.8), direction: [-0.5, -0.7, -1]}],
-        });
+        // The scene holds the meshes and the lights; lights are plain data classes with auto-assigned ids.
+        scene = new Scene(framework);
+        // Passing the scene makes the camera the scene's camera; the scene gives it to the materials of its meshes.
+        camera = framework.cameraFactory.createPerspectiveCamera({
+            aspectRatio: canvas.width / canvas.height,
+            eye: [0, 0, -3],
+        }, scene);
+        scene.activeAmbientLight.color = new Color(0.4, 0.4, 0.4);
 
-        // loadMesh only creates unlit materials, so build the lit mesh here from the same OBJ data.
-        const loader = new ObjLoader();
-        const obj = loader.fromText(cubeObj, loader.parseMtl(cubeMtl));
-        const geometry = framework.geometryBuilder.create(ObjGeometryMapper.toDescriptor(obj.geometry));
+        // The camera sits at world z = -3 (the look-at flips eye z), so this light shines from behind it onto the visible faces.
+        new DirectionalLight({name: "sun", color: new Color(1, 1, 1), intensity: 0.8, direction: [-0.4, -0.6, 1]}, scene);
+        // Two coloured point lights orbiting the cube; positions are updated every frame.
+        new PointLight({name: "warm", color: new Color(1.0, 0.5, 0.2), intensity: 1.2, linear: 0.35, quadratic: 0.44}, scene);
+        new PointLight({name: "cool", color: new Color(0.2, 0.5, 1.0), intensity: 1.2, linear: 0.35, quadratic: 0.44}, scene);
 
-        const subMeshes: SubMeshDescriptor[] = [];
-        for (const range of obj.geometry.materialRanges) {
-            const definition = obj.materials.find(m => m.name == range.materialName);
-            const material = createMaterial(definition);
-            materials.push(material);
-            subMeshes.push({material, indexStart: range.indexStart, indexCount: range.indexCount});
-        }
-        cube = framework.meshFactory.createWithSubMeshes(geometry, subMeshes);
-        status.textContent = `Loaded cube.obj: ${subMeshes.length} submeshes, Blinn-Phong materials, ambient light.`;
+        // One submesh per usemtl range with Blinn-Phong materials from the .mtl (Kd, Ka falling back to Kd, Ks, Ns),
+        // all using the scene's lights. The mesh adds itself to the scene.
+        cube = await framework.content.loadBlinnPhongMeshAsync(cubeUrl, scene);
+        status.textContent = `Loaded cube.obj: ${cube.subMeshes?.length ?? 0} submeshes, Blinn-Phong materials, ambient light.`;
     } catch (error) {
         status.textContent = error instanceof Error ? error.message : String(error);
     }
 });
 
+let orbitAngle = 0;
+const orbitSpeed = 1.2; // radians per second
+
 framework.addOnUpdateListener((time: GameTime) => {
-    if (camera == null || cube == null || lights == null) {
+    if (camera == null || cube == null || scene == null) {
         return;
     }
 
-    // Slowly pulse the ambient light so update() has something to upload.
-    const level = 0.3 + 0.2 * Math.sin(time.elapsedTimeSec);
-    lights.ambientLight.value = new Color(level, level, level);
-    lights.update();
+    // Slowly pulse the ambient light so scene.update() has something to upload.
+    scene.activeAmbientLight.intensity = 0.75 + 0.5 * Math.sin(time.elapsedTimeSec);
+
+    // Orbit the point lights around the cube (radius 1.6), opposite each other, tilted on y.
+    orbitAngle += orbitSpeed * time.deltaTimeSec;
+    scene.pointLights.forEach((light, i) => {
+        const a = orbitAngle + i * Math.PI;
+        light.position = [1.6 * Math.cos(a), 0.6 * Math.sin(a * 2), 1.6 * Math.sin(a)];
+    });
+    scene.update(time);
 
     angle += rotationSpeed * time.deltaTimeSec;
-    mat4.identity(modelMatrix);
-    mat4.rotateY(modelMatrix, modelMatrix, angle);
-    mat4.rotateX(modelMatrix, modelMatrix, angle * 0.7);
-    for (const material of materials) {
-        mat4.copy(material.modelMatrix, modelMatrix);
+    // Euler radians (x, y, z), applied Y then X; the mesh pushes its model matrix into the submesh materials when it renders.
+    if (cube) {
+        cube.rotation = [angle * 0.7, angle, 0];
     }
 
     camera.update(time);
 });
 
 framework.addOnRenderListener(() => {
-    if (cube == null) {
-        return;
-    }
-
-    for (const subMesh of cube.subMeshes ?? []) {
-        subMesh.material!.beforeRender();
-        subMesh.material!.renderMesh(subMesh);
-    }
+    scene?.render();
 });
 
 framework.initialize();
-framework.renderer.clearColor = Color.lightPink();
+framework.renderer.clearColor = Color.cornerFlowerBlue();

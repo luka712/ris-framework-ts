@@ -5,6 +5,34 @@ import {MathHelper} from "../utilities/MathHelper.ts";
 import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
 import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
 import {GameTime} from "../time/GameTime.ts";
+import type {Scene} from "../scene/Scene.ts";
+
+/**
+ * The descriptor for a perspective camera. Every field is optional.
+ */
+export interface PerspectiveCameraDescriptor {
+
+    /** The vertical field of view in degrees. By default, 60. */
+    fov?: number;
+
+    /** The aspect ratio (width / height). By default, 1. */
+    aspectRatio?: number;
+
+    /** The near plane. By default, 0.01. */
+    near?: number;
+
+    /** The far plane. By default, 100. */
+    far?: number;
+
+    /** The eye position. Copied. By default, (0, 0, 3). */
+    eye?: vec3;
+
+    /** The point the camera looks at. Copied. By default, the origin. */
+    target?: vec3;
+
+    /** The up vector. Copied. By default, (0, 1, 0). */
+    up?: vec3;
+}
 
 /**
  * The perspective camera.
@@ -26,24 +54,33 @@ export class PerspectiveCamera implements ICamera {
     private _projectionBuffer: IUniformBuffer = null!;
 
     /**
-     * The constructor.
+     * The constructor. Call `initialize()` before use (the camera factory does).
      * @param framework The framework.
-     * @param fov The field of view in radians.
-     * @param aspectRatio The aspect ratio.
-     * @param nearPlane The near plane.
-     * @param farPlane The far plane.
+     * @param descriptor The optional descriptor; omitted fields use the defaults documented on {@link PerspectiveCameraDescriptor}.
+     *                   `fov` is in degrees; {@link fieldOfView} holds it in radians. Vectors are copied.
+     * @param scene The optional scene; the camera assigns itself as `scene.camera`.
      */
     public constructor(
         framework: IFramework,
-        fov: number,
-        aspectRatio: number,
-        nearPlane: number,
-        farPlane: number) {
+        descriptor?: PerspectiveCameraDescriptor,
+        scene?: Scene) {
         this._framework = framework;
-        this.fieldOfView = fov;
-        this.aspectRatio = aspectRatio;
-        this.nearPlane = nearPlane;
-        this.farPlane = farPlane;
+        this.fieldOfView = MathHelper.toRadians(descriptor?.fov ?? 60);
+        this.aspectRatio = descriptor?.aspectRatio ?? 1;
+        this.nearPlane = descriptor?.near ?? 0.01;
+        this.farPlane = descriptor?.far ?? 100;
+        if (descriptor?.eye) {
+            vec3.copy(this.eye, descriptor.eye);
+        }
+        if (descriptor?.target) {
+            vec3.copy(this.target, descriptor.target);
+        }
+        if (descriptor?.up) {
+            vec3.copy(this.up, descriptor.up);
+        }
+        if (scene) {
+            scene.add(this);
+        }
 
         this._updateMatrices();
     }
@@ -159,10 +196,18 @@ export class PerspectiveCamera implements ICamera {
      */
     public initialize(): void {
         const bufferUsage = BufferUsage.UNIFORM | BufferUsage.COPY_DST;
-        this._positionBuffer = this._framework.bufferFactory.createUniformBuffer(this.eye, bufferUsage);
+        this._positionBuffer = this._framework.bufferFactory.createUniformBuffer(this._worldEye(), bufferUsage);
         this._projectionViewBuffer = this._framework.bufferFactory.createUniformBuffer(this.projectionViewMatrix, bufferUsage);
         this._projectionBuffer = this._framework.bufferFactory.createUniformBuffer(this.projectionMatrix, bufferUsage);
         this._viewBuffer = this._framework.bufferFactory.createUniformBuffer(this.viewMatrix, bufferUsage);
+    }
+
+    /**
+     * The eye in world space, as used by the view matrix: z is flipped for the right-handed look-at.
+     * This is what {@link positionBuffer} holds, std140 `vec3` (padded to 16 bytes).
+     */
+    private _worldEye(): number[] {
+        return [this.eye[0], this.eye[1], -this.eye[2], 0];
     }
 
     /**
@@ -190,7 +235,7 @@ export class PerspectiveCamera implements ICamera {
 
     /** @inheritDoc */
     public updateBuffers(): void {
-        this._positionBuffer.update(this.eye);
+        this._positionBuffer.update(this._worldEye());
         this._projectionBuffer.update(this.projectionMatrix);
         this._viewBuffer.update(this.viewMatrix);
         this._projectionViewBuffer.update(this.projectionViewMatrix);

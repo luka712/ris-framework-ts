@@ -47,8 +47,14 @@ export class WebGlRenderPipelineFactory implements IRenderPipelineFactory {
             descriptor.modelBuffer,
             descriptor.materialBuffer,
             descriptor.lightsBuffer,
+            descriptor.cameraPositionBuffer,
             descriptor.primitiveState
             );
+        if (descriptor.maxDirectionalLights !== undefined || descriptor.maxPointLights !== undefined) {
+            pipeline.setLightCounts(
+                descriptor.maxDirectionalLights ?? pipeline.maxDirectionalLights,
+                descriptor.maxPointLights ?? pipeline.maxPointLights);
+        }
         pipeline.initialize();
         return pipeline;
     }

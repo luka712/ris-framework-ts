@@ -1,4 +1,3 @@
-import {mat4} from "gl-matrix";
 import type { GeometryFormat } from "../geometry/GeometryFormat.ts";
 import type { IMesh } from "../meshes/IMesh.ts";
 import type { IVertexBuffer } from "../rendering/buffers/IVertexBuffer.ts";
@@ -39,11 +38,7 @@ export class SpriteMaterial implements IMaterial {
         this._renderPipeline = framework.renderPipelineFactory.createSpriteRenderPipeline(descriptor.projectionViewBuffer);
         this._renderPipeline.textureSampler = descriptor.sampler;
         this._renderPipeline.spriteTexture = descriptor.texture;
-        this.modelMatrix = mat4.create();
     }
-
-    /** @inheritDoc */
-    public modelMatrix: mat4;
 
     /** @inheritDoc */
     public get geometryFormat(): GeometryFormat {

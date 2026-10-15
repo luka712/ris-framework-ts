@@ -1,3 +1,4 @@
+import type {Scene} from "../scene/Scene.ts";
 import type { IMeshFactory } from "./IMeshFactory.ts";
 import type { IGeometry } from "../geometry/IGeometry.ts";
 import type { IMesh } from "./IMesh.ts";
@@ -21,14 +22,14 @@ export class MeshFactory implements IMeshFactory {
     }
 
     /** @inheritDoc */
-    public create(geometry: IGeometry, material: IMaterial): IMesh {
-        const mesh = new Mesh(this._framework, material);
+    public create(scene: Scene, geometry: IGeometry, material: IMaterial): IMesh {
+        const mesh = new Mesh(this._framework, scene, material);
         mesh.setGeometry(geometry);
         return mesh;
     }
 
     /** @inheritDoc */
-    public createWithSubMeshes(geometry: IGeometry, subMeshes: SubMeshDescriptor[]): IMesh {
+    public createWithSubMeshes(scene: Scene, geometry: IGeometry, subMeshes: SubMeshDescriptor[]): IMesh {
         if (subMeshes.length == 0) {
             throw new Error("createWithSubMeshes needs at least one submesh.");
         }
@@ -37,7 +38,7 @@ export class MeshFactory implements IMeshFactory {
             throw new Error("All submesh materials must use the same geometry format, as they share one vertex buffer.");
         }
 
-        const mesh = new Mesh(this._framework);
+        const mesh = new Mesh(this._framework, scene);
         mesh.setGeometry(geometry, format);
         for (const subMesh of subMeshes) {
             mesh.addSubMesh(subMesh.material, subMesh.indexStart, subMesh.indexCount);

@@ -8,6 +8,7 @@ layout(location = 3) in vec3 a_normal;
 out vec4 v_color;
 out vec2 v_texCoords;
 out vec3 v_normal;
+out vec3 v_worldPosition;
 
 layout(std140) uniform CameraBuffer
 {
@@ -21,8 +22,11 @@ layout(std140) uniform ModelBuffer
 
 void main()
 {
-	gl_Position = projectionView * model * vec4(a_position, 1.0);
+    vec4 worldPosition = model * vec4(a_position, 1.0);
+	gl_Position = projectionView * worldPosition;
 	v_color = a_color;
 	v_texCoords = a_texCoord;
-    v_normal = a_normal;
+    // World-space normal. mat3(model) is enough without non-uniform scale.
+    v_normal = mat3(model) * a_normal;
+    v_worldPosition = worldPosition.xyz;
 }

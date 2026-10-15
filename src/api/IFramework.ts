@@ -95,7 +95,7 @@ export interface IFramework extends IDisposable {
     /**
      * The ambient light factory.
      */
-    readonly ambientLightFactory: AmbientLightFactory;
+    readonly lightsFactory: AmbientLightFactory;
 
     /**
      * The time manager.
@@ -123,14 +123,10 @@ export interface IFramework extends IDisposable {
      */
     removeOnLoadContentListener(event: () => void): void;
 
-    /**
-     * Called when the framework is initialized.
-     */
+    /** Called when the framework is initialized.*/
     addOnInitializedListener(event: () => void): void;
 
-    /**
-     * Called when the framework is initialized.
-     */
+    /** Called when the framework is initialized.*/
     removeOnInitializedListener(event: () => void): void;
 
     /**

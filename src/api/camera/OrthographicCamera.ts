@@ -40,6 +40,9 @@ export class OrthographicCamera implements IOrthographicCamera {
     private _projectionBuffer: IUniformBuffer = null!;
     private _viewBuffer: IUniformBuffer = null!;
     private _projectionViewBuffer: IUniformBuffer = null!;
+    private _positionBuffer: IUniformBuffer = null!;
+    /** std140 vec3 world-space eye, padded to 4 floats. */
+    private readonly _positionData = [0, 0, 0, 0];
 
     /**
      *
@@ -204,6 +207,19 @@ export class OrthographicCamera implements IOrthographicCamera {
         return this._viewBuffer;
     }
 
+    /** @inheritDoc */
+    public get positionBuffer(): IUniformBuffer {
+        return this._positionBuffer;
+    }
+
+    /** Writes the world-space eye into the std140 position data (no z flip: the look-at uses the eye as is). */
+    private _updatePositionData(): number[] {
+        this._positionData[0] = this._eye[0];
+        this._positionData[1] = this._eye[1];
+        this._positionData[2] = this._eye[2];
+        return this._positionData;
+    }
+
     /**
      * Updates the camera matrices.
      */
@@ -227,6 +243,10 @@ export class OrthographicCamera implements IOrthographicCamera {
         this._projectionViewBuffer = this._framework.bufferFactory.createUniformBuffer(
             this._projectionViewMatrix, BufferUsage.UNIFORM, "OrthographicCamera.projectionViewBuffer"
         );
+
+        this._positionBuffer = this._framework.bufferFactory.createUniformBuffer(
+            this._updatePositionData(), BufferUsage.UNIFORM, "OrthographicCamera.positionBuffer"
+        );
     }
 
     /** @inheritDoc */
@@ -235,6 +255,7 @@ export class OrthographicCamera implements IOrthographicCamera {
         this.projectionBuffer.update(this.projectionMatrix);
         this.viewBuffer.update(this.viewMatrix);
         this.projectionViewBuffer.update(this.projectionViewMatrix);
+        this.positionBuffer.update(this._updatePositionData());
     }
 
     /** @inheritDoc */
@@ -253,5 +274,6 @@ export class OrthographicCamera implements IOrthographicCamera {
         this.projectionBuffer.dispose();
         this.projectionViewBuffer.dispose();
         this.viewBuffer.dispose();
+        this.positionBuffer.dispose();
     }
 }

@@ -51,6 +51,10 @@ export class WebGlUnlitRenderPipeline extends AWebGlRenderPipeline implements IU
                 materialBuffer: IUniformBuffer,
                 primitiveState?: IPrimitiveState,
     ) {
+        // Validated before super(), which touches WebGL.
+        if (!modelBuffer) {
+            throw new Error("WebGlUnlitRenderPipeline: modelBuffer is required (the mesh's model buffer, std140 mat4).");
+        }
         super(framework, primitiveState);
         this._projectionViewBuffer = projectionViewBuffer as WebGlUniformBuffer;
         this._modelBuffer = modelBuffer as WebGlUniformBuffer;
@@ -77,6 +81,9 @@ export class WebGlUnlitRenderPipeline extends AWebGlRenderPipeline implements IU
 
     /** @inheritdoc */
     public set modelBuffer(value: IUniformBuffer) {
+        if (!value) {
+            throw new Error("WebGlUnlitRenderPipeline: modelBuffer is required (the mesh's model buffer, std140 mat4).");
+        }
         this._modelBuffer = asWebGLUniformBuffer(value);
     }
 

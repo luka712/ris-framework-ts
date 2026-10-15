@@ -37,6 +37,12 @@ export interface ICamera extends IDisposable {
     readonly viewBuffer: IUniformBuffer;
 
     /**
+     * The world-space eye position buffer, std140 `vec3` (`[x, y, z, 0]`).
+     * Used by lit materials for specular highlights.
+     */
+    readonly positionBuffer: IUniformBuffer;
+
+    /**
      * Update the GPU buffers.
      * This needs to be called when camera properties are changed.
      */

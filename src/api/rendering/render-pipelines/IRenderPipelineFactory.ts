@@ -16,6 +16,9 @@ export interface ForwardBlinnPhongRenderPipelineDescriptor {
     /** The world buffer. */
     modelBuffer: IUniformBuffer;
 
+    /** The camera position buffer, e.g. `camera.positionBuffer`: std140 `vec3` world-space eye. */
+    cameraPositionBuffer: IUniformBuffer;
+
     /** The material buffer (ambient and diffuse color). */
     materialBuffer: IUniformBuffer;
 
@@ -24,6 +27,12 @@ export interface ForwardBlinnPhongRenderPipelineDescriptor {
      * Optional: it can be set later through `pipeline.lightsBuffer`.
      */
     lightsBuffer?: IUniformBuffer;
+
+    /** Directional light slots to compile the shader with; must match the lights buffer. Defaults to `DEFAULT_DIRECTIONAL_LIGHTS_COUNT`. */
+    maxDirectionalLights?: number;
+
+    /** Point light slots to compile the shader with; must match the lights buffer. Defaults to `DEFAULT_POINT_LIGHTS_COUNT`. */
+    maxPointLights?: number;
 
     /** The primitive state. */
     primitiveState?: IPrimitiveState;

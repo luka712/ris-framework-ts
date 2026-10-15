@@ -7,18 +7,17 @@ export class WebGLFilterAnisotropicUtilities {
      */
     private MAX_ANISOTROPY_EXT: string = "EXT_texture_filter_anisotropic";
 
-    private _extension: any;
-
     /**
      * Gets the max anisotropy.
      * @param gl The WebGL2 rendering context.
      * @returns The maximum supported level of anisotropic filtering. `0` if not supported.
      */
     public getMaxAnisotropy(gl: WebGL2RenderingContext): number {
-        this._extension = gl.getExtension(this.MAX_ANISOTROPY_EXT);
+        // Looked up per context: this utility is a shared static, and an extension object belongs to one context.
+        const extension = gl.getExtension(this.MAX_ANISOTROPY_EXT);
 
-        if (this._extension) {
-            return gl.getParameter(this._extension.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+        if (extension) {
+            return gl.getParameter(extension.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
         }
 
         return 0;
@@ -31,7 +30,11 @@ export class WebGLFilterAnisotropicUtilities {
      * @param anisotropy The level of anisotropic filtering
      */
     public setAnisotropy(gl: WebGL2RenderingContext, texture: WebGLTexture, anisotropy: number) {
+        const extension = gl.getExtension(this.MAX_ANISOTROPY_EXT);
+        if (!extension) {
+            return;
+        }
         gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texParameterf(gl.TEXTURE_2D, this._extension.MAX_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+        gl.texParameterf(gl.TEXTURE_2D, extension.MAX_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
     }
 }

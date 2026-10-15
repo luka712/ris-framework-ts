@@ -11,11 +11,12 @@ import {
     type IFramework,
     type IGeometry,
     type IMaterial,
+    type Scene,
 } from "../src/api/index.ts";
 
 class InspectableQuad extends QuadMesh {
     public constructor(framework: IFramework, isUpdatable: boolean, scale?: vec2) {
-        super(framework, material, isUpdatable, scale);
+        super(framework, scene, material, isUpdatable, scale);
     }
 
     public get bufferUsage(): number {
@@ -28,12 +29,13 @@ class InspectableQuad extends QuadMesh {
 }
 
 const framework = {} as IFramework;
+const scene = { add: () => {}, remove: () => false } as unknown as Scene;
 /** Stub material; these tests never render, they only need a geometry format. */
 const material = { geometryFormat: GeometryFormat.POS3_COLOR4_TEXTURECOORDS2 } as IMaterial;
 
 describe("Mesh", () => {
     it("starts created and refuses to build buffers without positions", () => {
-        const mesh = new Mesh(framework, material);
+        const mesh = new Mesh(framework, scene, material);
 
         expect(mesh.state).toBe(State.CREATED);
         expect(mesh.positions).toBeUndefined();
@@ -43,7 +45,7 @@ describe("Mesh", () => {
     });
 
     it("refuses geometry that reports no vertices", () => {
-        const mesh = new Mesh(framework, material);
+        const mesh = new Mesh(framework, scene, material);
         const geometry = { vertexCount: 0 } as IGeometry;
 
         expect(() => mesh.setGeometry(geometry))
@@ -53,7 +55,7 @@ describe("Mesh", () => {
 
 describe("QuadMesh", () => {
     it("builds a unit quad in xy before any buffer upload", () => {
-        const mesh = new QuadMesh(framework, material, false);
+        const mesh = new QuadMesh(framework, scene, material, false);
 
         expect(mesh.positions).toEqual([
             -0.5, -0.5, 0,
@@ -81,7 +83,7 @@ describe("QuadMesh", () => {
     });
 
     it("scales the quad positions from the center", () => {
-        const mesh = new QuadMesh(framework, material, false, vec2.fromValues(2, 4));
+        const mesh = new QuadMesh(framework, scene, material, false, vec2.fromValues(2, 4));
 
         expect(mesh.positions).toEqual([
             -1, -2, 0,

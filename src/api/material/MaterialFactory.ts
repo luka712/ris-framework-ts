@@ -33,7 +33,7 @@ export class MaterialFactory implements IMaterialFactory {
     }
 
     /** @inheritDoc */
-    public createForwardBlinnPhongMaterial(descriptor?: ForwardBlinnPhongMaterialDescriptor): ForwardBlinnPhongMaterial {
+    public createForwardBlinnPhongMaterial(descriptor: ForwardBlinnPhongMaterialDescriptor): ForwardBlinnPhongMaterial {
         return new ForwardBlinnPhongMaterial(this._framework, descriptor);
     }
 }
