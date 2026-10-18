@@ -39,7 +39,6 @@ Compared with `main` (0.1.0).
 
 - The sprite fragment shader added `vec4(1.0)` to every pixel, so sprites rendered white.
 - The orthographic camera's default eye was at z = -1 instead of z = 1.
-- `Framework.dispose()` did nothing, and `WindowManager.dispose()` threw "Method not implemented". `Framework.dispose()` now stops the event loop and removes the input listeners. It also deletes cached shader programs, the default texture and the graphics device resources.
 - The default texture was a static shared by every `Framework` instance, so a second framework (a new GL context) reused a texture from the old one. It is now per framework.
 - The anisotropic filtering helper cached the extension object from the first GL context on a shared static. It is now looked up per context.
 - A leftover `debugger` statement in `WebGlGraphicsDevice` initialization is removed.
