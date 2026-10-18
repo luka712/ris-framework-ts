@@ -80,4 +80,35 @@ export class VertexBufferLayout implements IVertexBufferLayout {
             ]
         );
     }
+
+    static createFloat3Float4Float2Float3Layout(): VertexBufferLayout {
+        const floatSize = 4;
+
+        return new VertexBufferLayout(
+            (3 + 4 + 2 + 3) * floatSize,
+            VertexStepMode.VERTEX,
+            [
+                {
+                    format: VertexFormat.FLOAT_32X3,
+                    offset: 0,
+                    shaderLocation: 0,
+                },
+                {
+                    format: VertexFormat.FLOAT_32X4,
+                    offset: 3 * floatSize,
+                    shaderLocation: 1,
+                },
+                {
+                    format: VertexFormat.FLOAT_32X2,
+                    offset: (3 + 4) * floatSize,
+                    shaderLocation: 2,
+                },
+                {
+                    format: VertexFormat.FLOAT_32X3,
+                    offset: (3 + 4 + 2) * floatSize,
+                    shaderLocation: 3,
+                },
+            ]
+        );
+    }
 }

@@ -11,6 +11,7 @@ import type { IContentManager } from "./content/IContentManager.ts";
 import type { IImageLoader } from "./loaders/IImageLoader.ts";
 import type { IMeshFactory } from "./meshes/IMeshFactory.ts";
 import type { IMaterialFactory } from "./material/IMaterialFactory.ts";
+import type { AmbientLightFactory } from "./lights/LightFactory.ts";
 import type { ITimeManager } from "./time/ITimeManager.ts";
 import type { IInputManager } from "./input/IInputManager.ts";
 import type { IWindowManager } from "./window/IWindowManager.ts";
@@ -92,6 +93,11 @@ export interface IFramework extends IDisposable {
     readonly materialFactory: IMaterialFactory;
 
     /**
+     * The ambient light factory.
+     */
+    readonly lightsFactory: AmbientLightFactory;
+
+    /**
      * The time manager.
      */
     readonly timeManager: ITimeManager;
@@ -117,14 +123,10 @@ export interface IFramework extends IDisposable {
      */
     removeOnLoadContentListener(event: () => void): void;
 
-    /**
-     * Called when the framework is initialized.
-     */
+    /** Called when the framework is initialized.*/
     addOnInitializedListener(event: () => void): void;
 
-    /**
-     * Called when the framework is initialized.
-     */
+    /** Called when the framework is initialized.*/
     removeOnInitializedListener(event: () => void): void;
 
     /**

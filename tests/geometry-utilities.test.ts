@@ -7,11 +7,15 @@ describe("GeometryUtilities", () => {
             .toBe(9 * Float32Array.BYTES_PER_ELEMENT);
     });
 
+    it("returns the byte stride of an interleaved position, color, uv and normal vertex", () => {
+        expect(GeometryUtilities.stride(GeometryFormat.POS3_COLOR4_TEXTURECOORDS2_NORMAL3))
+            .toBe(12 * Float32Array.BYTES_PER_ELEMENT);
+    });
+
     it("throws for geometry formats that have no stride", () => {
         const unsupported = [
             GeometryFormat.POS3_COLOR4,
             GeometryFormat.POS3_COLOR4_TEXTURECOORDS2_ALIGNED,
-            GeometryFormat.POS3_COLOR4_TEXTURECOORDS2_NORMAL3,
             GeometryFormat.POS3_TEXTURECOORDS2,
         ];
 

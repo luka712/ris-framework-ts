@@ -1,9 +1,10 @@
-import type {
-    IFramework, IPrimitiveState,
-    ISampler,
-    ITexture2D,
-    IUniformBuffer,
-    IVertexBuffer
+import {
+    GeometryFormat,
+    type IFramework, type IPrimitiveState,
+    type ISampler,
+    type ITexture2D,
+    type IUniformBuffer,
+    type IVertexBuffer
 } from "../../../api/index.ts";
 import {VertexBufferLayout} from "../../../core/rendering/vertex-buffer-layout";
 import type {WebGlUniformBuffer} from "../../buffers/WebGlUniformBuffer.ts";
@@ -52,12 +53,18 @@ export class WebGlInspectTextureMipsRenderPipeline extends AWebGlRenderPipeline 
                 textureConstantsBuffer: IUniformBuffer,
                 primitiveState? : IPrimitiveState
                 ) {
+        // Validated before super(), which touches WebGL.
+        if (!modelBuffer) {
+            throw new Error("WebGlInspectTextureMipsRenderPipeline: modelBuffer is required (the mesh's model buffer, std140 mat4).");
+        }
         super(framework, primitiveState);
         this._projectionViewBuffer = projectionViewBuffer as WebGlUniformBuffer;
         this._modelBuffer = modelBuffer as WebGlUniformBuffer;
         this._textureConstantsBuffer = textureConstantsBuffer as WebGlUniformBuffer;
     }
 
+    /** @inheritDoc */
+    public readonly geometryFormat = GeometryFormat.POS3_COLOR4_TEXTURECOORDS2;
 
     /** @inheritdoc */
     public get projectionViewBuffer(): IUniformBuffer {
@@ -76,6 +83,9 @@ export class WebGlInspectTextureMipsRenderPipeline extends AWebGlRenderPipeline 
 
     /** @inheritdoc */
     public set modelBuffer(value: IUniformBuffer) {
+        if (!value) {
+            throw new Error("WebGlInspectTextureMipsRenderPipeline: modelBuffer is required (the mesh's model buffer, std140 mat4).");
+        }
         this._modelBuffer = asWebGLUniformBuffer(value);
     }
 

@@ -18,7 +18,7 @@ Open `index.html`. The module script is `src/main.ts`. That file builds the page
 | `shaders/glsl` | Vertex and fragment shaders used by the built-in shader modules. |
 | `tests` | Vitest tests for the types under `src/api`. |
 
-Runtime dependencies are `ris-ktx2`, `gl-matrix`, `tsyringe`, and `reflect-metadata`. The KTX2 types (`IKtx2Texture`, `VkFormat`, `KtxTranscodeFormat`, and the rest) are imported from `ris-ktx2`. The library build includes the browser portion of `ris-ktx2`, with its Node loader replaced by a stub, so the published entry does not import Node built-ins. TypeScript, Vite, and Vitest are dev dependencies. Notices for the bundled KTX loader are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The package license is Apache License 2.0. Copyright 2026 Luka Erkapic. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Runtime dependencies are `ris-ktx2` and `gl-matrix`. The KTX2 types (`IKtx2Texture`, `VkFormat`, `KtxTranscodeFormat`, and the rest) are imported from `ris-ktx2`. The library build includes the browser portion of `ris-ktx2`, with its Node loader replaced by a stub, so the published entry does not import Node built-ins. TypeScript, Vite, and Vitest are dev dependencies. Notices for the bundled KTX loader are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The package license is Apache License 2.0. Copyright 2026 Luka Erkapic. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 ## Prerequisites
 
@@ -54,7 +54,7 @@ To work in this repository:
 npm ci
 ```
 
-Import `reflect-metadata` before constructing the framework. `src/main.ts` keeps that import first. `Framework` registers itself on a tsyringe child container, and tsyringe expects `reflect-metadata` to be loaded.
+`Framework` creates its services itself and passes dependencies through their constructors; no dependency-injection container or `reflect-metadata` import is needed.
 
 ## Create a framework instance
 
@@ -76,8 +76,6 @@ No config field is required. Each field has a default.
 Every field is optional on `IFrameworkConfiguration`. A new `FrameworkConfiguration` sets `useKtx2`, `textureFiltering`, `alpha`, and `powerPreference`. `canvas` and `backBufferSize` start unset.
 
 ```ts
-import "reflect-metadata";
-
 import { Framework, FrameworkConfiguration, TextureSamplerFilteringPreset } from "ris-framework";
 
 const config = new FrameworkConfiguration();
@@ -167,6 +165,19 @@ The first `begin` / `drawRect` / `end` runs inside `initialize()`, before the te
 `src/main.ts` also loads `/assets/cat.jpg` the same way and draws it at `new Rect(200, 500, 200, 200)`. Those two files are absent from this repository. Put them under `public/assets/` before those loads can succeed. The blue rectangle still draws when the image loads fail.
 
 Setting `framework.renderer.clearColor` after `initialize()` updates later frames. The first frame has already cleared with the default light pink.
+
+## Scene
+
+`new Scene(framework)` holds meshes, lights and the camera. `scene.add(item)` and `scene.remove(item)` accept a mesh, an `AmbientLight`, `DirectionalLight`, `PointLight` or a camera; adding twice does nothing. Meshes, lights and the perspective camera given a scene in their constructor add themselves, and a disposed mesh removes itself. Adding a camera makes it `scene.camera`; removing the active camera clears it. `addLight`/`removeLight` remain as deprecated aliases.
+
+## Examples
+
+Browser examples live in [`examples/`](examples/), one folder per example. See [`examples/README.md`](examples/README.md).
+
+```sh
+npm run dev:examples      # serve the examples index, e.g. /sprite_batch/
+npm run build:examples    # build every example into examples/dist/
+```
 
 ## What is still unfinished
 
