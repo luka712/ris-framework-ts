@@ -25,7 +25,6 @@ Compared with `main` (0.1.0).
 - Submeshes: one mesh can draw several index ranges, each with its own material (`mesh.addSubMesh`, `meshFactory.createWithSubMeshes`).
 - OBJ/MTL loading:
   - `ObjLoader` is framework-independent and produces plain definitions. `ObjLoader.loadAsync(path, options)` supports `resolveMaterialUrl` and `ignoreMaterials`.
-  - `ObjGeometryMapper` maps the definitions to framework geometry.
   - `content.loadMeshAsync(path, scene)` loads a mesh with unlit materials, and `content.loadBlinnPhongMeshAsync(path, scene)` loads one with Blinn-Phong materials.
 - `geometryBuilder.create(descriptor)` with `GeometryDescriptor`. `BaseGeometry` is exported.
 - `SpriteMaterial` and `materialFactory.createSpriteMaterial`; sprite batches draw through it.

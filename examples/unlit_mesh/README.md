@@ -7,7 +7,7 @@ Loads a cube from `assets/cube.obj` into a `Scene` with `framework.content.loadM
 How `loadMeshAsync` builds the mesh:
 
 1. `ObjLoader`, in the framework-independent `src/api/loaders/obj/`, parses the OBJ and MTL into plain data: an `ObjGeometryDefinition` with `materialRanges`, plus `ObjMaterialDefinition`s.
-2. `ObjGeometryMapper.toDescriptor` maps the geometry onto a framework `GeometryDescriptor`, and `geometryBuilder.create` turns that into geometry.
+2. The geometry is mapped onto a framework `GeometryDescriptor` internally, and `geometryBuilder.create` turns that into geometry.
 3. `meshFactory.createWithSubMeshes` creates one mesh with a single vertex buffer and a single index buffer. It has one `SubMesh` per `usemtl` range, here 6 faces and so 6 submeshes, and each submesh draws its own index range.
 4. Each OBJ material gets an unlit material with `Kd` as its diffuse colour and `d` as alpha. Ranges that use the same material share one. For lit materials use `loadBlinnPhongMeshAsync` (see `blinn_phong_mesh`).
 

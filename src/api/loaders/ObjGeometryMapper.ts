@@ -4,6 +4,8 @@ import type {ObjGeometryDefinition} from "./obj/index.ts";
 /**
  * Maps plain OBJ geometry definitions from {@link ObjLoader} onto the framework's {@link GeometryDescriptor}.
  * Pass the result to `geometryBuilder.create`.
+ * Not part of the public API: `content.loadMeshAsync` and `content.loadBlinnPhongMeshAsync` use it.
+ * @internal
  */
 export class ObjGeometryMapper {
 

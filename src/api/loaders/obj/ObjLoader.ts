@@ -23,7 +23,7 @@ function readColor(parts: string[]): ObjColor | undefined {
 
 /**
  * Loads .obj models (and their .mtl materials) from text or a URL into plain data.
- * Engine-independent; uses only `fetch` and `URL`. Use `ObjGeometryMapper` to get framework geometry.
+ * Engine-independent; uses only `fetch` and `URL`. `content.loadMeshAsync` turns the result into a framework mesh.
  */
 export class ObjLoader {
 

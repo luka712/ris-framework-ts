@@ -10,7 +10,6 @@ import {
     TextureUsage,
     type IMesh,
     ObjLoader,
-    ObjGeometryMapper,
     Color,
     type ICamera,
     type IMaterial,
@@ -23,6 +22,7 @@ import {
     type Scene,
     type IDisposable,
 } from "../index.ts";
+import {ObjGeometryMapper} from "../loaders/ObjGeometryMapper.ts";
 import {Ktx2Factory} from "ris-ktx2";
 import type {IKtx2Texture} from "ris-ktx2";
 
