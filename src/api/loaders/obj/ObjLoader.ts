@@ -2,6 +2,7 @@ import {
     ObjMaterialDefinition,
     type ObjColor,
     type ObjLoadResult,
+    type ObjLoadOptions,
     type ObjMaterialRange,
 } from "./ObjTypes.ts";
 
@@ -223,9 +224,10 @@ export class ObjLoader {
      * Loads an .obj file and the .mtl files it references with `mtllib`.
      * A missing or failing .mtl is skipped (logged as a warning); the model still loads with white vertex colours.
      * @param filePath The .obj URL.
+     * @param options Optional: how to resolve `mtllib` names, or skip materials.
      * @returns The geometry, materials and raw data.
      */
-    public async loadAsync(filePath: string): Promise<ObjLoadResult> {
+    public async loadAsync(filePath: string, options?: ObjLoadOptions): Promise<ObjLoadResult> {
         const response = await fetch(filePath);
         if (!response.ok) {
             throw new Error(`Failed to load OBJ '${filePath}': ${response.status} ${response.statusText}`);
@@ -234,15 +236,24 @@ export class ObjLoader {
 
         const materials: ObjMaterialDefinition[] = [];
 
-        const libraries = text.split(/\r?\n/)
+        const libraries = options?.ignoreMaterials ? [] : text.split(/\r?\n/)
             .map(line => tokens(line))
             .filter(parts => parts[0] == "mtllib")
             .flatMap(parts => parts.slice(1));
 
+        // data: and blob: URLs have no directory, so relative names cannot be resolved against them.
+        const opaqueUrl = /^(data|blob):/i.test(filePath);
         for (const library of libraries) {
             try {
-                const baseUrl = filePath.substring(0, filePath.lastIndexOf("/") + 1);
-                const mtlResponse = await fetch(baseUrl + library);
+                let mtlUrl: string;
+                if (options?.resolveMaterialUrl) {
+                    mtlUrl = options.resolveMaterialUrl(library);
+                } else if (opaqueUrl) {
+                    throw new Error("the OBJ was loaded from a data: or blob: URL (e.g. a bundler-inlined asset), so the name cannot be resolved; pass options.resolveMaterialUrl");
+                } else {
+                    mtlUrl = filePath.substring(0, filePath.lastIndexOf("/") + 1) + library;
+                }
+                const mtlResponse = await fetch(mtlUrl);
 
                 if (!mtlResponse.ok) {
                     throw new Error(`${mtlResponse.status} ${mtlResponse.statusText}`);

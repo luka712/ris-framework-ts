@@ -154,4 +154,28 @@ describe("ObjLoader", () => {
         expect(result.geometry.colors).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
         warn.mockRestore();
     });
+
+    it("loadAsync uses resolveMaterialUrl, skips materials on request and does not guess for data: URLs", async () => {
+        const obj = "mtllib cube.mtl\nv 0 0 0\nv 1 0 0\nv 0 1 0\nusemtl red\nf 1 2 3";
+        const fetchMock = vi.fn(async (url: string) => url == "http://cdn/cube-123.mtl" ? new Response(mtlText) : new Response(obj));
+        vi.stubGlobal("fetch", fetchMock);
+        const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+        const dataUrl = "data:model/obj;base64,bXRsbGli/abc";
+
+        const resolved = await new ObjLoader().loadAsync(dataUrl, { resolveMaterialUrl: name => `http://cdn/${name.replace(".mtl", "-123.mtl")}` });
+        expect(fetchMock).toHaveBeenLastCalledWith("http://cdn/cube-123.mtl");
+        expect(resolved.materials.map(m => m.name)).toEqual(["red", "blue"]);
+
+        fetchMock.mockClear();
+        const ignored = await new ObjLoader().loadAsync("http://host/cube.obj", { ignoreMaterials: true });
+        expect(fetchMock).toHaveBeenCalledOnce();
+        expect(ignored.materials).toEqual([]);
+
+        fetchMock.mockClear();
+        const unresolved = await new ObjLoader().loadAsync(dataUrl);
+        expect(fetchMock).toHaveBeenCalledOnce();
+        expect(unresolved.materials).toEqual([]);
+        expect(String(warn.mock.calls[0][1])).toContain("resolveMaterialUrl");
+        warn.mockRestore();
+    });
 });

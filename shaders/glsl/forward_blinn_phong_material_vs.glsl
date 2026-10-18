@@ -26,7 +26,7 @@ void main()
 	gl_Position = projectionView * worldPosition;
 	v_color = a_color;
 	v_texCoords = a_texCoord;
-    // World-space normal. mat3(model) is enough without non-uniform scale.
-    v_normal = mat3(model) * a_normal;
+    // World-space normal through the normal matrix, correct for non-uniform mesh scale.
+    v_normal = transpose(inverse(mat3(model))) * a_normal;
     v_worldPosition = worldPosition.xyz;
 }

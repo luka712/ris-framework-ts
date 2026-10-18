@@ -227,6 +227,11 @@ export class Scene implements IDisposable {
 
     private static _assignCamera(material: IMaterial | undefined, camera: ICamera): void {
         // Only materials that have a camera property; the setter rebinds buffers, so skip when unchanged.
+        // A camera that is not initialized yet (e.g. added from its constructor) has no buffers;
+        // it is assigned by the next update() once initialize() created them.
+        if (!camera.projectionViewBuffer || !camera.positionBuffer) {
+            return;
+        }
         if (material && "camera" in material && material.camera !== camera) {
             material.camera = camera;
         }

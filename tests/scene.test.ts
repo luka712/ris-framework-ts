@@ -162,7 +162,7 @@ describe("Scene", () => {
         scene.update({} as GameTime);
         expect(sets).toBe(0);
 
-        const camera = {} as ICamera;
+        const camera = { projectionViewBuffer: {}, positionBuffer: {} } as unknown as ICamera;
         scene.camera = camera;
         scene.update({} as GameTime);
         expect([own.camera, a.camera, b.camera]).toEqual([camera, camera, camera]);
@@ -172,7 +172,7 @@ describe("Scene", () => {
         scene.update({} as GameTime);
         expect(sets).toBe(3);
 
-        const next = {} as ICamera;
+        const next = { projectionViewBuffer: {}, positionBuffer: {} } as unknown as ICamera;
         scene.camera = next;
         scene.update({} as GameTime);
         expect(a.camera).toBe(next);
@@ -180,7 +180,7 @@ describe("Scene", () => {
     });
 
     describe("add / remove", () => {
-        const fakeCamera = () => ({ projectionViewBuffer: {}, viewMatrix: {}, updateBuffers: vi.fn() }) as unknown as ICamera;
+        const fakeCamera = () => ({ projectionViewBuffer: {}, positionBuffer: {}, viewMatrix: {}, updateBuffers: vi.fn() }) as unknown as ICamera;
 
         it("meshes: added once, assigned the camera, removed (not disposed)", () => {
             const { framework } = fakeFramework();
@@ -261,6 +261,21 @@ describe("Scene", () => {
             expect(scene.remove(camera)).toBe(true);
             expect(scene.camera).toBeUndefined();
             expect(scene.remove(camera)).toBe(false);
+        });
+
+        it("defers assigning a camera without buffers (not initialized yet) to update()", () => {
+            const { framework } = fakeFramework();
+            const scene = new Scene(framework);
+            const m = { ...material(), camera: undefined as unknown };
+            new Mesh(framework, scene, m as unknown as IMaterial);
+            const camera = { projectionViewBuffer: undefined, positionBuffer: undefined, viewMatrix: {}, updateBuffers: vi.fn() } as unknown as { projectionViewBuffer: unknown; positionBuffer: unknown };
+            scene.add(camera as unknown as ICamera);
+            expect(scene.camera).toBe(camera);
+            expect(m.camera).toBeUndefined();
+            camera.projectionViewBuffer = {};
+            camera.positionBuffer = {};
+            scene.update({} as GameTime);
+            expect(m.camera).toBe(camera);
         });
 
         it("rejects unsupported items", () => {
