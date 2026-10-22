@@ -4,6 +4,7 @@ import type { IPrimitiveState } from "../primitive/IPrimitiveState.ts";
 import type { IVertexBufferLayout } from "../buffers/IVertexBufferLayout.ts";
 import type { IIndexBuffer } from "../buffers/IIndexBuffer.ts";
 import type { IVertexBuffer } from "../buffers/IVertexBuffer.ts";
+import type { GeometryFormat } from "../../geometry/GeometryFormat.ts";
 
 /**
  * The render pipeline interface.
@@ -26,6 +27,9 @@ export interface IRenderPipeline extends IDisposable {
      * The vertex buffer layout of the render pipeline.
      */
     readonly vertexBufferLayouts: IVertexBufferLayout[];
+
+    /** The geometry format required by the render pipeline. */
+    readonly geometryFormat: GeometryFormat;
 
     /**
      * Initializes the render pipeline.

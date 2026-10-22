@@ -1,11 +1,11 @@
 import  {vec2} from "gl-matrix";
 import type { ICameraFactory } from "./ICameraFactory.ts";
+import type { Scene } from "../scene/Scene.ts";
 import type { IFramework } from "../IFramework.ts";
 import type { IOrthographicCamera } from "./IOrthographicCamera.ts";
 import {OrthographicCamera} from "./OrthographicCamera.ts";
 import {OrbitCamera} from "./OrbitCamera.ts";
-import {PerspectiveCamera} from "./PerspectiveCamera.ts";
-import {MathHelper} from "../utilities/MathHelper.ts";
+import {PerspectiveCamera, type PerspectiveCameraDescriptor} from "./PerspectiveCamera.ts";
 
 /** The Camera Factory */
 export class CameraFactory implements ICameraFactory {
@@ -41,15 +41,15 @@ export class CameraFactory implements ICameraFactory {
 
     /** @inheritDoc */
     public createOrbitCamera(fov = 60, aspectRatio = 1, near = 0.01, far = 100): OrbitCamera {
-        return new OrbitCamera(this.createPerspectiveCamera(fov, aspectRatio, near, far), this._framework.input);
+        return new OrbitCamera(this.createPerspectiveCamera({fov, aspectRatio, near, far}), this._framework.input);
 
     }
 
     /** @inheritDoc */
-    public createPerspectiveCamera(fov= 60, aspectRatio = 1, near= 0.01, far = 100): PerspectiveCamera {
-        fov = MathHelper.toRadians(fov);
-        const camera = new PerspectiveCamera(this._framework, fov, aspectRatio, near, far);
+    public createPerspectiveCamera(descriptor?: PerspectiveCameraDescriptor, scene? : Scene): PerspectiveCamera {
+        const camera = new PerspectiveCamera(this._framework, descriptor, scene);
         camera.initialize();
+
         return camera;
     }
 

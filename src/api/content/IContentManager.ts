@@ -1,9 +1,11 @@
+import type { Scene } from "../scene/Scene.ts";
 import type { IShaderModuleLoader } from "../shader/IShaderModuleLoader.ts";
 import type { IShaderModule } from "../shader/IShaderModule.ts";
 import type { ITexture2D } from "../rendering/texture/ITexture2D.ts";
 import {TextureDescriptor} from "../rendering/texture/TextureDescriptor.ts";
 import {ContentConfig} from "./ContentConfig.ts";
 import type { IKtx2Texture } from "ris-ktx2";
+import type {IMesh} from "../meshes/IMesh.ts";
 
 /**
  * The content manager.
@@ -26,9 +28,10 @@ export interface IContentManager {
     /**
      * Loads a shader module.
      * @param shaderAssetId - The id of a shader asset.
+     * @param keyValueDictionary - If present, tries to find key in shader such that it replaced ##DIRECTIONAL_LIGHT_COUNT## by given value for key DIRECTIONAL_LIGHST_COUNT.
      * @returns The shader module.
      */
-    loadShaderModule(shaderAssetId: string): IShaderModule;
+    loadShaderModule(shaderAssetId: string, keyValueDictionary?: { [id:string]: number}): IShaderModule;
 
     /**
      * Loads a texture2D.
@@ -38,4 +41,33 @@ export interface IContentManager {
      * @returns The Texture2D.
      */
     loadTexture2DAsync(path: string, desc?: TextureDescriptor, contentConfig?: ContentConfig): Promise<ITexture2D>;
+
+    /**
+     * Loads a mesh from a model, typically.
+     * Currently, OBJ(WAVEFRONT) is supported.
+     * The mesh has one submesh per `usemtl` range, all sharing one vertex and index buffer.
+     * By default, each submesh gets an unlit material with the .mtl `Kd` as diffuse colour and `d` as alpha.
+     * @param path The path or url to the model.
+     * @param scene The scene the mesh adds itself to; `scene.render()` draws it. The materials use `scene.camera`
+     *              (assigned on `scene.update()` when it is set later).
+     * @return The mesh.
+     */
+    loadMeshAsync(path: string, scene: Scene): Promise<IMesh>;
+
+    /**
+     * Loads an OBJ (Wavefront) mesh with lit Blinn-Phong materials.
+     * Like {@link loadMeshAsync}, the mesh has one submesh per `usemtl` range sharing one vertex and index buffer,
+     * and ranges with the same material name share one material. `scene.render()` draws it.
+     * The .mtl values map onto `ForwardBlinnPhongMaterial`:
+     * - `Kd` → `diffuseColor` (with `d` as alpha), white when missing.
+     * - `Ka` → `ambientColor`, the diffuse colour when missing.
+     * - `Ks` → `specularColor` and `Ns` → `shininess`, the material defaults (0.5 grey, 32) when missing.
+     * Without an .mtl file every submesh gets a white material with those defaults.
+     * @param path The path or url to the .obj file. A relative `mtllib` is resolved against it.
+     * @param scene The scene the mesh adds itself to. Every material uses the scene's lights and `scene.camera`
+     *              (assigned on `scene.update()` when it is set later).
+     * @return The mesh.
+     */
+    loadBlinnPhongMeshAsync(path: string, scene: Scene): Promise<IMesh>;
+
 }

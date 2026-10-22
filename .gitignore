@@ -6,3 +6,21 @@ coverage/
 .idea/
 *.log
 *.tgz
+
+# Generated API docs (npm run docs)
+docs/
+
+# Environment and local overrides
+.env
+.env.*
+*.local
+
+# Editor and OS files
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Tool caches and package-manager logs
+.vite/
+.eslintcache
+npm-debug.log*

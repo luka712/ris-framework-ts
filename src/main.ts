@@ -1,5 +1,4 @@
 import './style.css'
-import "reflect-metadata";
 
 import typescriptLogo from './typescript.svg'
 import viteLogo from '/vite.svg'

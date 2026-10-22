@@ -1,6 +1,6 @@
 import { vec2 } from "gl-matrix"
 import { BaseGeometry } from "./BaseGeometry.ts";
-import type {IGeometry, IGeometryBuilder} from "../index.ts";
+import type {IGeometry, IGeometryBuilder, GeometryDescriptor} from "../index.ts";
 
 /**
  * The GeometryBuilder class provides methods for creating various types of geometries, such as quads, with specified parameters like scale and winding order.
@@ -54,5 +54,17 @@ export class GeometryBuilder implements IGeometryBuilder {
             ];
 
         return geometry;
+    }
+
+    /** @inheritdoc */
+    public create(descriptor: GeometryDescriptor): IGeometry {
+        const vertexCount = descriptor.positions.length / 3;
+        return new BaseGeometry(
+            [...descriptor.positions],
+            descriptor.indices ? [...descriptor.indices] : undefined,
+            descriptor.normals ? [...descriptor.normals] : new Array(vertexCount * 3).fill(0),
+            descriptor.textureCoords ? [...descriptor.textureCoords] : new Array(vertexCount * 2).fill(0),
+            descriptor.colors ? [...descriptor.colors] : new Array(vertexCount * 4).fill(1),
+        );
     }
 }

@@ -1,7 +1,7 @@
-import {container, type DependencyContainer} from "tsyringe";
+import {WebGlAmbientLightFactory} from "./webgl/lights/WebGlAmbientLightFactory.ts";
 import {WindowManager} from "./api/window/WindowManager.ts";
 import {FrameworkConfiguration} from "./api/FrameworkConfiguration.ts";
-import {type IRendererConfiguration, RenderConfigurationSymbol} from "./api/rendering/renderer-interface.ts";
+import {type IRendererConfiguration} from "./api/rendering/renderer-interface.ts";
 import {GeometryBuilder} from "./api/geometry/GeometryBuilder.ts";
 import {ContentManager} from "./api/content/ContentManager.ts";
 import {WebGlRenderer} from "./webgl/WebGlRenderer.ts";
@@ -26,6 +26,7 @@ import {
     type IInputManager,
     ImageLoader,
     type IMaterialFactory,
+    type AmbientLightFactory,
     type IMeshFactory,
     type ISpriteBatch,
     type ITextureFactory,
@@ -35,6 +36,8 @@ import {
     RenderingBackend,
     TimeManager
 } from "./api/index.ts";
+import {WebGlTexture2D} from "./webgl/texture/WebGlTexture2D.ts";
+import type {IDisposable} from "./api/core/IDisposable.ts";
 import {WebGlShaderModuleLoader} from "./webgl/shader/WebGlShaderModuleLoader.ts";
 import {TextureSamplerFilteringPreset} from "./core/rendering/enums.ts";
 import {SpriteBatch} from "./api/sprites/SpriteBatch.ts";
@@ -53,12 +56,12 @@ export class Framework implements IFramework {
     private readonly _onUpdateListeners: ((gameTime: GameTime) => void)[] = [];
     private readonly _onRenderListeners: (() => void)[] = [];
 
-    private readonly _container: DependencyContainer;
     private readonly _textureFactory: ITextureFactory;
     private readonly _buffersFactory: IBufferFactory;
     private readonly _contentManager: IContentManager;
     private readonly _geometryBuilder: IGeometryBuilder;
     private readonly _meshFactory: IMeshFactory;
+    private _disposed = false;
 
     /**
      * The constructor for the Framework class.
@@ -73,17 +76,15 @@ export class Framework implements IFramework {
         }
         options.backBufferSize = options.backBufferSize ?? vec2.fromValues(800, 600);
 
-        this._container = container.createChildContainer();
         this.windowManager = new WindowManager(options.canvas ?? null);
 
-        // Setup container.
+        // Services are created here and get their dependencies through their constructors.
         const rendererConfig: IRendererConfiguration = {
             backBufferSize: options.backBufferSize,
             textureFiltering: options.textureFiltering ?? TextureSamplerFilteringPreset.BILINEAR,
             alpha: options.alpha ?? false,
             powerPreference: options.powerPreference ?? PowerPreferenceType.DEFAULT
         };
-        this._container.registerInstance(RenderConfigurationSymbol, rendererConfig);
         this.renderer = new WebGlRenderer(this, rendererConfig);
         this.renderingBackend = RenderingBackend.WEB_GL;
         this._textureFactory = new WebGlTextureFactory(this);
@@ -92,6 +93,7 @@ export class Framework implements IFramework {
         this._contentManager = new ContentManager(this, new WebGlShaderModuleLoader(this));
         this._meshFactory = new MeshFactory(this);
         this.materialFactory = new MaterialFactory(this);
+        this.lightsFactory = new WebGlAmbientLightFactory(this);
 
         this._buffersFactory = new WebGlBuffersFactory(this);
         this.spriteBatch = new SpriteBatch(this);
@@ -217,6 +219,9 @@ export class Framework implements IFramework {
     public readonly materialFactory: IMaterialFactory;
 
     /** @inheritDoc */
+    public readonly lightsFactory: AmbientLightFactory;
+
+    /** @inheritDoc */
     public readonly timeManager: ITimeManager;
 
     /** @inheritDoc */
@@ -235,12 +240,13 @@ export class Framework implements IFramework {
 
         this.timeManager.prepareStart();
 
-        // Load content events.
-        for(const listener of this._onLoadContentListeners){
+        // Initialize callbacks.
+        for(const listener of this._onInitializeListeners){
             listener();
         }
 
-        for(const listener of this._onInitializeListeners){
+        // Load content events.
+        for(const listener of this._onLoadContentListeners){
             listener();
         }
 
@@ -271,10 +277,28 @@ export class Framework implements IFramework {
         this.windowManager.runEventLoop();
     }
 
-    /** @inheritDoc */
-    public dispose() {
-       //  this.windowManager.dispose();
+    /**
+     * Stops the event loop and disposes the framework's services and GL resources,
+     * including per-framework caches such as the default texture and the shader modules.
+     * A new `Framework` afterwards creates fresh resources on its own context. Calling it twice does nothing.
+     */
+    public dispose(): void {
+        if (this._disposed) {
+            return;
+        }
+        this._disposed = true;
 
-        // TODO: dispose of other resources
+        this.windowManager.dispose();
+        (this.input as Partial<IDisposable>).dispose?.();
+
+        this._onLoadContentListeners.length = 0;
+        this._onInitializeListeners.length = 0;
+        this._onUpdateListeners.length = 0;
+        this._onRenderListeners.length = 0;
+
+        WebGlTexture2D.disposeDefault(this);
+        (this._contentManager as Partial<IDisposable>).dispose?.();
+        // Only exists after initialize(); it owns the default sampler and blend state.
+        (this.renderer.graphicsDevice as IGraphicsDevice | undefined)?.dispose();
     }
 }

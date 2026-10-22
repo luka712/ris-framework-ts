@@ -7,7 +7,7 @@ in vec2 v_texCoords;
 layout(location = 0) out vec4 o_outputColor;
 
 layout(std140) uniform MaterialBuffer
- {
+{
     vec4 diffuseColor;
 };
 

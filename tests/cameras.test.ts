@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { vec2, vec3 } from "gl-matrix";
 import {
     GameTime,
@@ -84,7 +84,7 @@ function createOrbit(
     core: HeadlessPerspectiveCamera;
     orbit: OrbitCamera;
 } {
-    const core = new HeadlessPerspectiveCamera(framework, Math.PI / 3, 1, near, far);
+    const core = new HeadlessPerspectiveCamera(framework, { fov: 60, aspectRatio: 1, near, far });
     const orbit = new OrbitCamera(core, {
         getMouseState: () => mouse,
         getTouchCollection: () => touches,
@@ -94,7 +94,7 @@ function createOrbit(
 
 describe("PerspectiveCamera", () => {
     it("builds a right-handed view by flipping the eye z before look-at", () => {
-        const camera = new PerspectiveCamera(framework, Math.PI / 2, 2, 0.1, 100);
+        const camera = new PerspectiveCamera(framework, { fov: 90, aspectRatio: 2, near: 0.1, far: 100 });
 
         expectComponents(camera.eye, [0, 0, 3]);
         expectComponents(camera.target, [0, 0, 0]);
@@ -131,6 +131,27 @@ describe("OrthographicCamera", () => {
         return new InspectableOrthographicCamera(framework, -1, 1, 1, -1, 0, 1);
     }
 
+    it("has a std140 eye position buffer that is updated and disposed", () => {
+        const buffers: { label?: string; data: number[]; update: ReturnType<typeof vi.fn>; dispose: ReturnType<typeof vi.fn> }[] = [];
+        const fw = { bufferFactory: { createUniformBuffer: vi.fn((data: ArrayLike<number>, _usage: unknown, label?: string) => {
+            const buffer = { label, data: Array.from(data), update: vi.fn(), dispose: vi.fn() };
+            buffers.push(buffer);
+            return buffer;
+        }) } } as unknown as IFramework;
+        const camera = new OrthographicCamera(fw, -1, 1, 1, -1, 0, 10);
+        camera.initialize();
+        const position = buffers.find(b => b.label === "OrthographicCamera.positionBuffer")!;
+        expect(camera.positionBuffer).toBe(position);
+        expect(position.data).toEqual([0, 0, 1, 0]);
+
+        camera.eye = [1, 2, 3];
+        camera.updateBuffers();
+        expect(Array.from(position.update.mock.calls[0][0] as number[])).toEqual([1, 2, 3, 0]);
+
+        camera.dispose();
+        expect(position.dispose).toHaveBeenCalledOnce();
+    });
+
     it("builds an orthographic projection and a view aimed at the origin", () => {
         const camera = createCamera();
 
@@ -140,17 +161,18 @@ describe("OrthographicCamera", () => {
         expect(camera.bottom).toBe(-1);
         expect(camera.nearPlane).toBe(0);
         expect(camera.farPlane).toBe(1);
-        expectComponents(camera.eye, [0, 0, -1]);
+        expectComponents(camera.eye, [0, 0, 1]);
         expectComponents(camera.projectionMatrix, [
             1, 0, 0, 0,
             0, 1, 0, 0,
             0, 0, -2, 0,
             0, 0, -1, 1,
         ]);
+        // Eye at +z looking at the origin: no mirroring of x, so screen-space sprites stay on screen.
         expectComponents(camera.viewMatrix, [
-            -1, 0, 0, 0,
+            1, 0, 0, 0,
             0, 1, 0, 0,
-            0, 0, -1, 0,
+            0, 0, 1, 0,
             0, 0, -1, 1,
         ]);
     });
