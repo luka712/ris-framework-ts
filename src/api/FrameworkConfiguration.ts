@@ -2,6 +2,7 @@ import { TextureSamplerFilteringPreset } from "../core/rendering/enums.ts";
 import {vec2} from "gl-matrix";
 import type {IFrameworkConfiguration} from "./IFrameworkConfiguration.ts";
 import {PowerPreferenceType} from "./rendering/PowerPreference.ts";
+import {RenderingBackend} from "./rendering/RenderingBackend.ts";
 
 /**
  * The options for configuring the Framework.
@@ -26,4 +27,7 @@ export class FrameworkConfiguration implements IFrameworkConfiguration {
 
     /** @inheritDoc */
     powerPreference = PowerPreferenceType.DEFAULT;
+
+    /** @inheritDoc */
+    renderingBackend = RenderingBackend.WEB_GL;
 }

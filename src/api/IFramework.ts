@@ -158,4 +158,10 @@ export interface IFramework extends IDisposable {
     /** Initializes the framework. */
     initialize(): void;
 
+    /**
+     * Initializes the framework asynchronously and starts the event loop.
+     * Required for the WebGPU backend; for WebGL it behaves like {@link initialize}.
+     */
+    initializeAsync(): Promise<void>;
+
 }

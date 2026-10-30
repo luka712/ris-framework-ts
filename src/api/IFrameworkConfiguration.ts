@@ -1,4 +1,5 @@
 import {PowerPreferenceType} from "./rendering/PowerPreference.ts";
+import type {RenderingBackend} from "./rendering/RenderingBackend.ts";
 import type {vec2} from "gl-matrix";
 import type {TextureSamplerFilteringPreset} from "../core/rendering/enums.ts";
 
@@ -27,4 +28,11 @@ export class IFrameworkConfiguration {
 
     /** The preference when it comes to selecting GPU device. Only makes sense to set on multi-GPU devices. */
     powerPreference ?: PowerPreferenceType;
+
+    /**
+     * The rendering backend. Defaults to WebGL.
+     * WebGPU requires `Framework.initializeAsync()`; when `navigator.gpu` is missing or no device is available,
+     * the framework falls back to WebGL with a warning.
+     */
+    renderingBackend?: RenderingBackend;
 }
