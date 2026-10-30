@@ -7,6 +7,7 @@ import type { IBufferFactory } from "./rendering/buffers/IBufferFactory.ts";
 import type { IGeometryBuilder } from "./geometry/IGeometryBuilder.ts";
 import type { ICameraFactory } from "./camera/ICameraFactory.ts";
 import type { ITextureFactory } from "./rendering/texture/ITextureFactory.ts";
+import type { ObjLoader } from "./loaders/ObjLoader.ts";
 import type { IContentManager } from "./content/IContentManager.ts";
 import type { IImageLoader } from "./loaders/IImageLoader.ts";
 import type { IMeshFactory } from "./meshes/IMeshFactory.ts";
@@ -86,6 +87,11 @@ export interface IFramework extends IDisposable {
      * The mesh factory.
      */
     readonly meshFactory: IMeshFactory;
+
+    /**
+     * The OBJ loader: `objLoader.loadAsync(path, blinnPhongDescriptor | subMesh => material)`.
+     */
+    readonly objLoader: ObjLoader;
 
     /**
      * The material factory.

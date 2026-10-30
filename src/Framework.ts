@@ -4,6 +4,7 @@ import {FrameworkConfiguration} from "./api/FrameworkConfiguration.ts";
 import {type IRendererConfiguration} from "./api/rendering/renderer-interface.ts";
 import {GeometryBuilder} from "./api/geometry/GeometryBuilder.ts";
 import {ContentManager} from "./api/content/ContentManager.ts";
+import {ObjLoader} from "./api/loaders/ObjLoader.ts";
 import {WebGlRenderer} from "./webgl/WebGlRenderer.ts";
 import {WebGlBuffersFactory} from "./webgl/buffers/WebGlBuffersFactory.ts";
 import {
@@ -214,6 +215,9 @@ export class Framework implements IFramework {
     public get meshFactory(): IMeshFactory {
         return this._meshFactory;
     }
+
+    /** @inheritDoc */
+    public readonly objLoader: ObjLoader = new ObjLoader(this);
 
     /** @inheritDoc */
     public readonly materialFactory: IMaterialFactory;

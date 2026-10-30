@@ -24,5 +24,6 @@ export * from "./meshes/_export.ts";
 export * from "./material/_export.ts";
 export * from "./lights/_export.ts";
 export * from "./scene/Scene.ts";
+export * from "./scene/SceneMesh.ts";
 export * from "./input/_export.ts";
 export * from "./image/_export.ts";

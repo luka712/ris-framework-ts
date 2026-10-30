@@ -31,8 +31,8 @@ export class WebGlLightsBuffer implements LightsBuffer {
     private readonly _buffer: IUniformBuffer;
     private readonly _data: number[];
     private readonly _uploaded: number[];
-    private readonly _directionalLights: DirectionalLight[] = [];
-    private readonly _pointLights: PointLight[] = [];
+    private _directionalLights: DirectionalLight[] = [];
+    private _pointLights: PointLight[] = [];
     private _disposed = false;
 
     /**
@@ -71,16 +71,26 @@ export class WebGlLightsBuffer implements LightsBuffer {
     }
 
     /** @inheritDoc */
-    public get directionalLights(): readonly DirectionalLight[] {
+    public get directionalLights(): DirectionalLight[] {
         return this._directionalLights;
+    }
+
+    /** @inheritDoc */
+    public set directionalLights(lights: DirectionalLight[]) {
+        this._directionalLights = lights;
     }
 
     /** @inheritDoc */
     public readonly maxDirectionalLights: number;
 
     /** @inheritDoc */
-    public get pointLights(): readonly PointLight[] {
+    public get pointLights(): PointLight[] {
         return this._pointLights;
+    }
+
+    /** @inheritDoc */
+    public set pointLights(lights: PointLight[]) {
+        this._pointLights = lights;
     }
 
     /** @inheritDoc */

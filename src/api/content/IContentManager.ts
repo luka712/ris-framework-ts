@@ -1,4 +1,6 @@
-import type { Scene } from "../scene/Scene.ts";
+import type { ICamera } from "../camera/ICamera.ts";
+import type { GeometryFormat } from "../geometry/GeometryFormat.ts";
+import type { IRenderableMesh } from "../meshes/IRenderableMesh.ts";
 import type { IShaderModuleLoader } from "../shader/IShaderModuleLoader.ts";
 import type { IShaderModule } from "../shader/IShaderModule.ts";
 import type { ITexture2D } from "../rendering/texture/ITexture2D.ts";
@@ -43,31 +45,33 @@ export interface IContentManager {
     loadTexture2DAsync(path: string, desc?: TextureDescriptor, contentConfig?: ContentConfig): Promise<ITexture2D>;
 
     /**
-     * Loads a mesh from a model, typically.
-     * Currently, OBJ(WAVEFRONT) is supported.
-     * The mesh has one submesh per `usemtl` range, all sharing one vertex and index buffer.
-     * By default, each submesh gets an unlit material with the .mtl `Kd` as diffuse colour and `d` as alpha.
-     * @param path The path or url to the model.
-     * @param scene The scene the mesh adds itself to; `scene.render()` draws it. The materials use `scene.camera`
-     *              (assigned on `scene.update()` when it is set later).
+     * Loads a plain mesh (geometry and buffers only, no material or transform) from an OBJ (Wavefront) file,
+     * like C# `ContentManager.LoadMesh`. Materials (.mtl) are not loaded.
+     * @param path The path or url to the .obj file.
+     * @param geometryFormat The vertex layout of the buffers, e.g. the format of the material it will be drawn with.
      * @return The mesh.
      */
-    loadMeshAsync(path: string, scene: Scene): Promise<IMesh>;
+    loadMeshAsync(path: string, geometryFormat: GeometryFormat): Promise<IMesh>;
 
     /**
-     * Loads an OBJ (Wavefront) mesh with lit Blinn-Phong materials.
-     * Like {@link loadMeshAsync}, the mesh has one submesh per `usemtl` range sharing one vertex and index buffer,
-     * and ranges with the same material name share one material. `scene.render()` draws it.
-     * The .mtl values map onto `ForwardBlinnPhongMaterial`:
-     * - `Kd` → `diffuseColor` (with `d` as alpha), white when missing.
-     * - `Ka` → `ambientColor`, the diffuse colour when missing.
-     * - `Ks` → `specularColor` and `Ns` → `shininess`, the material defaults (0.5 grey, 32) when missing.
-     * Without an .mtl file every submesh gets a white material with those defaults.
-     * @param path The path or url to the .obj file. A relative `mtllib` is resolved against it.
-     * @param scene The scene the mesh adds itself to. Every material uses the scene's lights and `scene.camera`
-     *              (assigned on `scene.update()` when it is set later).
-     * @return The mesh.
+     * Loads an OBJ mesh with unlit materials, through `framework.objLoader`.
+     * The root mesh has no material; each `usemtl` range is a sub mesh with an unlit material
+     * (`Kd` as diffuse colour, `d` as alpha, white when missing). Add it with `scene.add(mesh)`.
+     * @param path The path or url to the .obj file.
+     * @param camera The optional camera; `scene.update()` assigns the scene camera anyway.
+     * @return The root mesh.
      */
-    loadBlinnPhongMeshAsync(path: string, scene: Scene): Promise<IMesh>;
+    loadUnlitMeshAsync(path: string, camera?: ICamera): Promise<IRenderableMesh>;
+
+    /**
+     * Loads an OBJ mesh with Blinn-Phong materials: shorthand for
+     * `framework.objLoader.loadAsync(path, {projectionViewBuffer: camera.projectionViewBuffer, cameraPositionBuffer: camera.positionBuffer})`.
+     * See `ObjLoader.loadAsync` for the .mtl mapping. Add it with `scene.add(mesh)`; the scene assigns its camera and lights.
+     * @param path The path or url to the .obj file. A relative `mtllib` is resolved against it.
+     * @param camera An initialized camera (e.g. `scene.camera`).
+     * @return The root mesh.
+     * @throws Error when the camera has no buffers.
+     */
+    loadBlinnPhongMeshAsync(path: string, camera: ICamera): Promise<IRenderableMesh>;
 
 }

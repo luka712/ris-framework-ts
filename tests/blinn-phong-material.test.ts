@@ -19,11 +19,18 @@ function fakeFramework() {
         (pipeline as unknown as { modelBuffer: unknown }).modelBuffer = descriptor.modelBuffer;
         return pipeline;
     });
+    const lightsBuffer = {
+        buffer: { id: "lights" }, maxDirectionalLights: 3, maxPointLights: 5,
+        ambientLight: undefined as unknown, directionalLights: [] as unknown[], pointLights: [] as unknown[],
+        update: vi.fn(), dispose: vi.fn(),
+    };
+    const __createLightsBuffer = vi.fn(() => lightsBuffer as unknown as LightsBuffer);
     const framework = {
         bufferFactory: { createUniformBuffer },
         renderPipelineFactory: { createForwardBlinnPhongRenderPipeline },
+        lightsFactory: { __createLightsBuffer },
     } as unknown as IFramework;
-    return { framework, buffers, pipeline, createForwardBlinnPhongRenderPipeline };
+    return { framework, buffers, pipeline, createForwardBlinnPhongRenderPipeline, lightsBuffer, __createLightsBuffer };
 }
 
 /** A mesh's model buffer. */
@@ -91,22 +98,29 @@ describe("ForwardBlinnPhongMaterial", () => {
         expect((model as unknown as { dispose: ReturnType<typeof vi.fn> }).dispose).not.toHaveBeenCalled();
     });
 
-    it("compiles the pipeline for the lights buffer's counts, from the descriptor or the setter", () => {
-        const { framework, pipeline, createForwardBlinnPhongRenderPipeline } = fakeFramework();
-        const uniform = {};
-        const lights = { buffer: uniform, maxDirectionalLights: 1, maxPointLights: 2 } as unknown as LightsBuffer;
-
-        const material = new ForwardBlinnPhongMaterial(framework, { ...shared(), lightsBuffer: lights });
+    it("owns a 3 directional + 5 point lights buffer, exposes its lights by reference and disposes it", () => {
+        const { framework, createForwardBlinnPhongRenderPipeline, lightsBuffer, __createLightsBuffer } = fakeFramework();
+        const material = new ForwardBlinnPhongMaterial(framework, shared());
+        expect(__createLightsBuffer).toHaveBeenCalledWith({ maxDirectionalLights: 3, maxPointLights: 5 });
         material.modelBuffer = fakeModel();
         expect(createForwardBlinnPhongRenderPipeline.mock.calls[0]).toEqual([expect.objectContaining({
-            lightsBuffer: uniform, maxDirectionalLights: 1, maxPointLights: 2,
+            lightsBuffer: lightsBuffer.buffer, maxDirectionalLights: 3, maxPointLights: 5,
         })]);
-        expect(material.lightsBuffer).toBe(lights);
 
-        const other = { buffer: {}, maxDirectionalLights: 4, maxPointLights: 0 } as unknown as LightsBuffer;
-        material.lightsBuffer = other;
-        expect(pipeline.setLightCounts).toHaveBeenCalledWith(4, 0);
-        expect(pipeline.lightsBuffer).toBe(other.buffer);
+        const list: never[] = [];
+        material.pointLights = list;
+        expect(material.pointLights).toBe(list);
+        expect(lightsBuffer.pointLights).toBe(list);
+        material.directionalLights = list;
+        expect(lightsBuffer.directionalLights).toBe(list);
+        const ambient = {} as never;
+        material.ambientLight = ambient;
+        expect(lightsBuffer.ambientLight).toBe(ambient);
+
+        material.beforeRender();
+        expect(lightsBuffer.update).toHaveBeenCalledOnce();
+        material.dispose();
+        expect(lightsBuffer.dispose).toHaveBeenCalledOnce();
     });
 
     it("lays out the material buffer as std140 ambient, diffuse, specular + shininess", () => {

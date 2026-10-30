@@ -1,24 +1,21 @@
 /**
  * The mesh is a building class for a world shape.
  */
-import {mat4, quat, vec3} from "gl-matrix";
 import {State} from "../data/State.ts";
 import type {IVertexBuffer} from "../rendering/buffers/IVertexBuffer.ts";
 import type {IIndexBuffer} from "../rendering/buffers/IIndexBuffer.ts";
-import type {IUniformBuffer} from "../rendering/buffers/IUniformBuffer.ts";
 import type {IFramework} from "../IFramework.ts";
 import type {IMesh} from "./IMesh.ts";
 import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
 import type {IGeometry} from "../geometry/IGeometry.ts";
 import {MeshParameters} from "./MeshParameters.ts";
 import {GeometryUtilities} from "../utilities/GeometryUtilities.ts";
-import type {IMaterial} from "../material/IMaterial.ts";
 import type {GeometryFormat} from "../geometry/GeometryFormat.ts";
-import {SubMesh} from "./SubMesh.ts";
-import type {Scene} from "../scene/Scene.ts";
 
 /**
- * The mesh.
+ * The base mesh: geometry and the vertex and index buffers created from it (C# `BaseMesh`).
+ * No material and no transform; {@link RenderableMesh} adds those.
+ * @public
  */
 export class Mesh implements IMesh {
 
@@ -32,116 +29,23 @@ export class Mesh implements IMesh {
     protected _normals?: number[];
     protected _vertexBuffer?: IVertexBuffer;
     protected _indexBuffer?: IIndexBuffer;
-    protected _subMeshes: SubMesh[] = [];
-    private readonly _modelMatrix = mat4.create();
-    private readonly _rotationQuat = quat.create();
-    // Cached copies to detect in-place edits; NaN forces the first computation.
-    private readonly _lastPosition = vec3.fromValues(NaN, NaN, NaN);
-    private readonly _lastRotation = vec3.create();
-    private readonly _lastScale = vec3.create();
-    private _modelBuffer?: IUniformBuffer;
-    /** The matrix last uploaded to the model buffer. */
-    private readonly _uploadedMatrix = mat4.create();
-
-    /** @inheritDoc */
-    public position: vec3 = vec3.create();
-
-    /** @inheritDoc */
-    public rotation: vec3 = vec3.create();
-
-    /** @inheritDoc */
-    public scale: vec3 = vec3.fromValues(1, 1, 1);
-
-    /** @inheritDoc */
-    public get modelMatrix(): mat4 {
-        if (!vec3.exactEquals(this._lastPosition, this.position)
-            || !vec3.exactEquals(this._lastRotation, this.rotation)
-            || !vec3.exactEquals(this._lastScale, this.scale)) {
-            vec3.copy(this._lastPosition, this.position);
-            vec3.copy(this._lastRotation, this.rotation);
-            vec3.copy(this._lastScale, this.scale);
-            const q = quat.identity(this._rotationQuat);
-            quat.rotateY(q, q, this.rotation[1]);
-            quat.rotateX(q, q, this.rotation[0]);
-            quat.rotateZ(q, q, this.rotation[2]);
-            mat4.fromRotationTranslationScale(this._modelMatrix, q, this.position, this.scale);
-        }
-        return this._modelMatrix;
-    }
-
-    /** @inheritDoc Created on first access and disposed with the mesh. */
-    public get modelBuffer(): IUniformBuffer {
-        if (!this._modelBuffer) {
-            mat4.copy(this._uploadedMatrix, this.modelMatrix);
-            this._modelBuffer = this._framework.bufferFactory.createUniformBuffer(
-                this._uploadedMatrix, BufferUsage.UNIFORM | BufferUsage.COPY_DST, "Mesh.modelBuffer");
-        }
-        return this._modelBuffer;
-    }
-
-    /** Uploads the model matrix when the transform changed since the last upload. */
-    private _updateModelBuffer(): IUniformBuffer {
-        const buffer = this.modelBuffer;
-        const matrix = this.modelMatrix;
-        if (!mat4.exactEquals(this._uploadedMatrix, matrix)) {
-            mat4.copy(this._uploadedMatrix, matrix);
-            buffer.update(this._uploadedMatrix);
-        }
-        return buffer;
-    }
-
-    /**
-     * Assigns this mesh's model buffer to a material that uses one (has a `modelBuffer` property),
-     * only when it differs. Materials without one (e.g. sprites) are skipped and no buffer is created for them.
-     * @internal
-     */
-    __assignModelBuffer(material: IMaterial): void {
-        if (!("modelBuffer" in material)) {
-            return;
-        }
-        const buffer = this._updateModelBuffer();
-        if (material.modelBuffer !== buffer) {
-            material.modelBuffer = buffer;
-        }
-    }
+    protected _geometry?: IGeometry;
 
     /**
      * The constructor.
      * @param _framework The framework.
-     * @param scene The scene. The mesh adds itself to it and removes itself on dispose.
-     *              `null` only for internal meshes drawn outside a scene (e.g. the sprite batch).
-     * @param _material The material. Optional for a mesh that only holds submeshes.
      */
-    public constructor(protected readonly _framework: IFramework, public readonly scene: Scene | null, protected _material?: IMaterial) {
-        scene?.add(this);
+    public constructor(protected readonly _framework: IFramework) {
     }
 
-    /** The material. Undefined for a mesh drawn through its submeshes. */
-    public get material(): IMaterial | undefined {
-        return this._material;
+    /** The geometry the buffers were created from with {@link setGeometry}, if any. */
+    public get geometry(): IGeometry | undefined {
+        return this._geometry;
     }
 
-    /** Sets the material. */
-    public set material(material: IMaterial | undefined) {
-        this._material = material;
-    }
-
-    /** The submeshes. They share this mesh's vertex and index buffers. */
-    public get subMeshes(): SubMesh[] {
-        return this._subMeshes;
-    }
-
-    /**
-     * Adds a submesh that draws a range of this mesh's index buffer with its own material.
-     * @param material The material of the submesh.
-     * @param indexStart The first index of the range.
-     * @param indexCount The number of indices in the range.
-     * @returns The submesh.
-     */
-    public addSubMesh(material: IMaterial, indexStart: number, indexCount: number): SubMesh {
-        const subMesh = new SubMesh(this, material, indexStart, indexCount);
-        this._subMeshes.push(subMesh);
-        return subMesh;
+    /** The geometry format used when {@link setGeometry} is called without one. Undefined for a plain mesh. */
+    protected get _defaultGeometryFormat(): GeometryFormat | undefined {
+        return undefined;
     }
 
     /**
@@ -301,13 +205,13 @@ export class Mesh implements IMesh {
      *
      * This will create vertex buffer and index buffer from geometry.
      * @param geometry - The geometry.
-     * @param geometryFormat - The vertex layout. Defaults to the material's geometry format.
+     * @param geometryFormat - The vertex layout. A `RenderableMesh` defaults to its material's geometry format.
      */
     public setGeometry(geometry: IGeometry, geometryFormat?: GeometryFormat): void {
 
-        const format = geometryFormat ?? this._material?.geometryFormat;
+        const format = geometryFormat ?? this._defaultGeometryFormat;
         if (format === undefined) {
-            throw new Error("Cannot create buffers for a Mesh without a material or geometry format.");
+            throw new Error("Cannot create buffers for a Mesh without a geometry format (pass one, or give a RenderableMesh a material).");
         }
         if (geometry.vertexCount == 0) {
             const message =
@@ -316,6 +220,7 @@ export class Mesh implements IMesh {
             throw new Error(message);
         }
 
+        this._geometry = geometry;
         const interleavedData = geometry.toInterleaved(format);
         const stride = GeometryUtilities.stride(format);
 
@@ -345,34 +250,14 @@ export class Mesh implements IMesh {
         this.applyChanges();
     }
 
-    /** @inheritDoc */
-    public render(): void {
-
-        // Render submeshes.
-        if (this.subMeshes?.length > 0) {
-            for (let i = 0; i < this.subMeshes.length; ++i) {
-                this.subMeshes[i].render();
-            }
-        }
-
-        if (this.material) {
-            this.__assignModelBuffer(this.material);
-            this.material.beforeRender();
-            this.material.renderMesh(this);
-        }
-    }
-
     /**
-     * Dispose of the mesh.
+     * Disposes the vertex and index buffers.
      */
     public dispose(): void {
-        this.scene?.remove(this);
-        this._subMeshes.length = 0;
         this._vertexBuffer?.dispose();
         this._vertexBuffer = undefined;
         this._indexBuffer?.dispose();
         this._indexBuffer = undefined;
-        this._modelBuffer?.dispose();
-        this._modelBuffer = undefined;
+        this._state = State.DISPOSED;
     }
 }

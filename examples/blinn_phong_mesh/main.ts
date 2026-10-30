@@ -7,7 +7,7 @@ import {
     Scene,
     type GameTime,
     type IFramework,
-    type IMesh,
+    type IRenderableMesh,
     type PerspectiveCamera,
 } from "../../src";
 import cubeUrl from "./assets/cube.obj?url";
@@ -22,7 +22,7 @@ const framework: IFramework = new Framework(config);
 
 let camera: PerspectiveCamera | undefined;
 let scene: Scene | undefined;
-let cube: IMesh | undefined;
+let cube: IRenderableMesh | undefined;
 let angle = 0;
 /** Radians per second, so the speed does not depend on the frame rate. */
 const rotationSpeed = 0.6;
@@ -45,9 +45,11 @@ framework.addOnLoadContentListener(async () => {
         new PointLight({name: "cool", color: new Color(0.2, 0.5, 1.0), intensity: 1.2, linear: 0.35, quadratic: 0.44}, scene);
 
         // One submesh per usemtl range with Blinn-Phong materials from the .mtl (Kd, Ka falling back to Kd, Ks, Ns),
-        // all using the scene's lights. The mesh adds itself to the scene.
-        cube = await framework.content.loadBlinnPhongMeshAsync(cubeUrl, scene);
-        status.textContent = `Loaded cube.obj: ${cube.subMeshes?.length ?? 0} submeshes, Blinn-Phong materials, ambient light.`;
+        // Each material owns its lights buffer; scene.update() hands it the scene's ambient light and light lists.
+        // Same as framework.objLoader.loadAsync(cubeUrl, {projectionViewBuffer, cameraPositionBuffer}).
+        cube = await framework.content.loadBlinnPhongMeshAsync(cubeUrl, camera);
+        scene.add(cube);
+        status.textContent = `Loaded cube.obj: ${cube.subMeshes.length} submeshes, Blinn-Phong materials, ambient light.`;
     } catch (error) {
         status.textContent = error instanceof Error ? error.message : String(error);
     }

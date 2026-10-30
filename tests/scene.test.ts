@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { Scene } from "../src/api/scene/Scene.ts";
-import { Mesh } from "../src/api/meshes/Mesh.ts";
+import { SceneMesh } from "../src/api/scene/SceneMesh.ts";
+import { RenderableMesh } from "../src/api/meshes/RenderableMesh.ts";
 import { MeshFactory } from "../src/api/meshes/MeshFactory.ts";
 import { GeometryBuilder } from "../src/api/geometry/GeometryBuilder.ts";
 import { GeometryFormat } from "../src/api/geometry/GeometryFormat.ts";
@@ -13,126 +14,118 @@ import type { GameTime } from "../src/api/time/GameTime.ts";
 import type { ICamera } from "../src/api/camera/ICamera.ts";
 
 function fakeFramework() {
-    const lightsBuffer = { add: vi.fn(), remove: vi.fn(() => true), update: vi.fn(), dispose: vi.fn(), pointLights: [], directionalLights: [], ambientLight: undefined as unknown };
     const framework = {
         lightsFactory: {
             createAmbientLight: vi.fn((desc: unknown, scene?: Scene) => new AmbientLight(desc as never, scene)),
-            __createLightsBuffer: vi.fn(() => lightsBuffer),
         },
         geometryBuilder: new GeometryBuilder(),
         bufferFactory: { createVertexBuffer: vi.fn(() => ({ dispose: vi.fn() })), createIndexBuffer: vi.fn(() => ({ dispose: vi.fn() })) },
     } as unknown as IFramework;
     (framework as unknown as { meshFactory: MeshFactory }).meshFactory = new MeshFactory(framework);
-    return { framework, lightsBuffer };
+    return { framework };
 }
 
 const material = () => ({
     geometryFormat: GeometryFormat.POS3_COLOR4_TEXTURECOORDS2,
     beforeRender: vi.fn(),
     renderMesh: vi.fn(),
-}) as unknown as IMaterial & { beforeRender: ReturnType<typeof vi.fn>; renderMesh: ReturnType<typeof vi.fn> };
+    dispose: vi.fn(),
+}) as unknown as IMaterial & { beforeRender: ReturnType<typeof vi.fn>; renderMesh: ReturnType<typeof vi.fn>; dispose: ReturnType<typeof vi.fn> };
+
+const lightsMaterial = () => ({
+    ...material(),
+    ambientLight: new AmbientLight(),
+    directionalLights: [] as DirectionalLight[],
+    pointLights: [] as PointLight[],
+});
+
+const triangles = () => new GeometryBuilder().create({ positions: [0, 0, 0, 1, 0, 0, 0, 1, 0], indices: [0, 1, 2, 2, 1, 0] });
 
 describe("Scene", () => {
-    it("creates and registers an active ambient light and a lights buffer for it", () => {
+    it("creates and registers an active ambient light", () => {
         const { framework } = fakeFramework();
         const scene = new Scene(framework);
         expect(scene.ambientLights).toEqual([scene.activeAmbientLight]);
-        expect(framework.lightsFactory.__createLightsBuffer).toHaveBeenCalledWith({
-            ambientLight: scene.activeAmbientLight, maxDirectionalLights: 3, maxPointLights: 5,
-        });
 
         const other = new AmbientLight();
         scene.activeAmbientLight = other;
         expect(scene.ambientLights).toContain(other);
-        expect(scene.__forwardLightsBuffer.ambientLight).toBe(other);
     });
 
-    it("a mesh adds itself on construction and removes itself on dispose", () => {
+    it("hands its ambient light and its light lists (by reference) to lights materials", () => {
         const { framework } = fakeFramework();
         const scene = new Scene(framework);
-        const mesh = new Mesh(framework, scene, material());
-        expect(scene.meshes).toEqual([mesh]);
-        expect(mesh.scene).toBe(scene);
+        const lit = lightsMaterial();
+        const plain = material();
+        const mesh = framework.meshFactory.createWithSubMeshes(triangles(), [
+            { material: lit as unknown as IMaterial, indexStart: 0, indexCount: 3 },
+            { material: plain, indexStart: 3, indexCount: 3 },
+        ]);
+        scene.add(mesh);
+        expect(lit.ambientLight).toBe(scene.activeAmbientLight);
+        expect(lit.directionalLights).toBe(scene.directionalLights);
+        expect(lit.pointLights).toBe(scene.pointLights);
+        expect("pointLights" in plain).toBe(false);
 
-        mesh.dispose();
-        expect(scene.meshes).toEqual([]);
+        const lamp = new PointLight(undefined, scene);
+        expect(lit.pointLights).toEqual([lamp]);
+
+        const other = new AmbientLight();
+        scene.activeAmbientLight = other;
+        scene.update({} as GameTime);
+        expect(lit.ambientLight).toBe(other);
     });
 
-    it("adds only the parent mesh of submeshes, and render() draws every submesh once", () => {
+    it("wraps added meshes in a SceneMesh and render() draws every submesh once", () => {
         const { framework } = fakeFramework();
         const scene = new Scene(framework);
         const a = material();
         const b = material();
-        const geometry = new GeometryBuilder().create({ positions: [0, 0, 0, 1, 0, 0, 0, 1, 0], indices: [0, 1, 2, 2, 1, 0] });
-
-        const mesh = framework.meshFactory.createWithSubMeshes(scene, geometry, [
+        const mesh = framework.meshFactory.createWithSubMeshes(triangles(), [
             { material: a, indexStart: 0, indexCount: 3 },
             { material: b, indexStart: 3, indexCount: 3 },
         ]);
+        scene.add(mesh);
         expect(scene.meshes).toEqual([mesh]);
+        expect(scene.sceneMeshes[0]).toBeInstanceOf(SceneMesh);
+        expect(scene.sceneMeshes[0].mesh).toBe(mesh);
 
         scene.render();
         expect(a.beforeRender).toHaveBeenCalledOnce();
-        expect(a.renderMesh).toHaveBeenCalledWith(mesh.subMeshes![0]);
-        expect(b.renderMesh).toHaveBeenCalledWith(mesh.subMeshes![1]);
+        expect(a.renderMesh).toHaveBeenCalledWith(mesh.subMeshes[0]);
+        expect(b.renderMesh).toHaveBeenCalledWith(mesh.subMeshes[1]);
     });
 
-    it("render() draws a plain mesh with its own material", () => {
+    it("render() draws a plain renderable mesh with its own material", () => {
         const { framework } = fakeFramework();
         const scene = new Scene(framework);
         const m = material();
-        const geometry = new GeometryBuilder().create({ positions: [0, 0, 0, 1, 0, 0, 0, 1, 0], indices: [0, 1, 2] });
-        const mesh = framework.meshFactory.create(scene, geometry, m);
+        const mesh = framework.meshFactory.create(triangles(), m);
+        scene.add(new SceneMesh(mesh));
 
         scene.render();
         expect(m.beforeRender).toHaveBeenCalledOnce();
         expect(m.renderMesh).toHaveBeenCalledWith(mesh);
     });
 
-    it("delegates lights and update to its lights buffer", () => {
-        const { framework, lightsBuffer } = fakeFramework();
+    it("dispose() disposes each scene mesh once: the mesh and each distinct material", () => {
+        const { framework } = fakeFramework();
         const scene = new Scene(framework);
-        const light = new PointLight();
-
-        scene.add(light);
-        expect(lightsBuffer.add).toHaveBeenCalledWith(light);
-        expect(scene.remove(light)).toBe(true);
-        scene.update({} as GameTime);
-        expect(lightsBuffer.update).toHaveBeenCalledOnce();
-    });
-
-    it("a light given a scene adds itself; without a scene it is not added", () => {
-        const { framework, lightsBuffer } = fakeFramework();
-        const scene = new Scene(framework);
-        new PointLight();
-        new DirectionalLight();
-        expect(lightsBuffer.add).not.toHaveBeenCalled();
-
-        const point = new PointLight(undefined, scene);
-        const directional = new DirectionalLight({ intensity: 2 }, scene);
-        expect(lightsBuffer.add).toHaveBeenNthCalledWith(1, point);
-        expect(lightsBuffer.add).toHaveBeenNthCalledWith(2, directional);
-    });
-
-    it("a light constructor rethrows the scene's slot cap error", () => {
-        const { framework, lightsBuffer } = fakeFramework();
-        const scene = new Scene(framework);
-        lightsBuffer.add.mockImplementation(() => { throw new Error("all 5 point light slots are in use"); });
-        expect(() => new PointLight(undefined, scene)).toThrow(/slots are in use/);
-    });
-
-    it("dispose() disposes its meshes and lights buffer once", () => {
-        const { framework, lightsBuffer } = fakeFramework();
-        const scene = new Scene(framework);
-        const mesh = new Mesh(framework, scene, material());
+        const shared = material();
+        const mesh = framework.meshFactory.createWithSubMeshes(triangles(), [
+            { material: shared, indexStart: 0, indexCount: 3 },
+            { material: shared, indexStart: 3, indexCount: 3 },
+        ]);
+        scene.add(mesh);
         const dispose = vi.spyOn(mesh, "dispose");
 
         scene.dispose();
         scene.dispose();
         expect(dispose).toHaveBeenCalledOnce();
+        expect(shared.dispose).toHaveBeenCalledOnce();
         expect(scene.meshes).toEqual([]);
-        expect(lightsBuffer.dispose).toHaveBeenCalledOnce();
     });
+
     it("update() assigns its camera to mesh and submesh materials, only when it changed", () => {
         const { framework } = fakeFramework();
         const scene = new Scene(framework);
@@ -152,12 +145,12 @@ describe("Scene", () => {
         const b = withCamera();
         const noCamera = material();
         const geometry = new GeometryBuilder().create({ positions: [0, 0, 0, 1, 0, 0, 0, 1, 0], indices: [0, 1, 2, 2, 1, 0] });
-        framework.meshFactory.create(scene, geometry, own);
-        framework.meshFactory.createWithSubMeshes(scene, geometry, [
+        scene.add(framework.meshFactory.create(geometry, own));
+        scene.add(framework.meshFactory.createWithSubMeshes(geometry, [
             { material: a, indexStart: 0, indexCount: 3 },
             { material: b, indexStart: 3, indexCount: 3 },
-        ]);
-        framework.meshFactory.create(scene, geometry, noCamera);
+        ]));
+        scene.add(framework.meshFactory.create(geometry, noCamera));
 
         scene.update({} as GameTime);
         expect(sets).toBe(0);
@@ -188,7 +181,7 @@ describe("Scene", () => {
             const camera = fakeCamera();
             scene.camera = camera;
             const m = { ...material(), camera: undefined as unknown };
-            const mesh = new Mesh(framework, null, m as unknown as IMaterial);
+            const mesh = new RenderableMesh(framework, m as unknown as IMaterial);
             const dispose = vi.spyOn(mesh, "dispose");
             scene.add(mesh);
             scene.add(mesh);
@@ -198,16 +191,6 @@ describe("Scene", () => {
             expect(scene.remove(mesh)).toBe(false);
             expect(scene.meshes).toEqual([]);
             expect(dispose).not.toHaveBeenCalled();
-        });
-
-        it("a mesh given the scene registers through add and removes itself on dispose", () => {
-            const { framework } = fakeFramework();
-            const scene = new Scene(framework);
-            const add = vi.spyOn(scene, "add");
-            const mesh = new Mesh(framework, scene, material());
-            expect(add).toHaveBeenCalledWith(mesh);
-            mesh.dispose();
-            expect(scene.meshes).toEqual([]);
         });
 
         it("ambient lights: added once; the active one cannot be removed", () => {
@@ -224,16 +207,23 @@ describe("Scene", () => {
             expect(scene.ambientLights).toContain(selfAdded);
         });
 
-        it("directional and point lights go to the lights buffer (duplicates are the buffer's no-op)", () => {
-            const { framework, lightsBuffer } = fakeFramework();
+        it("directional and point lights go to the scene lists, once, up to 3 and 5", () => {
+            const { framework } = fakeFramework();
             const scene = new Scene(framework);
             const sun = new DirectionalLight();
             const lamp = new PointLight();
             scene.add(sun);
+            scene.add(sun);
             scene.add(lamp);
-            expect(lightsBuffer.add.mock.calls).toEqual([[sun], [lamp]]);
+            expect(scene.directionalLights).toEqual([sun]);
+            expect(scene.pointLights).toEqual([lamp]);
             expect(scene.remove(sun)).toBe(true);
-            expect(lightsBuffer.remove).toHaveBeenCalledWith(sun);
+            expect(scene.remove(sun)).toBe(false);
+            expect(scene.directionalLights).toEqual([]);
+            for (let i = 0; i < 4; i++) new PointLight(undefined, scene);
+            expect(() => new PointLight(undefined, scene)).toThrow(/all 5 point light slots are in use/);
+            new DirectionalLight(undefined, scene); new DirectionalLight(undefined, scene); new DirectionalLight(undefined, scene);
+            expect(() => scene.add(new DirectionalLight())).toThrow(/all 3 directional light slots/);
         });
 
         it("the deprecated addLight/removeLight delegate to add/remove", () => {
@@ -267,7 +257,7 @@ describe("Scene", () => {
             const { framework } = fakeFramework();
             const scene = new Scene(framework);
             const m = { ...material(), camera: undefined as unknown };
-            new Mesh(framework, scene, m as unknown as IMaterial);
+            scene.add(new RenderableMesh(framework, m as unknown as IMaterial));
             const camera = { projectionViewBuffer: undefined, positionBuffer: undefined, viewMatrix: {}, updateBuffers: vi.fn() } as unknown as { projectionViewBuffer: unknown; positionBuffer: unknown };
             scene.add(camera as unknown as ICamera);
             expect(scene.camera).toBe(camera);

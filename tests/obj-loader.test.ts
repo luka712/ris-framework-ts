@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ObjLoader } from "../src/api/loaders/obj/index.ts";
+import { ObjParser } from "../src/api/loaders/obj/index.ts";
 
 const triangleObj = [
     "# comment and blank lines are ignored",
@@ -33,9 +33,9 @@ const mtlText = [
     "map_Ks spec.png",
 ].join("\n");
 
-describe("ObjLoader", () => {
+describe("ObjParser", () => {
     it("returns plain objects and arrays only", () => {
-        const { geometry } = new ObjLoader().fromText(triangleObj);
+        const { geometry } = new ObjParser().fromText(triangleObj);
         expect(Object.getPrototypeOf(geometry)).toBe(Object.prototype);
         expect(Array.isArray(geometry.positions)).toBe(true);
         expect(JSON.parse(JSON.stringify(geometry))).toEqual(geometry);
@@ -44,7 +44,7 @@ describe("ObjLoader", () => {
     afterEach(() => vi.unstubAllGlobals());
 
     it("keeps the raw OBJ lists and face triplets", () => {
-        const { raw } = new ObjLoader().fromText(triangleObj);
+        const { raw } = new ObjParser().fromText(triangleObj);
 
         expect(raw.positions).toEqual([0, 0, 0, 1, 0, 0, 0, 1, 0]);
         expect(raw.textureCoords).toEqual([0, 0, 1, 0, 0.5, 1]);
@@ -53,7 +53,7 @@ describe("ObjLoader", () => {
     });
 
     it("expands corners into renderable per-vertex geometry", () => {
-        const { geometry, materials } = new ObjLoader().fromText(triangleObj);
+        const { geometry, materials } = new ObjParser().fromText(triangleObj);
 
         expect(geometry.positions).toEqual([0, 0, 0, 1, 0, 0, 0, 1, 0]);
         expect(geometry.textureCoords).toEqual([0, 0, 1, 0, 0.5, 1]);
@@ -66,7 +66,7 @@ describe("ObjLoader", () => {
     });
 
     it("reuses shared corners and triangulates quads, with v//vn and negative indices", () => {
-        const { geometry } = new ObjLoader().fromText([
+        const { geometry } = new ObjParser().fromText([
             "v 0 0 0", "v 1 0 0", "v 1 1 0", "v 0 1 0",
             "vn 0 0 1",
             "f 1//1 2//1 3//1 4//1",
@@ -79,7 +79,7 @@ describe("ObjLoader", () => {
     });
 
     it("parses mtl definitions", () => {
-        const [red, blue] = new ObjLoader().parseMtl(mtlText);
+        const [red, blue] = new ObjParser().parseMtl(mtlText);
 
         expect(red.name).toBe("red");
         expect(red.ambientColor).toEqual([0.1, 0.1, 0.1]);
@@ -97,7 +97,7 @@ describe("ObjLoader", () => {
     });
 
     it("applies usemtl colours and records material ranges and libraries", () => {
-        const loader = new ObjLoader();
+        const loader = new ObjParser();
         const result = loader.fromText([
             "mtllib colors.mtl",
             "v 0 0 0", "v 1 0 0", "v 0 1 0",
@@ -131,7 +131,7 @@ describe("ObjLoader", () => {
         });
         vi.stubGlobal("fetch", fetchMock);
 
-        const result = await new ObjLoader().loadAsync("http://host/models/cube.obj");
+        const result = await new ObjParser().loadAsync("http://host/models/cube.obj");
 
         expect(fetchMock).toHaveBeenCalledTimes(2);
         expect(result.materials.map(m => m.name)).toEqual(["red", "blue"]);
@@ -145,7 +145,7 @@ describe("ObjLoader", () => {
         vi.stubGlobal("fetch", fetchMock);
         const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-        const result = await new ObjLoader().loadAsync("http://host/models/m.obj");
+        const result = await new ObjParser().loadAsync("http://host/models/m.obj");
 
         expect(fetchMock).toHaveBeenCalledWith("http://host/models/missing.mtl");
         expect(warn).toHaveBeenCalledOnce();
@@ -162,17 +162,17 @@ describe("ObjLoader", () => {
         const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
         const dataUrl = "data:model/obj;base64,bXRsbGli/abc";
 
-        const resolved = await new ObjLoader().loadAsync(dataUrl, { resolveMaterialUrl: name => `http://cdn/${name.replace(".mtl", "-123.mtl")}` });
+        const resolved = await new ObjParser().loadAsync(dataUrl, { resolveMaterialUrl: name => `http://cdn/${name.replace(".mtl", "-123.mtl")}` });
         expect(fetchMock).toHaveBeenLastCalledWith("http://cdn/cube-123.mtl");
         expect(resolved.materials.map(m => m.name)).toEqual(["red", "blue"]);
 
         fetchMock.mockClear();
-        const ignored = await new ObjLoader().loadAsync("http://host/cube.obj", { ignoreMaterials: true });
+        const ignored = await new ObjParser().loadAsync("http://host/cube.obj", { ignoreMaterials: true });
         expect(fetchMock).toHaveBeenCalledOnce();
         expect(ignored.materials).toEqual([]);
 
         fetchMock.mockClear();
-        const unresolved = await new ObjLoader().loadAsync(dataUrl);
+        const unresolved = await new ObjParser().loadAsync(dataUrl);
         expect(fetchMock).toHaveBeenCalledOnce();
         expect(unresolved.materials).toEqual([]);
         expect(String(warn.mock.calls[0][1])).toContain("resolveMaterialUrl");

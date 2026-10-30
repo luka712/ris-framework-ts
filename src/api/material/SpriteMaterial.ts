@@ -1,5 +1,5 @@
 import type { GeometryFormat } from "../geometry/GeometryFormat.ts";
-import type { IMesh } from "../meshes/IMesh.ts";
+import type {IRenderableMesh} from "../meshes/IRenderableMesh.ts";
 import type { IVertexBuffer } from "../rendering/buffers/IVertexBuffer.ts";
 import type { IIndexBuffer } from "../rendering/buffers/IIndexBuffer.ts";
 import type { ITexture2D } from "../rendering/texture/ITexture2D.ts";
@@ -61,7 +61,7 @@ export class SpriteMaterial implements IMaterial {
     }
 
     /** @inheritDoc */
-    public renderMesh(mesh: IMesh): void {
+    public renderMesh(mesh: IRenderableMesh): void {
         this.render(mesh.vertexBuffer!, mesh.indexBuffer!, mesh.indexCount ?? -1, mesh.indexStart ?? 0);
     }
 

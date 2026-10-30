@@ -111,7 +111,7 @@ export interface ObjLoadResult {
     readonly raw: ObjRawData;
 }
 
-/** Options for {@link ObjLoader.loadAsync}. */
+/** Options for {@link ObjParser.loadAsync} and `ObjLoader.loadAsync`. */
 export interface ObjLoadOptions {
     /**
      * Maps an `mtllib` name to the URL to fetch.
@@ -121,4 +121,22 @@ export interface ObjLoadOptions {
     resolveMaterialUrl?: (libraryName: string) => string;
     /** Skip fetching .mtl files. */
     ignoreMaterials?: boolean;
+}
+
+/** One `usemtl` range of an {@link ObjModel}: its index range and resolved material definition. */
+export interface ObjSubMesh {
+    /** The material name from `usemtl`, or undefined for faces before any `usemtl`. */
+    readonly materialName?: string;
+    /** The material definition from the .mtl files, or undefined when there is none. */
+    readonly material?: ObjMaterialDefinition;
+    /** First index in `geometry.indices`. */
+    readonly indexStart: number;
+    /** Number of indices. */
+    readonly indexCount: number;
+}
+
+/** A parsed OBJ model (C# `ObjModel`): geometry, sub meshes and material definitions. No GPU resources. */
+export interface ObjModel extends ObjLoadResult {
+    /** One entry per `usemtl` range, in file order. */
+    readonly subMeshes: ObjSubMesh[];
 }

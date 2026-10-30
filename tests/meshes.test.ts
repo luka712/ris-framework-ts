@@ -4,6 +4,7 @@ import {
     BufferUsage,
     GeometryFormat,
     Mesh,
+    RenderableMesh,
     MeshFactory,
     QuadMesh,
     Rect,
@@ -11,12 +12,11 @@ import {
     type IFramework,
     type IGeometry,
     type IMaterial,
-    type Scene,
 } from "../src/api/index.ts";
 
 class InspectableQuad extends QuadMesh {
     public constructor(framework: IFramework, isUpdatable: boolean, scale?: vec2) {
-        super(framework, scene, material, isUpdatable, scale);
+        super(framework, material, isUpdatable, scale);
     }
 
     public get bufferUsage(): number {
@@ -29,13 +29,12 @@ class InspectableQuad extends QuadMesh {
 }
 
 const framework = {} as IFramework;
-const scene = { add: () => {}, remove: () => false } as unknown as Scene;
 /** Stub material; these tests never render, they only need a geometry format. */
 const material = { geometryFormat: GeometryFormat.POS3_COLOR4_TEXTURECOORDS2 } as IMaterial;
 
 describe("Mesh", () => {
     it("starts created and refuses to build buffers without positions", () => {
-        const mesh = new Mesh(framework, scene, material);
+        const mesh = new Mesh(framework);
 
         expect(mesh.state).toBe(State.CREATED);
         expect(mesh.positions).toBeUndefined();
@@ -45,17 +44,22 @@ describe("Mesh", () => {
     });
 
     it("refuses geometry that reports no vertices", () => {
-        const mesh = new Mesh(framework, scene, material);
+        const mesh = new RenderableMesh(framework, material);
         const geometry = { vertexCount: 0 } as IGeometry;
 
         expect(() => mesh.setGeometry(geometry))
             .toThrow("geometry.vertexCount is set");
     });
+
+    it("a plain mesh needs a geometry format; a renderable mesh takes its material's", () => {
+        const geometry = { vertexCount: 3 } as IGeometry;
+        expect(() => new Mesh(framework).setGeometry(geometry)).toThrow("without a geometry format");
+    });
 });
 
 describe("QuadMesh", () => {
     it("builds a unit quad in xy before any buffer upload", () => {
-        const mesh = new QuadMesh(framework, scene, material, false);
+        const mesh = new QuadMesh(framework, material, false);
 
         expect(mesh.positions).toEqual([
             -0.5, -0.5, 0,
@@ -83,7 +87,7 @@ describe("QuadMesh", () => {
     });
 
     it("scales the quad positions from the center", () => {
-        const mesh = new QuadMesh(framework, scene, material, false, vec2.fromValues(2, 4));
+        const mesh = new QuadMesh(framework, material, false, vec2.fromValues(2, 4));
 
         expect(mesh.positions).toEqual([
             -1, -2, 0,

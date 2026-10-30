@@ -3,6 +3,7 @@ import {
     type ObjColor,
     type ObjLoadResult,
     type ObjLoadOptions,
+    type ObjModel,
     type ObjMaterialRange,
 } from "./ObjTypes.ts";
 
@@ -22,10 +23,11 @@ function readColor(parts: string[]): ObjColor | undefined {
 }
 
 /**
- * Loads .obj models (and their .mtl materials) from text or a URL into plain data.
- * Engine-independent; uses only `fetch` and `URL`. `content.loadMeshAsync` turns the result into a framework mesh.
+ * Parses .obj models (and their .mtl materials) from text or a URL into plain data.
+ * Engine-independent; uses only `fetch` and `URL`, and creates no GPU resources.
+ * `framework.objLoader` (or the static `ObjLoader.parseAsync`) builds on it.
  */
-export class ObjLoader {
+export class ObjParser {
 
     /**
      * Parses .mtl text.
@@ -260,11 +262,40 @@ export class ObjLoader {
                 }
                 materials.push(...this.parseMtl(await mtlResponse.text()));
             } catch (error) {
-                console.warn(`ObjLoader: could not load material library '${library}'.`, error);
+                console.warn(`ObjParser: could not load material library '${library}'.`, error);
             }
         }
 
 
         return this.fromText(text, materials);
+    }
+
+    /**
+     * Loads an .obj file (and its .mtl files) into an {@link ObjModel}: the geometry plus one sub mesh per `usemtl`
+     * range with its resolved material definition.
+     * @param filePath The .obj URL.
+     * @param options Optional: how to resolve `mtllib` names, or skip materials.
+     * @returns The model.
+     */
+    public async parseAsync(filePath: string, options?: ObjLoadOptions): Promise<ObjModel> {
+        return ObjParser.toModel(await this.loadAsync(filePath, options));
+    }
+
+    /**
+     * Turns a load result into an {@link ObjModel}.
+     * @param result The load result.
+     * @returns The model.
+     */
+    public static toModel(result: ObjLoadResult): ObjModel {
+        const byName = new Map(result.materials.map(m => [m.name, m]));
+        return {
+            ...result,
+            subMeshes: result.geometry.materialRanges.map(range => ({
+                materialName: range.materialName,
+                material: range.materialName === undefined ? undefined : byName.get(range.materialName),
+                indexStart: range.indexStart,
+                indexCount: range.indexCount,
+            })),
+        };
     }
 }

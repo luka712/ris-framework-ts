@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { ObjLoader } from "../src/api/loaders/obj/index.ts";
+import { ObjParser } from "../src/api/loaders/obj/index.ts";
 import { ObjGeometryMapper } from "../src/api/loaders/ObjGeometryMapper.ts";
 import { GeometryBuilder } from "../src/api/geometry/GeometryBuilder.ts";
 import { BaseGeometry } from "../src/api/geometry/BaseGeometry.ts";
 import { GeometryFormat } from "../src/api/geometry/GeometryFormat.ts";
 
-const definition = new ObjLoader().fromText([
+const definition = new ObjParser().fromText([
     "v 0 0 0", "v 1 0 0", "v 0 1 0",
     "vt 0 0", "vt 1 0", "vt 0 1",
     "vn 0 0 1",
     "f 1/1/1 2/2/1 3/3/1",
-].join("\n"), new ObjLoader().parseMtl("newmtl red\nKd 1 0 0")).geometry;
+].join("\n"), new ObjParser().parseMtl("newmtl red\nKd 1 0 0")).geometry;
 
 describe("ObjGeometryMapper", () => {
     it("maps the definition onto a geometry descriptor, white by default", () => {
