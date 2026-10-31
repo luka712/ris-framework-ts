@@ -40,9 +40,8 @@ framework.renderer.clearColor = Color.cornerFlowerBlue();
 | `useKtx2` | `false` | Creates `framework.ktx2Factory`. |
 | `alpha` | `false` | Whether the back buffer has an alpha channel. |
 | `powerPreference` | `DEFAULT` | GPU preference on multi-GPU systems. |
-| `renderingBackend` | WebGL | Backend to use. |
 
-Register listeners before `initialize()`. Load-content and initialized listeners run inside that call. `framework.initializeAsync()` does the same thing asynchronously. WebGPU (`RenderingBackend.WEB_GPU`) is experimental and is planned for 0.3.0. It needs `initializeAsync()`, supports only unlit materials, and falls back to WebGL with a warning.
+Register listeners before `initialize()`. Load-content and initialized listeners run inside that call.
 
 ## Scenes, cameras and lights
 
