@@ -1,6 +1,5 @@
 import {WebGlUtilities} from "../utilities/WebGlUtilities.ts";
 import {
-    TextureDescriptor,
     type IFramework, State,
     type ITextureView,
     type TextureViewDescriptor, TextureUtilities
@@ -8,6 +7,7 @@ import {
 import type {WebGlGraphicsDevice} from "../WebGlGraphicsDevice.ts";
 import {ATexture2D} from "../../core/rendering/texture/texture.ts";
 import {vec2} from "gl-matrix";
+import {type ResolvedTextureDescriptor, resolveTextureDescriptor} from "../../core/rendering/texture/TextureDescriptorUtilities.ts";
 
 /**
  * The WebGL implementation of ITexture2D.
@@ -25,7 +25,7 @@ export class WebGlTexture2D extends ATexture2D {
      */
     constructor(
         private readonly _framework: IFramework,
-        textureDescriptor: TextureDescriptor
+        textureDescriptor: ResolvedTextureDescriptor
     ) {
         super(textureDescriptor);
         this._graphicsDevice = this._framework.renderer.graphicsDevice as WebGlGraphicsDevice;
@@ -121,12 +121,13 @@ export class WebGlTexture2D extends ATexture2D {
         let texture = WebGlTexture2D._defaultFilled.get(framework);
         if (!texture || texture.state === State.DISPOSED) {
 
-            const desc = new TextureDescriptor();
-            desc.width = 1;
-            desc.height = 1;
-            desc.data = [new Uint8Array([255, 255, 255, 255])];
-            desc.textureFormat = framework.renderer.preferredTextureFormat;
-            desc.label = "RisDefaultFilledTexture";
+            const desc = resolveTextureDescriptor({
+                width: 1,
+                height: 1,
+                data: [new Uint8Array([255, 255, 255, 255])],
+                textureFormat: framework.renderer.preferredTextureFormat,
+                label: "RisDefaultFilledTexture",
+            });
 
             texture = new WebGlTexture2D(framework, desc);
             texture.initialize();

@@ -5,7 +5,7 @@ import {RenderingBackend} from "./RenderingBackend.ts";
 import {vec2} from "gl-matrix";
 import type {PowerPreferenceType} from "./PowerPreference.ts";
 import type {TextureSamplerFilteringPreset} from "../../core/rendering/enums.ts";
-import type {TextureColorSpace} from "./enums.ts";
+import type {ColorSpace} from "./enums.ts";
 
 
 /**
@@ -31,7 +31,7 @@ export interface IRendererConfiguration {
     textureFiltering: TextureSamplerFilteringPreset;
 
     /** The desired texture color space. */
-    textureColorSpace: TextureColorSpace;
+    textureColorSpace: ColorSpace;
 }
 
 /**
@@ -46,12 +46,18 @@ export interface IRenderer {
     readonly graphicsDevice: IGraphicsDevice;
 
     /**
-     * The preferred texture format.
-     * This will encode texture which do not specify texture format to:
-     * - {@link TextureFormat.} // TODO: describe SRGB depending on TextureSurfaceFormat requested
-     * - {@link TextureFormat.} // TODO: describe RGBA depending on TextureSurfaceFormat requested
+     * The preferred texture format, chosen from {@link IRendererConfiguration.textureColorSpace}.
+     * Textures that do not specify a texture format are created with it:
+     * - {@link TextureFormat.RGBA_8_UNORM_SRGB} when the color space is {@link ColorSpace.SRGB} (the default).
+     * - {@link TextureFormat.RGBA_8_UNORM} when the color space is {@link ColorSpace.LINEAR}.
      */
     readonly preferredTextureFormat: TextureFormat;
+
+    /**
+     * The preferred texture color space, taken from {@link IRendererConfiguration.textureColorSpace}.
+     * Textures that do not specify a format are treated as being in this color space.
+     */
+    readonly preferredColorSpace: ColorSpace;
 
     /**
      * The preferred depth stencil format.

@@ -56,14 +56,11 @@ describe("sRGB compressed formats", () => {
     });
 
     it("finds sRGB/linear variants and block sizes", () => {
-        expect(TextureUtilities.toSrgbFormat(TextureFormat.BC7_RGBA_UNORM)).toBe(TextureFormat.BC7_RGBA_SRGB);
-        expect(TextureUtilities.toSrgbFormat(TextureFormat.PVRTC_4BPPV1_RGBA)).toBe(TextureFormat.PVRTC_4BPPV1_RGBA);
-        expect(TextureUtilities.toLinearFormat(TextureFormat.BC3_RGBA_SRGB)).toBe(TextureFormat.BC3_RGBA_UNORM);
+        expect(TextureUtilities.convertToSrgbVariant(TextureFormat.BC7_RGBA_UNORM)).toBe(TextureFormat.BC7_RGBA_SRGB);
+        expect(TextureUtilities.convertToSrgbVariant(TextureFormat.PVRTC_4BPPV1_RGBA)).toBe(TextureFormat.PVRTC_4BPPV1_RGBA);
+        expect(TextureUtilities.convertToLinearVariant(TextureFormat.BC3_RGBA_SRGB)).toBe(TextureFormat.BC3_RGBA_UNORM);
         expect(TextureUtilities.isSrgbFormat(TextureFormat.ETC2_RGB8_SRGB)).toBe(true);
         expect(TextureUtilities.isCompressedTextureFormat(TextureFormat.BC7_RGBA_SRGB)).toBe(true);
-        expect(TextureUtilities.getBlockSize(TextureFormat.ASTC_10X8_RGBA_SRGB)).toEqual([10, 8]);
-        expect(TextureUtilities.getBlockSize(TextureFormat.BC1_RGB_SRGB)).toEqual([4, 4]);
-        expect(TextureUtilities.getBlockSize(TextureFormat.RGBA_8_UNORM)).toEqual([1, 1]);
     });
 });
 

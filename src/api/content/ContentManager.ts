@@ -4,7 +4,7 @@ import {
     type IShaderModuleLoader,
     type ITexture2D,
     type IFramework,
-    TextureDescriptor,
+    type ITextureDescriptor,
     TextureFormat,
     ContentConfig,
     TextureUsage,
@@ -18,6 +18,7 @@ import {
 import {ObjGeometryMapper} from "../loaders/ObjGeometryMapper.ts";
 import {ObjLoader} from "../loaders/ObjLoader.ts";
 import {Ktx2Factory} from "ris-ktx2";
+import {resolveTextureDescriptor} from "../../core/rendering/texture/TextureDescriptorUtilities.ts";
 import type {IKtx2Texture} from "ris-ktx2";
 
 const KTX2_EXTENSION = ".ktx2";
@@ -76,16 +77,17 @@ export class ContentManager implements IContentManager {
 
     /** @inheritDoc */
     public async loadTexture2DAsync(path: string,
-                                    textureDescriptor?: TextureDescriptor,
+                                    textureDescriptor?: ITextureDescriptor,
                                     contentConfig?: ContentConfig,
     ): Promise<ITexture2D> {
+
+        const desc = resolveTextureDescriptor(textureDescriptor);
 
         // TODO: check texture cache
         if (path.endsWith(KTX2_EXTENSION)) {
 
             const ktx2Texture = await this.loadKtx2Async(path);
-            textureDescriptor = textureDescriptor ?? new TextureDescriptor();
-            const tex = this._framework.textureFactory.createFromKtx2(ktx2Texture, textureDescriptor);
+            const tex = this._framework.textureFactory.createFromKtx2(ktx2Texture, desc);
             if (contentConfig?.keepDataCached !== true) {
                 ktx2Texture.delete();
             }
@@ -94,8 +96,8 @@ export class ContentManager implements IContentManager {
 
         let format = this._framework.renderer.preferredTextureFormat;
 
-        if (textureDescriptor && textureDescriptor.textureFormat != TextureFormat.UNDEFINED) {
-            format = textureDescriptor.textureFormat;
+        if (desc.textureFormat != TextureFormat.UNDEFINED) {
+            format = desc.textureFormat;
         }
 
         const imageLoader = this._framework.imageLoader;
@@ -109,7 +111,7 @@ export class ContentManager implements IContentManager {
             path,
             TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_SRC,
             format,
-            textureDescriptor?.generateMipmaps
+            desc.generateMipmaps
         );
     }
 

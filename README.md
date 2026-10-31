@@ -103,7 +103,13 @@ const geometry = await framework.content.loadMeshAsync("/assets/cube.obj", Geome
 ```ts
 const png = await framework.content.loadTexture2DAsync("/assets/test.png");
 const ktx = await framework.content.loadTexture2DAsync("/assets/kodim23.ktx2");
+
+// Optional descriptor: every field is optional, missing ones get defaults.
+const desc: ITextureDescriptor = { generateMipmaps: true, textureFormat: TextureFormat.RGBA_8_UNORM };
+const cat = await framework.content.loadTexture2DAsync("/assets/cat.jpg", desc);
 ```
+
+Textures without a format use `RGBA_8_UNORM_SRGB` when `textureColorSpace` is `SRGB` (the default) and `RGBA_8_UNORM` when it is `LINEAR`.
 
 Paths ending in `.ktx2` are loaded through `ris-ktx2`.
 

@@ -3,14 +3,16 @@ import {
     type IFramework,
     type ITexture2D,
     type ITextureFactory,
-    TextureDescriptor,
+    type ITextureDescriptor,
     TextureFormat,
     TextureUsage,
     TextureUtilities
 } from "../../api/index.ts"
 import {WebGlTexture2D} from "./WebGlTexture2D.ts";
-import {type IKtx2Texture, KtxTranscodeFlags, KtxTranscodeFormat, VkFormat} from "ris-ktx2";
+import {type IKtx2Texture, KtxDFTransfer, KtxTranscodeFlags, KtxTranscodeFormat, VkFormat} from "ris-ktx2";
 import {vec2} from "gl-matrix";
+import {ColorSpace} from "../../api/rendering/enums.ts";
+import {resolveTextureDescriptor} from "../../core/rendering/texture/TextureDescriptorUtilities.ts";
 
 export class WebGlTextureFactory implements ITextureFactory {
 
@@ -22,51 +24,55 @@ export class WebGlTextureFactory implements ITextureFactory {
     }
 
     /** @inheritDoc */
-    public createFromKtx2(ktxTexture: IKtx2Texture, descriptor?: TextureDescriptor): ITexture2D {
-        descriptor = descriptor ?? new TextureDescriptor();
+    public createFromKtx2(ktxTexture: IKtx2Texture, descriptor?: ITextureDescriptor): ITexture2D {
+        const desc = resolveTextureDescriptor(descriptor);
         const vkFormat = ktxTexture.vkFormat;
 
         // Ktx2 will have different cases, for now we consider simple 2d case.
         const numLevels = ktxTexture.numLevels;
         let transcodeFormat = KtxTranscodeFormat.NO_SELECTION;
-        let textureFormat = descriptor.textureFormat;
+        let textureFormat = desc.textureFormat;
         const gpuFeatures = this._framework.graphicsDevice.features;
+
+        const srgb = ktxTexture.oetf == KtxDFTransfer.SRGB;
+        const preferSrgb = this._framework.renderer.preferredColorSpace == ColorSpace.SRGB;
 
         if (ktxTexture.needsTranscoding && vkFormat == VkFormat.UNDEFINED)
         {
             // If descriptor format is UNDEFINED, we will use format according to the GPU features.
-            if(descriptor.textureFormat == TextureFormat.UNDEFINED)
+            if(desc.textureFormat == TextureFormat.UNDEFINED)
             {
                 // BC7 needs BPTC (supportsTextureCompressionBC), BC3 needs S3TC.
                 if(gpuFeatures.supportsTextureCompressionBC)
                 {
                     transcodeFormat = KtxTranscodeFormat.BC7_RGBA;
-                    textureFormat = TextureFormat.BC7_RGBA_UNORM;
+                    textureFormat = srgb ? TextureFormat.BC7_RGBA_SRGB : TextureFormat.BC7_RGBA_UNORM;
                 }
                 else if(gpuFeatures.supportsTextureCompressionASTC)
                 {
                     transcodeFormat = KtxTranscodeFormat.ASTC_4X4_RGBA;
-                    textureFormat = TextureFormat.ASTC_4X4_RGBA_UNORM
+                    textureFormat = srgb ? TextureFormat.ASTC_4X4_RGBA_SRGB : TextureFormat.ASTC_4X4_RGBA_UNORM;
                 }
                 else if(gpuFeatures.supportsTextureCompressionS3TC)
                 {
                     transcodeFormat = KtxTranscodeFormat.BC3_RGBA;
-                    textureFormat = TextureFormat.BC3_RGBA_UNORM;
+                    textureFormat = srgb ? TextureFormat.BC3_RGBA_SRGB : TextureFormat.BC3_RGBA_UNORM;
                 }
                 else if(gpuFeatures.supportsTextureCompressionETC2)
                 {
                     transcodeFormat = KtxTranscodeFormat.ETC2_RGBA;
-                    textureFormat = TextureFormat.ETC2_RGBA8_UNORM;
+                    textureFormat = srgb ? TextureFormat.ETC2_RGBA8_SRGB : TextureFormat.ETC2_RGBA8_UNORM;
                 }
                 else if(gpuFeatures.supportsTextureCompressionPVRTC)
                 {
                     transcodeFormat = KtxTranscodeFormat.PVRTC1_4_RGBA;
+                    // Does not have SRGB equivalent.
                     textureFormat = TextureFormat.PVRTC_4BPPV1_RGBA;
                 }
                 else
                 {
                     transcodeFormat = KtxTranscodeFormat.RGBA32;
-                    textureFormat = TextureFormat.RGBA_8_UNORM;
+                    textureFormat = srgb ? TextureFormat.RGBA_8_UNORM_SRGB : TextureFormat.RGBA_8_UNORM;
                 }
             }
             else
@@ -75,21 +81,19 @@ export class WebGlTextureFactory implements ITextureFactory {
             }
 
             ktxTexture.transcodeBasis(transcodeFormat, KtxTranscodeFlags.HIGH_QUALITY);
-
-            // After transcoding, libktx reports the sRGB vkFormat when the file's DFD transfer function is sRGB.
-            if (descriptor.textureFormat == TextureFormat.UNDEFINED && WebGlTextureFactory._isSrgbVkFormat(ktxTexture.vkFormat))
-            {
-                textureFormat = TextureUtilities.toSrgbFormat(textureFormat);
-            }
         }
         else {
             // No transcoding path, the vkFormat already says linear or sRGB.
             textureFormat = TextureUtilities.convertVkFormatToTextureFormat(vkFormat);
+            if(!srgb && preferSrgb && !TextureUtilities.isSrgbFormat(textureFormat)){
+                textureFormat = TextureUtilities.convertToSrgbVariant(textureFormat);
+            }
+            else if(srgb && !preferSrgb && TextureUtilities.isSrgbFormat(textureFormat)){
+                textureFormat = TextureUtilities.convertToLinearVariant(textureFormat);
+            }
         }
 
-        textureFormat = this._ensureSrgbSupported(textureFormat, ktxTexture.filePath);
-
-        const blockSize = TextureUtilities.getBlockSize(textureFormat);
+        const blockSize = ktxTexture.getTextureFormatInfo(ktxTexture.vkFormat);
         if (!blockSize) {
             throw new Error(`Unknown block size for texture format ${textureFormat}.`);
         }
@@ -100,38 +104,18 @@ export class WebGlTextureFactory implements ITextureFactory {
             data.push(ktxTexture.getImage(i));
         }
 
-        const textureDescriptor = new TextureDescriptor();
-        textureDescriptor.width = ktxTexture.width;
-        textureDescriptor.height = ktxTexture.height;
-        textureDescriptor.data = data;
-        textureDescriptor.textureFormat = textureFormat;
-        textureDescriptor.generateMipmaps = descriptor.generateMipmaps;
-        textureDescriptor.blockSize = vec2.fromValues(blockSize[0], blockSize[1]);
+        const textureDescriptor = resolveTextureDescriptor({
+            ...desc,
+            width: ktxTexture.width,
+            height: ktxTexture.height,
+            data,
+            textureFormat,
+            blockSize: vec2.fromValues(blockSize.blockWidth, blockSize.blockHeight),
+        });
 
         const texture = new WebGlTexture2D(this._framework, textureDescriptor);
         texture.initialize();
         return texture;
-    }
-
-    /** Whether the Vulkan format is an sRGB format. */
-    private static _isSrgbVkFormat(vkFormat: VkFormat): boolean {
-        const name = (VkFormat as unknown as Record<number, string>)[vkFormat];
-        return typeof name === "string" && name.includes("_SRGB");
-    }
-
-    /**
-     * Falls back to the linear variant (with a warning) when the GPU cannot sample the sRGB format.
-     * Only S3TC sRGB (BC1/BC3) has its own WebGL extension; BC7, ETC2 and ASTC sRGB ship with their base extension.
-     */
-    private _ensureSrgbSupported(textureFormat: TextureFormat, source?: string): TextureFormat {
-        const isS3tcSrgb = textureFormat === TextureFormat.BC3_RGBA_SRGB || textureFormat === TextureFormat.BC1_RGB_SRGB;
-        if (isS3tcSrgb && !this._framework.graphicsDevice.features.supportsTextureCompressionS3TCSrgb) {
-            const linear = TextureUtilities.toLinearFormat(textureFormat);
-            console.warn(`sRGB S3TC is not supported (WEBGL_compressed_texture_s3tc_srgb missing); ` +
-                `loading ${source ?? "texture"} as ${linear}. Colours will look washed out.`);
-            return linear;
-        }
-        return textureFormat;
     }
 
     /** @inheritdoc */
@@ -155,15 +139,16 @@ export class WebGlTextureFactory implements ITextureFactory {
             throw new Error("channels must be greater than 0.");
         }
 
-        const desc = new TextureDescriptor();
-        desc.width = width;
-        desc.height = height;
-        // @ts-ignore
-        desc.data = data ? [data] : null;
-        desc.textureFormat = textureFormat;
-        desc.textureUsage = textureUsage;
-        desc.generateMipmaps = useMipMaps;
-        desc.label = label;
+        const desc = resolveTextureDescriptor({
+            width,
+            height,
+            // @ts-ignore HTMLImageElement is uploaded as-is by WebGlTexture2D.
+            data: [data],
+            textureFormat,
+            textureUsage,
+            generateMipmaps: useMipMaps,
+            label,
+        });
 
         const texture = new WebGlTexture2D(
             this._framework,
@@ -191,13 +176,14 @@ export class WebGlTextureFactory implements ITextureFactory {
             textureFormat = this._framework.renderer.preferredTextureFormat;
         }
 
-        const desc = new TextureDescriptor();
-        desc.width = width;
-        desc.height = height;
-        desc.textureUsage = textureUsage;
-        desc.textureFormat = textureFormat;
-        desc.label = label;
-        desc.generateMipmaps = useMipmap;
+        const desc = resolveTextureDescriptor({
+            width,
+            height,
+            textureUsage,
+            textureFormat,
+            label,
+            generateMipmaps: useMipmap,
+        });
 
         // Fast path: avoid generating & uploading a big CPU-side buffer when not needed.
         if (!color || color.equals(Color.black())) {

@@ -18,7 +18,7 @@ import {
     TextureFormat,
     TextureUsage
 } from "../../api/index.ts";
-import {TextureColorSpace} from "../../api/rendering/enums.ts";
+import {ColorSpace} from "../../api/rendering/enums.ts";
 
 export abstract class ARenderer implements ITempRenderer {
 
@@ -69,6 +69,9 @@ export abstract class ARenderer implements ITempRenderer {
     /** @inheritdoc */
     public readonly preferredTextureFormat: TextureFormat;
 
+    /** @inheritDoc */
+    public readonly preferredColorSpace: ColorSpace;
+
     /** @inheritdoc */
     public get preferredDepthStencilFormat(): TextureFormat {
         return this._preferredDepthStencilFormat;
@@ -108,7 +111,8 @@ export abstract class ARenderer implements ITempRenderer {
         this._windowManager = framework.windowManager;
         this._currentBackBufferSize[0] = this._windowManager.canvas.width;
         this._currentBackBufferSize[1] = this._windowManager.canvas.height;
-        this.preferredTextureFormat = configuration.textureColorSpace == TextureColorSpace.SRGB
+        this.preferredColorSpace = configuration.textureColorSpace;
+        this.preferredTextureFormat = configuration.textureColorSpace == ColorSpace.SRGB
             ? TextureFormat.RGBA_8_UNORM_SRGB : TextureFormat.RGBA_8_UNORM;
     }
 

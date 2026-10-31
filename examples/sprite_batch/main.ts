@@ -8,7 +8,7 @@ import {
 } from "../../src/index.ts";
 // Kodak test image kodim23 (parrots), resized to 512×341. See README.md for source and license.
 import parrotsUrl from "./assets/kodim23.ktx2?url";
-import {TextureColorSpace} from "../../src/api/rendering/enums.ts";
+import {ColorSpace} from "../../src/api/rendering/enums.ts";
 
 const status = document.querySelector<HTMLParagraphElement>("#status")!;
 const canvas = document.querySelector<HTMLCanvasElement>("#game-canvas")!;
@@ -16,7 +16,7 @@ const canvas = document.querySelector<HTMLCanvasElement>("#game-canvas")!;
 const framework: IFramework = new Framework({
     canvas,
     textureFiltering: TextureSamplerFilteringPreset.BILINEAR,
-    textureColorSpace: TextureColorSpace.SRGB
+    textureColorSpace: ColorSpace.SRGB
 });
 
 let parrots: ITexture2D | undefined;

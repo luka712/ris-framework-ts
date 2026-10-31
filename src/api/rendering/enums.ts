@@ -19,12 +19,12 @@ export enum Culling {
     Front
 }
 
-/** TODO: */
-export enum TextureColorSpace
+/** The color space. */
+export enum ColorSpace
 {
-    /** TODO */
+    /** The linear color space. */
     LINEAR = "LINEAR",
 
-    /** TODO */
-    SRGB = "S_RGBA",
+    /** The sRGB color space. */
+    SRGB = "SRGB",
 }

@@ -1,7 +1,6 @@
 import {
     type IFramework,
     State,
-    TextureDescriptor,
     TextureUsage,
     TextureUtilities,
     type ITextureView,
@@ -13,6 +12,7 @@ import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
 import {GpuTextureUsage, type GpuTexture, type GpuTextureView} from "../WebGpuTypes.ts";
 import {WebGpuConverter} from "../utilities/WebGpuConverter.ts";
 import {WebGpuTextureView} from "./WebGpuTextureView.ts";
+import {type ResolvedTextureDescriptor, resolveTextureDescriptor} from "../../core/rendering/texture/TextureDescriptorUtilities.ts";
 
 /**
  * The WebGPU 2D texture.
@@ -34,7 +34,7 @@ export class WebGpuTexture2D extends ATexture2D {
      * @param descriptor The texture descriptor.
      * @param image An optional image to upload instead of `descriptor.data`.
      */
-    public constructor(framework: IFramework, descriptor: TextureDescriptor, image?: HTMLImageElement) {
+    public constructor(framework: IFramework, descriptor: ResolvedTextureDescriptor, image?: HTMLImageElement) {
         super(descriptor);
         this._graphicsDevice = framework.renderer.graphicsDevice as WebGpuGraphicsDevice;
         this._image = image;
@@ -171,13 +171,14 @@ export class WebGpuTexture2D extends ATexture2D {
     public static getOrCreateDefault(framework: IFramework): WebGpuTexture2D {
         let texture = WebGpuTexture2D._defaultFilled.get(framework);
         if (!texture || texture.state === State.DISPOSED) {
-            const desc = new TextureDescriptor();
-            desc.width = 1;
-            desc.height = 1;
-            desc.data = [new Uint8Array([255, 255, 255, 255])];
-            desc.textureFormat = framework.renderer.preferredTextureFormat;
-            desc.textureUsage = TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST;
-            desc.label = "RisDefaultFilledTexture";
+            const desc = resolveTextureDescriptor({
+                width: 1,
+                height: 1,
+                data: [new Uint8Array([255, 255, 255, 255])],
+                textureFormat: framework.renderer.preferredTextureFormat,
+                textureUsage: TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST,
+                label: "RisDefaultFilledTexture",
+            });
             texture = new WebGpuTexture2D(framework, desc);
             texture.initialize();
             WebGpuTexture2D._defaultFilled.set(framework, texture);

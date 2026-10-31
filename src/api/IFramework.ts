@@ -23,7 +23,7 @@ import type { IDisposable } from "./core/IDisposable.ts";
 import type {vec2} from "gl-matrix";
 import type {TextureSamplerFilteringPreset} from "../core/rendering/enums.ts";
 import type {PowerPreferenceType} from "./rendering/PowerPreference.ts";
-import type {TextureColorSpace} from "./rendering/enums.ts";
+import type {ColorSpace} from "./rendering/enums.ts";
 
 
 /**
@@ -41,8 +41,8 @@ export class IFrameworkConfiguration {
     /** The texture filtering to configure */
     textureFiltering?: TextureSamplerFilteringPreset;
 
-    /** The texture color space to use by default. By default, it is {@link TextureColorSpace.SRGB}. */
-     textureColorSpace?: TextureColorSpace;
+    /** The texture color space to use by default. By default, it is {@link ColorSpace.SRGB}. */
+     textureColorSpace?: ColorSpace;
 
      /**
      * The HTMLCanvasElement to use for rendering.
