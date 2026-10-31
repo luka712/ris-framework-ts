@@ -1,5 +1,4 @@
 export * from "./IFramework.ts";
-export * from "./IFrameworkConfiguration.ts";
 export * from "./rendering/texture/_export-texture.ts";
 export * from "./rendering/buffers/_export-buffers.ts";
 export * from "./data/_export.ts";
@@ -24,5 +23,6 @@ export * from "./meshes/_export.ts";
 export * from "./material/_export.ts";
 export * from "./lights/_export.ts";
 export * from "./scene/Scene.ts";
+export * from "./scene/SceneMesh.ts";
 export * from "./input/_export.ts";
 export * from "./image/_export.ts";

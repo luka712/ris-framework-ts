@@ -168,7 +168,19 @@ Setting `framework.renderer.clearColor` after `initialize()` updates later frame
 
 ## Scene
 
-`new Scene(framework)` holds meshes, lights and the camera. `scene.add(item)` and `scene.remove(item)` accept a mesh, an `AmbientLight`, `DirectionalLight`, `PointLight` or a camera; adding twice does nothing. Meshes, lights and the perspective camera given a scene in their constructor add themselves, and a disposed mesh removes itself. Adding a camera makes it `scene.camera`; removing the active camera clears it. `addLight`/`removeLight` remain as deprecated aliases.
+`new Scene(framework)` holds meshes, lights and the camera. `scene.add(item)` and `scene.remove(item)` accept a renderable mesh (wrapped in a `SceneMesh`, which owns and disposes its materials), an `AmbientLight`, `DirectionalLight`, `PointLight` or a camera; adding twice does nothing. Lights and the perspective camera given a scene in their constructor add themselves. Adding a camera makes it `scene.camera`; removing the active camera clears it. `scene.update(time)` hands the camera, the active ambient light and the scene's light lists (by reference) to the materials. `addLight`/`removeLight` remain as deprecated aliases.
+
+Meshes follow the C# framework: `IMesh`/`Mesh` hold geometry and buffers only; `IRenderableMesh`/`RenderableMesh` add an optional material, an index range (`indexStart`, `indexCount`, -1 for all), sub meshes that share the root's buffers, and the transform with one model buffer per root. OBJ files load through `framework.objLoader`:
+
+```ts
+const mesh = await framework.objLoader.loadAsync(url, {
+    projectionViewBuffer: camera.projectionViewBuffer,
+    cameraPositionBuffer: camera.positionBuffer,
+}); // one ForwardBlinnPhongMaterial per usemtl material
+// or: framework.objLoader.loadAsync(url, subMesh => myMaterial(subMesh.material))
+// or: await ObjLoader.parseAsync(url) for plain data without GPU resources
+scene.add(mesh);
+```
 
 ## Examples
 

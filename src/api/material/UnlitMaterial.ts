@@ -1,5 +1,6 @@
+import type {ICameraMaterial} from "./ICameraMaterial.ts";
 
-import type { IMesh } from "../meshes/IMesh.ts";
+import type {IRenderableMesh} from "../meshes/IRenderableMesh.ts";
 import type { ITexture2D } from "../rendering/texture/ITexture2D.ts";
 import type { ISampler } from "../rendering/sampler/ISampler.ts";
 import {mat4} from "gl-matrix";
@@ -28,7 +29,7 @@ export class UnlitMaterialDescriptor {
 /**
  * Unlit material.
  */
-export class UnlitMaterial {
+export class UnlitMaterial implements ICameraMaterial {
 
     private readonly _framework: IFramework;
     private _color = Color.white();
@@ -191,7 +192,7 @@ export class UnlitMaterial {
     }
 
     /** @inheritDoc */
-    public renderMesh(mesh: IMesh): void {
+    public renderMesh(mesh: IRenderableMesh): void {
         this.render(mesh.vertexBuffer!, mesh.indexBuffer!, mesh.indexCount ?? -1, mesh.indexStart ?? 0);
     }
 

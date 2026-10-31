@@ -3,11 +3,10 @@ import './style.css'
 import typescriptLogo from './typescript.svg'
 import viteLogo from '/vite.svg'
 import {Framework} from './Framework.ts';
-import {FrameworkConfiguration} from "./api/FrameworkConfiguration.ts";
 import {TextureSamplerFilteringPreset} from "./core/rendering/enums.ts";
 import {
   Color,
-  type IFramework,
+  type IFramework, IFrameworkConfiguration,
   type ISampler,
   type ITexture2D,
   Rect,
@@ -31,7 +30,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 `
 
 
-const frameworkConfig = new FrameworkConfiguration();
+const frameworkConfig: IFrameworkConfiguration = {} ;
 frameworkConfig.canvas = document.getElementById("game-canvas") as HTMLCanvasElement;
 frameworkConfig.textureFiltering = TextureSamplerFilteringPreset.BILINEAR;
 const framework : IFramework = new Framework(frameworkConfig);

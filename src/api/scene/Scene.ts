@@ -2,23 +2,34 @@ import {AmbientLight} from "../lights/AmbientLight.ts";
 import {DirectionalLight} from "../lights/DirectionalLight.ts";
 import {PointLight} from "../lights/PointLight.ts";
 import type {IDisposable} from "../core/IDisposable.ts";
-import type {LightsBuffer} from "../lights/LightsBuffer.ts";
 import type {IFramework} from "../IFramework.ts";
-import type {IMesh} from "../meshes/IMesh.ts";
+import type {IRenderableMesh} from "../meshes/IRenderableMesh.ts";
+import {SceneMesh} from "./SceneMesh.ts";
+import {isCameraMaterial} from "../material/ICameraMaterial.ts";
+import {isLightsMaterial} from "../material/ILightsMaterial.ts";
 import type {GameTime} from "../time/GameTime.ts";
 import type {ICamera} from "../camera/ICamera.ts";
-import type {IMaterial} from "../material/IMaterial.ts";
 
 /** Anything a scene can hold: a mesh, a light (ambient, directional, point) or a camera. */
-export type SceneItem = IMesh | AmbientLight | DirectionalLight | PointLight | ICamera;
+export type SceneItem = IRenderableMesh | SceneMesh | AmbientLight | DirectionalLight | PointLight | ICamera;
 
 /**
- * The scene. Meshes, lights and cameras given a scene in their constructor add themselves through {@link add};
- * meshes remove themselves when disposed. Call {@link update} once per frame and {@link render} in the render listener.
+ * The scene. Lights and cameras given a scene in their constructor add themselves through {@link add};
+ * meshes are added with `scene.add(mesh)` (wrapped in a {@link SceneMesh}, which owns the mesh's materials).
+ * Like C#, the scene keeps the light lists and hands its active ambient light and the lists themselves (not copies)
+ * to every lights material in {@link update}; each material owns and uploads its own lights buffer. Call {@link update} once per frame and {@link render} in the render listener.
  */
 export class Scene implements IDisposable {
 
-    private readonly _meshes: IMesh[] = [];
+    private readonly _sceneMeshes: SceneMesh[] = [];
+    private readonly _directionalLights: DirectionalLight[] = [];
+    private readonly _pointLights: PointLight[] = [];
+
+    /** The directional light slots (matches the Blinn-Phong material). */
+    public static readonly MAX_DIRECTIONAL_LIGHTS = 3;
+
+    /** The point light slots (matches the Blinn-Phong material). */
+    public static readonly MAX_POINT_LIGHTS = 5;
     private _activeAmbientLight: AmbientLight;
     private _disposed = false;
     private _activeCamera?: ICamera;
@@ -37,8 +48,8 @@ export class Scene implements IDisposable {
         if (!value) {
             return;
         }
-        for (const mesh of this._meshes) {
-            Scene._assignCameraToMesh(mesh, value);
+        for (const sceneMesh of this._sceneMeshes) {
+            Scene._assignCamera(sceneMesh, value);
         }
     }
 
@@ -53,34 +64,26 @@ export class Scene implements IDisposable {
 
         // Assigned through add() by the ambient light constructor; set here for the type checker.
         this._activeAmbientLight = framework.lightsFactory.createAmbientLight(undefined, this);
-
-        this.__forwardLightsBuffer = framework.lightsFactory.__createLightsBuffer({
-            ambientLight: this._activeAmbientLight,
-            maxDirectionalLights: 3,
-            maxPointLights: 5
-        });
-
     }
 
-    /**
-     * The lights buffer used for forward shading.
-     * @internal
-     */
-    __forwardLightsBuffer: LightsBuffer;
+    /** The scene meshes, in the order they were added. */
+    public get sceneMeshes(): readonly SceneMesh[] {
+        return this._sceneMeshes;
+    }
 
-    /** The meshes in this scene, in the order they were added. */
-    public get meshes(): readonly IMesh[] {
-        return this._meshes;
+    /** The root meshes in this scene, in the order they were added. */
+    public get meshes(): readonly IRenderableMesh[] {
+        return this._sceneMeshes.map(s => s.mesh);
     }
 
     /** The directional lights in this scene. */
     public get directionalLights(): readonly DirectionalLight[] {
-        return this.__forwardLightsBuffer.directionalLights;
+        return this._directionalLights;
     }
 
     /** The point lights in this scene. */
     public get pointLights(): readonly PointLight[] {
-        return this.__forwardLightsBuffer.pointLights;
+        return this._pointLights;
     }
 
     /**
@@ -94,16 +97,16 @@ export class Scene implements IDisposable {
     public set activeAmbientLight(value: AmbientLight) {
         this._addAmbientLight(value);
         this._activeAmbientLight = value;
-        this.__forwardLightsBuffer.ambientLight = value;
     }
 
     /**
      * Adds a mesh, a light or a camera. Adding an item that is already in the scene does nothing.
-     * - Mesh: drawn by {@link render}; gets the scene camera.
+     * - Renderable mesh or {@link SceneMesh}: drawn by {@link render}; its materials get the scene camera and lights.
+     *   A mesh is wrapped in a `SceneMesh`, so {@link dispose} also disposes its materials.
      * - Ambient light: added to {@link ambientLights} (use {@link activeAmbientLight} to make it the lit one).
-     * - Directional / point light: added to the lights buffer.
+     * - Directional / point light: added to {@link directionalLights} / {@link pointLights}.
      * - Camera: becomes the scene {@link camera}.
-     * Constructors given a scene (meshes, lights, the perspective camera) call this themselves.
+     * Constructors given a scene (lights, the perspective camera) call this themselves.
      * @param item The item to add.
      * @throws Error when all slots for a light kind are in use (3 directional, 5 point), or for an unsupported item.
      */
@@ -111,15 +114,15 @@ export class Scene implements IDisposable {
         if (item instanceof AmbientLight) {
             this._addAmbientLight(item);
         } else if (item instanceof DirectionalLight || item instanceof PointLight) {
-            this.__forwardLightsBuffer.add(item);
+            this._addLight(item);
         } else if (Scene._isCamera(item)) {
             this.camera = item;
-        } else if (Scene._isMesh(item)) {
-            if (!this._meshes.includes(item)) {
-                this._meshes.push(item);
-                if (this._activeCamera) {
-                    Scene._assignCameraToMesh(item, this._activeCamera);
-                }
+        } else if (item instanceof SceneMesh || Scene._isMesh(item)) {
+            const mesh = item instanceof SceneMesh ? item.mesh : item;
+            if (!this._sceneMeshes.some(s => s.mesh === mesh)) {
+                const sceneMesh = item instanceof SceneMesh ? item : new SceneMesh(item);
+                this._sceneMeshes.push(sceneMesh);
+                this._bind(sceneMesh);
             }
         } else {
             throw new Error("Scene.add: expected a mesh, an AmbientLight, DirectionalLight, PointLight or a camera.");
@@ -127,7 +130,7 @@ export class Scene implements IDisposable {
     }
 
     /**
-     * Removes a mesh, a light or a camera. The mesh is not disposed.
+     * Removes a mesh (or scene mesh), a light or a camera. The mesh and its materials are not disposed.
      * Removing the active camera clears {@link camera}.
      * @param item The item to remove.
      * @returns True when the item was in the scene (for a camera: was the active camera).
@@ -141,7 +144,9 @@ export class Scene implements IDisposable {
             return Scene._removeFrom(this.ambientLights, item);
         }
         if (item instanceof DirectionalLight || item instanceof PointLight) {
-            return this.__forwardLightsBuffer.remove(item);
+            return item instanceof DirectionalLight
+                ? Scene._removeFrom(this._directionalLights, item)
+                : Scene._removeFrom(this._pointLights, item);
         }
         if (Scene._isCamera(item)) {
             if (item !== this._activeCamera) {
@@ -150,8 +155,14 @@ export class Scene implements IDisposable {
             this._activeCamera = undefined;
             return true;
         }
-        if (Scene._isMesh(item)) {
-            return Scene._removeFrom(this._meshes, item);
+        if (item instanceof SceneMesh || Scene._isMesh(item)) {
+            const mesh = item instanceof SceneMesh ? item.mesh : item;
+            const index = this._sceneMeshes.findIndex(s => s.mesh === mesh);
+            if (index < 0) {
+                return false;
+            }
+            this._sceneMeshes.splice(index, 1);
+            return true;
         }
         throw new Error("Scene.remove: expected a mesh, an AmbientLight, DirectionalLight, PointLight or a camera.");
     }
@@ -172,6 +183,19 @@ export class Scene implements IDisposable {
      */
     public removeLight(light: DirectionalLight | PointLight): boolean {
         return this.remove(light);
+    }
+
+    private _addLight(light: DirectionalLight | PointLight): void {
+        const [list, max, kind] = light instanceof DirectionalLight
+            ? [this._directionalLights as (DirectionalLight | PointLight)[], Scene.MAX_DIRECTIONAL_LIGHTS, "directional"]
+            : [this._pointLights as (DirectionalLight | PointLight)[], Scene.MAX_POINT_LIGHTS, "point"];
+        if (list.includes(light)) {
+            return;
+        }
+        if (list.length >= max) {
+            throw new Error(`Scene: cannot add ${kind} light ${light.id}; all ${max} ${kind} light slots are in use.`);
+        }
+        list.push(light);
     }
 
     private _addAmbientLight(ambientLight: AmbientLight): void {
@@ -196,44 +220,55 @@ export class Scene implements IDisposable {
             && "projectionViewBuffer" in camera && "viewMatrix" in camera && typeof camera.updateBuffers === "function";
     }
 
-    /** Meshes have render() and a material slot or submeshes. */
-    private static _isMesh(item: unknown): item is IMesh {
-        const mesh = item as Partial<IMesh> | null;
-        return typeof mesh === "object" && mesh !== null && typeof mesh.render === "function"
-            && ("material" in mesh || "subMeshes" in mesh);
+    /** Renderable meshes have render() and sub meshes. */
+    private static _isMesh(item: unknown): item is IRenderableMesh {
+        const mesh = item as Partial<IRenderableMesh> | null;
+        return typeof mesh === "object" && mesh !== null && typeof mesh.render === "function" && "subMeshes" in mesh;
     }
 
     /**
-     * Updates the scene: assigns {@link camera} to the mesh materials that don't have it yet, and uploads changed lights.
+     * Updates the scene: assigns {@link camera}, the active ambient light and the light lists to the mesh materials.
+     * Each lights material uploads its lights buffer when drawn, only if the lights changed.
      * @param _time The game time.
      * @public
      */
     update(_time: GameTime): void {
-        // Also covers meshes whose submeshes were added after the mesh registered itself.
+        for (const sceneMesh of this._sceneMeshes) {
+            this._bind(sceneMesh);
+        }
+    }
+
+    /** Assigns the camera (when set) and the lights to the scene mesh's materials. */
+    private _bind(sceneMesh: SceneMesh): void {
         if (this._activeCamera) {
-            for (const mesh of this._meshes) {
-                Scene._assignCameraToMesh(mesh, this._activeCamera);
+            Scene._assignCamera(sceneMesh, this._activeCamera);
+        }
+        for (const material of sceneMesh.materials) {
+            if (isLightsMaterial(material)) {
+                if (material.ambientLight !== this._activeAmbientLight) {
+                    material.ambientLight = this._activeAmbientLight;
+                }
+                if (material.directionalLights !== this._directionalLights) {
+                    material.directionalLights = this._directionalLights;
+                }
+                if (material.pointLights !== this._pointLights) {
+                    material.pointLights = this._pointLights;
+                }
             }
         }
-        this.__forwardLightsBuffer.update();
     }
 
-    private static _assignCameraToMesh(mesh: IMesh, camera: ICamera): void {
-        Scene._assignCamera(mesh.material, camera);
-        for (const subMesh of mesh.subMeshes ?? []) {
-            Scene._assignCamera(subMesh.material, camera);
-        }
-    }
-
-    private static _assignCamera(material: IMaterial | undefined, camera: ICamera): void {
-        // Only materials that have a camera property; the setter rebinds buffers, so skip when unchanged.
+    private static _assignCamera(sceneMesh: SceneMesh, camera: ICamera): void {
         // A camera that is not initialized yet (e.g. added from its constructor) has no buffers;
         // it is assigned by the next update() once initialize() created them.
         if (!camera.projectionViewBuffer || !camera.positionBuffer) {
             return;
         }
-        if (material && "camera" in material && material.camera !== camera) {
-            material.camera = camera;
+        for (const material of sceneMesh.materials) {
+            // The setter rebinds buffers, so skip when unchanged.
+            if (isCameraMaterial(material) && material.camera !== camera) {
+                material.camera = camera;
+            }
         }
     }
 
@@ -242,23 +277,21 @@ export class Scene implements IDisposable {
      */
     render(): void {
 
-        for (const mesh of this._meshes) {
-            mesh.render();
+        for (const sceneMesh of this._sceneMeshes) {
+            sceneMesh.render();
         }
 
     }
 
-    /** Disposes the meshes still in the scene and the lights buffer. Calling it twice does nothing. */
+    /** Disposes the scene meshes still in the scene: their meshes and materials. Calling it twice does nothing. */
     public dispose(): void {
         if (this._disposed) {
             return;
         }
         this._disposed = true;
-        // Each mesh removes itself, so iterate a copy.
-        for (const mesh of this._meshes.slice()) {
-            mesh.dispose();
+        for (const sceneMesh of this._sceneMeshes) {
+            sceneMesh.dispose();
         }
-        this._meshes.length = 0;
-        this.__forwardLightsBuffer.dispose();
+        this._sceneMeshes.length = 0;
     }
 }

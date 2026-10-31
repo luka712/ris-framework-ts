@@ -1,10 +1,9 @@
 import {
     Color,
     Framework,
-    FrameworkConfiguration,
     type GameTime,
-    type IFramework,
-    type IMesh,
+    type IFramework, IFrameworkConfiguration,
+    type IRenderableMesh,
     type PerspectiveCamera,
     Scene,
 } from "../../src";
@@ -13,14 +12,14 @@ import cubeUrl from "./assets/cube.obj?url";
 const status = document.querySelector<HTMLParagraphElement>("#status")!;
 const canvas = document.querySelector<HTMLCanvasElement>("#game-canvas")!;
 
-const config = new FrameworkConfiguration();
+const config: IFrameworkConfiguration = {};
 config.canvas = canvas;
 
 const framework: IFramework = new Framework(config);
 
 let camera: PerspectiveCamera | undefined;
 let scene: Scene | undefined;
-let cube: IMesh | undefined;
+let cube: IRenderableMesh | undefined;
 let angle = 0;
 /** Radians per second, so the speed does not depend on the frame rate. */
 const rotationSpeed = 0.6;
@@ -28,14 +27,15 @@ const rotationSpeed = 0.6;
 framework.addOnLoadContentListener(async () => {
     try {
         // One submesh per usemtl range (6 faces -> 6 submeshes), each with an unlit material coloured by its Kd.
-        // The mesh adds itself to the scene, and scene.render() draws it.
+        // scene.add(mesh) wraps it in a SceneMesh (which owns its materials), and scene.render() draws it.
         scene = new Scene(framework);
         // Passing the scene makes the camera the scene's camera.
         camera = framework.cameraFactory.createPerspectiveCamera({
             fov: 60, aspectRatio: canvas.width / canvas.height, near: 0.1, far: 100, eye: [0, 0, 3],
         }, scene);
-        cube = await framework.content.loadMeshAsync(cubeUrl, scene);
-        status.textContent = `Loaded cube.obj: ${cube.subMeshes?.length ?? 0} submeshes, unlit materials.`;
+        cube = await framework.content.loadUnlitMeshAsync(cubeUrl, camera);
+        scene.add(cube);
+        status.textContent = `Loaded cube.obj: ${cube.subMeshes.length} submeshes, unlit materials.`;
     } catch (error) {
         status.textContent = error instanceof Error ? error.message : String(error);
     }

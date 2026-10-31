@@ -1,36 +1,35 @@
 import {WebGlAmbientLightFactory} from "./webgl/lights/WebGlAmbientLightFactory.ts";
 import {WindowManager} from "./api/window/WindowManager.ts";
-import {FrameworkConfiguration} from "./api/FrameworkConfiguration.ts";
-import {type IRendererConfiguration} from "./api/rendering/renderer-interface.ts";
 import {GeometryBuilder} from "./api/geometry/GeometryBuilder.ts";
 import {ContentManager} from "./api/content/ContentManager.ts";
+import {ObjLoader} from "./api/loaders/ObjLoader.ts";
 import {WebGlRenderer} from "./webgl/WebGlRenderer.ts";
 import {WebGlBuffersFactory} from "./webgl/buffers/WebGlBuffersFactory.ts";
 import {
-    type ICameraFactory,
-    type IContentManager,
-    type IFramework, IFrameworkConfiguration,
-    type IImageLoader,
-    type IRenderer,
-    type IRenderPipelineFactory,
-    type IWindowManager
-} from "./api/index.ts";
-import {
+    type AmbientLightFactory,
     CameraFactory,
     CpuImageProcessor,
     GameTime,
     type IBufferFactory,
+    type ICameraFactory,
+    type IContentManager,
+    type IFramework,
+    IFrameworkConfiguration,
     type IGeometryBuilder,
     type IGraphicsDevice,
+    type IImageLoader,
     type IImageProcessor,
     type IInputManager,
     ImageLoader,
     type IMaterialFactory,
-    type AmbientLightFactory,
     type IMeshFactory,
+    type IRenderer,
+    type IRendererConfiguration,
+    type IRenderPipelineFactory,
     type ISpriteBatch,
     type ITextureFactory,
     type ITimeManager,
+    type IWindowManager,
     MaterialFactory,
     MeshFactory,
     RenderingBackend,
@@ -48,7 +47,16 @@ import type {IKtx2Factory} from "ris-ktx2";
 import {Ktx2Factory} from "ris-ktx2";
 import {PowerPreferenceType} from "./api/rendering/PowerPreference.ts";
 import {vec2} from "gl-matrix";
+import {ARenderer} from "./core/rendering/ARenderer.ts";
+import {WebGpuRenderer} from "./webgpu/WebGpuRenderer.ts";
+import {WebGpuTextureFactory} from "./webgpu/texture/WebGpuTextureFactory.ts";
+import {WebGpuRenderPipelineFactory} from "./webgpu/render-pipelines/WebGpuRenderPipelineFactory.ts";
+import {WebGpuShaderModuleLoader} from "./webgpu/shader/WebGpuShaderModuleLoader.ts";
+import {WebGpuBuffersFactory} from "./webgpu/buffers/WebGpuBuffersFactory.ts";
+import {WebGpuTexture2D} from "./webgpu/texture/WebGpuTexture2D.ts";
+import {TextureColorSpace} from "./api/rendering/enums.ts";
 
+/** The Ris framework */
 export class Framework implements IFramework {
 
     private readonly _onLoadContentListeners: (() => void)[] = [];
@@ -56,46 +64,63 @@ export class Framework implements IFramework {
     private readonly _onUpdateListeners: ((gameTime: GameTime) => void)[] = [];
     private readonly _onRenderListeners: (() => void)[] = [];
 
-    private readonly _textureFactory: ITextureFactory;
-    private readonly _buffersFactory: IBufferFactory;
-    private readonly _contentManager: IContentManager;
+    private _configuration: IFrameworkConfiguration;
+    private _textureFactory: ITextureFactory = null!;
+    private _buffersFactory: IBufferFactory = null!;
+    private _contentManager: IContentManager = null!;
+    private readonly _rendererConfiguration: IRendererConfiguration = null!;
+    private _renderer: IRenderer = null!;
     private readonly _geometryBuilder: IGeometryBuilder;
     private readonly _meshFactory: IMeshFactory;
     private _disposed = false;
 
     /**
      * The constructor for the Framework class.
-     * @param options The optional framework configuration. When omitted, a default `FrameworkConfiguration` is used.
+     * @param configuration The optional framework configuration. When omitted, a default `FrameworkConfiguration` is used.
      */
-    constructor(options?: IFrameworkConfiguration) {
-        options = options ?? new FrameworkConfiguration();
+    constructor(configuration?: IFrameworkConfiguration) {
+
+        this._configuration = configuration ?? {}
+
+        if(!this._configuration.backBufferSize){
+            this._configuration.backBufferSize = vec2.fromValues(800, 600);
+        }
 
         // Without a canvas, WindowManager creates one and appends it to document.body.
-        if(!options.canvas){
+        if(!this._configuration.canvas){
             console.warn("Canvas not provided. Creating canvas and appending it to document.body.")
         }
-        options.backBufferSize = options.backBufferSize ?? vec2.fromValues(800, 600);
+        this._configuration.backBufferSize = this._configuration.backBufferSize ?? vec2.fromValues(800, 600);
 
-        this.windowManager = new WindowManager(options.canvas ?? null);
+        this.windowManager = new WindowManager(this._configuration.canvas ?? null);
 
         // Services are created here and get their dependencies through their constructors.
-        const rendererConfig: IRendererConfiguration = {
-            backBufferSize: options.backBufferSize,
-            textureFiltering: options.textureFiltering ?? TextureSamplerFilteringPreset.BILINEAR,
-            alpha: options.alpha ?? false,
-            powerPreference: options.powerPreference ?? PowerPreferenceType.DEFAULT
+        this._rendererConfiguration  = {
+            backBufferSize: this._configuration.backBufferSize,
+            textureFiltering: this._configuration.textureFiltering ?? TextureSamplerFilteringPreset.BILINEAR,
+            alpha: this._configuration.alpha ?? false,
+            powerPreference: this._configuration.powerPreference ?? PowerPreferenceType.DEFAULT,
+            textureColorSpace: this._configuration.textureColorSpace ?? TextureColorSpace.SRGB
         };
-        this.renderer = new WebGlRenderer(this, rendererConfig);
-        this.renderingBackend = RenderingBackend.WEB_GL;
-        this._textureFactory = new WebGlTextureFactory(this);
+
+
+        // The renderer, texture, pipeline, shader and buffer services depend on the backend.
+        let backend = this._configuration.renderingBackend ?? RenderingBackend.WEB_GL;
+        if (backend === RenderingBackend.DEFAULT) {
+            backend = RenderingBackend.WEB_GL;
+        }
+        if (backend === RenderingBackend.WEB_GPU && !WebGpuRenderer.isSupported()) {
+            console.warn("WebGPU was requested, but navigator.gpu is missing. Falling back to WebGL.");
+            backend = RenderingBackend.WEB_GL;
+        }
+        this.renderingBackend = backend;
+        this._setupBackendServices(backend);
+
         this._geometryBuilder = new GeometryBuilder();
-        this.renderPipelineFactory = new WebGlRenderPipelineFactory(this);
-        this._contentManager = new ContentManager(this, new WebGlShaderModuleLoader(this));
         this._meshFactory = new MeshFactory(this);
         this.materialFactory = new MaterialFactory(this);
         this.lightsFactory = new WebGlAmbientLightFactory(this);
 
-        this._buffersFactory = new WebGlBuffersFactory(this);
         this.spriteBatch = new SpriteBatch(this);
         this.cameraFactory = new CameraFactory(this);
         this.timeManager = new TimeManager();
@@ -103,7 +128,7 @@ export class Framework implements IFramework {
         this.imageProcessor = new CpuImageProcessor();
         this.imageLoader = new ImageLoader(this);
 
-        if(options.useKtx2){
+        if(this._configuration.useKtx2){
             this.ktx2Factory = new Ktx2Factory();
         }
     }
@@ -117,7 +142,30 @@ export class Framework implements IFramework {
     public readonly imageProcessor :IImageProcessor;
 
     /** @inheritDoc */
-    public readonly renderer : IRenderer;
+    public get renderer(): IRenderer {
+        return this._renderer;
+    }
+
+    /**
+     * Creates the backend-specific services: renderer, texture factory, pipeline factory, shader loader and buffers factory.
+     * @param backend WEB_GL or WEB_GPU.
+     */
+    private _setupBackendServices(backend: RenderingBackend): void {
+        this.renderingBackend = backend;
+        if (backend === RenderingBackend.WEB_GPU) {
+            this._renderer = new WebGpuRenderer(this, this._rendererConfiguration);
+            this._textureFactory = new WebGpuTextureFactory(this);
+            this.renderPipelineFactory = new WebGpuRenderPipelineFactory(this);
+            this._contentManager = new ContentManager(this, new WebGpuShaderModuleLoader(this));
+            this._buffersFactory = new WebGpuBuffersFactory(this);
+        } else {
+            this._renderer = new WebGlRenderer(this, this._rendererConfiguration);
+            this._textureFactory = new WebGlTextureFactory(this);
+            this.renderPipelineFactory = new WebGlRenderPipelineFactory(this);
+            this._contentManager = new ContentManager(this, new WebGlShaderModuleLoader(this));
+            this._buffersFactory = new WebGlBuffersFactory(this);
+        }
+    }
 
     /** @inheritDoc */
     public readonly spriteBatch: ISpriteBatch;
@@ -185,7 +233,7 @@ export class Framework implements IFramework {
     }
 
     /** @inheritdoc */
-    public renderPipelineFactory: IRenderPipelineFactory;
+    public renderPipelineFactory: IRenderPipelineFactory = null!;
 
     /** @inheritdoc */
     get geometryBuilder(): IGeometryBuilder {
@@ -216,6 +264,9 @@ export class Framework implements IFramework {
     }
 
     /** @inheritDoc */
+    public readonly objLoader: ObjLoader = new ObjLoader(this);
+
+    /** @inheritDoc */
     public readonly materialFactory: IMaterialFactory;
 
     /** @inheritDoc */
@@ -230,11 +281,43 @@ export class Framework implements IFramework {
     /** @inheritdoc */
     public initialize(): void {
 
+        // WebGPU needs an async device request; initialize() keeps the synchronous WebGL path.
+        if (this.renderingBackend === RenderingBackend.WEB_GPU) {
+            console.warn("WebGPU needs Framework.initializeAsync(). initialize() falls back to WebGL.");
+            this._setupBackendServices(RenderingBackend.WEB_GL);
+        }
+
         if(this.ktx2Factory) {
             this.ktx2Factory.initializeAsync();
         }
 
-        (this.renderer as WebGlRenderer).initialize();
+        this._initializeCore();
+    }
+
+    /**
+     * Initializes the framework and starts the event loop. Required for WebGPU, which requests its adapter
+     * and device asynchronously; for WebGL it behaves like {@link initialize}.
+     * If the WebGPU device cannot be acquired, the framework falls back to WebGL with a warning.
+     */
+    public async initializeAsync(): Promise<void> {
+        if (this.renderingBackend === RenderingBackend.WEB_GPU) {
+            try {
+                await (this._renderer as WebGpuRenderer).acquireDeviceAsync();
+            } catch (error) {
+                console.warn(`WebGPU could not be initialized (${(error as Error)?.message ?? error}). Falling back to WebGL.`);
+                this._setupBackendServices(RenderingBackend.WEB_GL);
+            }
+        }
+
+        if (this.ktx2Factory) {
+            this.ktx2Factory.initializeAsync();
+        }
+
+        this._initializeCore();
+    }
+
+    private _initializeCore(): void {
+        (this._renderer as ARenderer).initialize();
         this.spriteBatch.initialize();
         this.input.initialize();
 
@@ -297,6 +380,7 @@ export class Framework implements IFramework {
         this._onRenderListeners.length = 0;
 
         WebGlTexture2D.disposeDefault(this);
+        WebGpuTexture2D.disposeDefault(this);
         (this._contentManager as Partial<IDisposable>).dispose?.();
         // Only exists after initialize(); it owns the default sampler and blend state.
         (this.renderer.graphicsDevice as IGraphicsDevice | undefined)?.dispose();

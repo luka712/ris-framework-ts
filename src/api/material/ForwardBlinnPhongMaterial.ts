@@ -1,4 +1,4 @@
-import type {IMesh} from "../meshes/IMesh.ts";
+import type {IRenderableMesh} from "../meshes/IRenderableMesh.ts";
 import type {ITexture2D} from "../rendering/texture/ITexture2D.ts";
 import type {ISampler} from "../rendering/sampler/ISampler.ts";
 import {GeometryFormat} from "../geometry/GeometryFormat.ts";
@@ -11,6 +11,11 @@ import {Color} from "../data/Color.ts";
 import type {IPrimitiveState} from "../rendering/primitive/IPrimitiveState.ts";
 import type {ICamera} from "../camera/ICamera.ts";
 import type {LightsBuffer} from "../lights/LightsBuffer.ts";
+import type {AmbientLight} from "../lights/AmbientLight.ts";
+import type {DirectionalLight} from "../lights/DirectionalLight.ts";
+import type {PointLight} from "../lights/PointLight.ts";
+import type {ICameraMaterial} from "./ICameraMaterial.ts";
+import type {ILightsMaterial} from "./ILightsMaterial.ts";
 import type {IForwardBlinnPhongRenderPipeline} from "../rendering/render-pipelines/IForwardBlinnPhongRenderPipeline.ts";
 
 /**
@@ -27,9 +32,6 @@ export class ForwardBlinnPhongMaterialDescriptor {
 
     /** The camera position buffer. */
     public cameraPositionBuffer!: IUniformBuffer;
-
-    /** The lights buffer. The shader is compiled for its light counts. Can also be set later through `material.lightsBuffer`. */
-    public lightsBuffer?: LightsBuffer;
 }
 
 
@@ -37,11 +39,17 @@ export class ForwardBlinnPhongMaterialDescriptor {
  * The Blinn-Phong material with forward calculated lighting.
  * @public
  */
-export class ForwardBlinnPhongMaterial {
+export class ForwardBlinnPhongMaterial implements ICameraMaterial, ILightsMaterial {
+
+    /** The directional light slots of the material's lights buffer and shader. */
+    public static readonly MAX_DIRECTIONAL_LIGHTS = 3;
+
+    /** The point light slots of the material's lights buffer and shader. */
+    public static readonly MAX_POINT_LIGHTS = 5;
 
     private readonly _framework: IFramework;
 
-    private _lightsBuffer?: LightsBuffer;
+    private readonly _lightsBuffer: LightsBuffer;
     private _diffuseColorCache: Color;
     private _ambientColorCache: Color;
     private _specularColorCache: Color;
@@ -94,7 +102,11 @@ export class ForwardBlinnPhongMaterial {
         this._cameraPositionBuffer = descriptor.cameraPositionBuffer;
         this._materialBuffer = framework.bufferFactory.createUniformBuffer(this._materialData, usage);
         this._primitiveState = descriptor.primitiveState;
-        this._lightsBuffer = descriptor.lightsBuffer;
+        // Owned by the material, like C#: 3 directional + 5 point slots (88 floats), uploaded only when the lights changed.
+        this._lightsBuffer = framework.lightsFactory.__createLightsBuffer({
+            maxDirectionalLights: ForwardBlinnPhongMaterial.MAX_DIRECTIONAL_LIGHTS,
+            maxPointLights: ForwardBlinnPhongMaterial.MAX_POINT_LIGHTS,
+        });
         // The pipeline is created once a model buffer is assigned (see modelBuffer).
     }
 
@@ -105,9 +117,9 @@ export class ForwardBlinnPhongMaterial {
             modelBuffer,
             materialBuffer: this._materialBuffer,
             cameraPositionBuffer: this._cameraPositionBuffer,
-            lightsBuffer: this._lightsBuffer?.buffer,
-            maxDirectionalLights: this._lightsBuffer?.maxDirectionalLights,
-            maxPointLights: this._lightsBuffer?.maxPointLights,
+            lightsBuffer: this._lightsBuffer.buffer,
+            maxDirectionalLights: this._lightsBuffer.maxDirectionalLights,
+            maxPointLights: this._lightsBuffer.maxPointLights,
             primitiveState: this._primitiveState,
         });
         if (this._pendingTexture) {
@@ -175,19 +187,31 @@ export class ForwardBlinnPhongMaterial {
         }
     }
 
-    /** The lights buffer with the scene's lights. Shared, not disposed by this material. */
-    public get lightsBuffer(): LightsBuffer | undefined {
-        return this._lightsBuffer;
+    /** @inheritDoc Defaults to a black ambient light; a `Scene` assigns its active ambient light. */
+    public get ambientLight(): AmbientLight {
+        return this._lightsBuffer.ambientLight;
     }
 
-    /** The lights buffer with the scene's lights. Shared, not disposed by this material. */
-    public set lightsBuffer(lightsBuffer: LightsBuffer | undefined) {
-        this._lightsBuffer = lightsBuffer;
-        if (lightsBuffer && this._pipeline) {
-            // Switches to the shader variant for this buffer's light counts when they differ.
-            this._pipeline.setLightCounts(lightsBuffer.maxDirectionalLights, lightsBuffer.maxPointLights);
-            this._pipeline.lightsBuffer = lightsBuffer.buffer;
-        }
+    public set ambientLight(value: AmbientLight) {
+        this._lightsBuffer.ambientLight = value;
+    }
+
+    /** @inheritDoc Only the first 3 are used. A `Scene` assigns its own list. */
+    public get directionalLights(): DirectionalLight[] {
+        return this._lightsBuffer.directionalLights;
+    }
+
+    public set directionalLights(value: DirectionalLight[]) {
+        this._lightsBuffer.directionalLights = value;
+    }
+
+    /** @inheritDoc Only the first 5 are used. A `Scene` assigns its own list. */
+    public get pointLights(): PointLight[] {
+        return this._lightsBuffer.pointLights;
+    }
+
+    public set pointLights(value: PointLight[]) {
+        this._lightsBuffer.pointLights = value;
     }
 
     /**
@@ -256,6 +280,7 @@ export class ForwardBlinnPhongMaterial {
 
     /** @inheritDoc */
     public beforeRender(): void {
+        this._lightsBuffer.update();
 
 
         if (!this._diffuseColorCache.equals(this.diffuseColor)
@@ -281,7 +306,7 @@ export class ForwardBlinnPhongMaterial {
     }
 
     /** @inheritDoc */
-    public renderMesh(mesh: IMesh): void {
+    public renderMesh(mesh: IRenderableMesh): void {
         this.render(mesh.vertexBuffer!, mesh.indexBuffer!, mesh.indexCount ?? -1, mesh.indexStart ?? 0);
     }
 
@@ -298,5 +323,6 @@ export class ForwardBlinnPhongMaterial {
         this._pipeline?.dispose();
         this._pipeline = undefined;
         this._materialBuffer.dispose();
+        this._lightsBuffer.dispose();
     }
 }

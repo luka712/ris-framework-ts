@@ -1,59 +1,54 @@
 import type { IVertexBuffer } from "../rendering/buffers/IVertexBuffer.ts";
 import type { IDisposable } from "../core/IDisposable.ts";
 import type { IIndexBuffer } from "../rendering/buffers/IIndexBuffer.ts";
-import type { IMaterial } from "../material/IMaterial.ts";
-import type { mat4, vec3 } from "gl-matrix";
-import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
+import type { IGeometry } from "../geometry/IGeometry.ts";
+import type { GeometryFormat } from "../geometry/GeometryFormat.ts";
+import type { State } from "../data/State.ts";
 
 /**
- * Represents a mesh containing geometry, material information, and optionally child submeshes.
- * A mesh may contain vertex and index buffers directly, or act as a container for submeshes.
+ * A mesh: geometry and the vertex and index buffers created from it.
+ * It has no material and no transform; see {@link IRenderableMesh} for a mesh that can be drawn.
  * @public
  */
 export interface IMesh extends IDisposable {
 
-    /** The vertex buffer containing the mesh's vertex data, if any. */
+    /** The state of the mesh. */
+    readonly state: State;
+
+    /** The positions, when set through `setMesh`. */
+    readonly positions?: number[];
+
+    /** The colors, when set through `setMesh`. */
+    readonly colors?: number[];
+
+    /** The texture coordinates, when set through `setMesh`. */
+    readonly textureCoords?: number[];
+
+    /** The normals, when set through `setMesh`. */
+    readonly normals?: number[];
+
+    /** The indices, when set through `setMesh`. */
+    readonly indices?: number[];
+
+    /** The geometry the buffers were created from with `setGeometry`, if any. */
+    readonly geometry?: IGeometry;
+
+    /** The vertex buffer, if created. */
     readonly vertexBuffer?: IVertexBuffer;
 
-    /** The index buffer containing the mesh's index data, if any. */
+    /** The index buffer, if created. */
     readonly indexBuffer?: IIndexBuffer;
 
-    /** The material assigned to this mesh, if any. */
-    material?: IMaterial;
-
-    /** First index in {@link indexBuffer} to draw. Undefined draws from 0. */
-    readonly indexStart?: number;
-
-    /** Number of indices to draw. Undefined draws the whole index buffer. */
-    readonly indexCount?: number;
-
-    /** The child submeshes contained in this mesh, if any. */
-    readonly subMeshes?: IMesh[];
-
-    /** World position. Defaults to the origin. In-place edits are detected. */
-    position: vec3;
+    /** Creates the buffers from the current data. */
+    initialize(): void;
 
     /**
-     * Euler rotation in radians, applied in Y, X, Z order (yaw, pitch, roll): `R = Ry * Rx * Rz`.
-     * Defaults to (0, 0, 0). In-place edits are detected.
+     * Creates the vertex and index buffers from a geometry.
+     * @param geometry The geometry.
+     * @param geometryFormat The vertex layout.
      */
-    rotation: vec3;
+    setGeometry(geometry: IGeometry, geometryFormat?: GeometryFormat): void;
 
-    /** Scale. Defaults to (1, 1, 1). In-place edits are detected. */
-    scale: vec3;
-
-    /**
-     * The model matrix `T * R * S`, recomputed only when position, rotation or scale changed.
-     */
-    readonly modelMatrix: mat4;
-
-    /**
-     * The model buffer (std140 `mat4`) holding {@link modelMatrix}. Owned by the mesh (submeshes share the parent's),
-     * uploaded when the transform changed and assigned to the material(s) before drawing.
-     * Created on first use.
-     */
-    readonly modelBuffer: IUniformBuffer;
-
-    /** Render the mesh. */
-    render(): void;
+    /** Re-creates (or updates) the buffers from the current data. */
+    applyChanges(): void;
 }

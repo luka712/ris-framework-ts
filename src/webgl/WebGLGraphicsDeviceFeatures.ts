@@ -14,13 +14,17 @@ export class WebGLGraphicsDeviceFeatures implements IGraphicsDeviceFeatures {
         this.supportsTextureCompressionASTC = !!this.astcExtension;
 
         this.bptcExtension = webgl.getExtension("EXT_texture_compression_bptc") as EXT_texture_compression_bptc;
-        this.supportsTextureCompressionS3TC = !!this.bptcExtension;
+        // BPTC holds BC6H/BC7 (linear and sRGB).
+        this.supportsTextureCompressionBC = !!this.bptcExtension;
 
         this.etcExtension = webgl.getExtension("WEBGL_compressed_texture_etc") as WEBGL_compressed_texture_etc;
         this.supportsTextureCompressionETC2 = !!this.etcExtension;
 
         this.s3tcExtension = webgl.getExtension("WEBGL_compressed_texture_s3tc") as WEBGL_compressed_texture_s3tc;
-        this.supportsTextureCompressionBC = !!this.s3tcExtension;
+        this.supportsTextureCompressionS3TC = !!this.s3tcExtension;
+
+        this.s3tcSrgbExtension = webgl.getExtension("WEBGL_compressed_texture_s3tc_srgb") as WEBGL_compressed_texture_s3tc_srgb;
+        this.supportsTextureCompressionS3TCSrgb = !!this.s3tcSrgbExtension;
 
         this.pvrtcExtension = webgl.getExtension("WEBGL_compressed_texture_pvrtc") as WEBGL_compressed_texture_pvrtc;
         this.supportsTextureCompressionPVRTC = !!this.pvrtcExtension;
@@ -54,4 +58,10 @@ export class WebGLGraphicsDeviceFeatures implements IGraphicsDeviceFeatures {
 
     /** @inheritdoc */
     readonly supportsTextureCompressionS3TC: boolean;
+
+    /** The WEBGL_compressed_texture_s3tc_srgb extension. */
+    readonly s3tcSrgbExtension?: WEBGL_compressed_texture_s3tc_srgb;
+
+    /** @inheritdoc */
+    readonly supportsTextureCompressionS3TCSrgb: boolean;
 }

@@ -1,3 +1,4 @@
+import {WebGlConstants} from "./WebGlConstants.ts";
 import {Culling} from "../../api/rendering/enums.ts";
 import {BlendFactor, BlendOperation} from "../../core/rendering/blending/enums";
 import {VertexFormat} from "../../api/geometry/VertexFormat.ts";
@@ -13,20 +14,6 @@ import {
 } from "../../api/index.ts";
 
 export class WebGlConverter {
-
-    // https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Constants
-
-    /** BC3 */
-    private static GL_COMPRESSED_RGBA_S3TC_DXT5_EXT = 0x83F3;
-
-    /** BC7 */
-    private static GL_COMPRESSED_RGBA_BPTC_UNORM = 0x8E8C;
-
-
-    /** ETC2 */
-    private static GL_COMPRESSED_RGBA8_ETC2_EAC = 0x9278;
-
-    private static GL_COMPRESSED_RGBA_ASTC_4x4_KHR = 0x93B0;
 
     /**
      * Converts PrimitiveTopology to WebGL enum.
@@ -65,7 +52,8 @@ export class WebGlConverter {
                 return WebGL2RenderingContext.BACK;
             case CullMode.FRONT:
                 return WebGL2RenderingContext.FRONT;
-            default: throw new Error("Method not implemented.");
+            default:
+                throw new Error("Method not implemented.");
         }
 
     }
@@ -95,13 +83,13 @@ export class WebGlConverter {
 
         let bufferUsage: number = WebGL2RenderingContext.STATIC_DRAW;
 
-        if((usage & BufferUsage.COPY_DST) == BufferUsage.COPY_DST)
-        {
+        if ((usage & BufferUsage.COPY_DST) == BufferUsage.COPY_DST) {
             bufferUsage = WebGL2RenderingContext.DYNAMIC_DRAW;
         }
 
         return bufferUsage;
     }
+
     /**
      * Converts BlendOperation to WebGL enum.
      * @param gl The WebGL2RenderingContext.
@@ -195,13 +183,94 @@ export class WebGlConverter {
             case TextureFormat.DEPTH_24_STENCIL_8:
                 return gl.DEPTH24_STENCIL8;
             case TextureFormat.BC3_RGBA_UNORM:
-                return WebGlConverter.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+                return WebGlConstants.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
             case TextureFormat.ETC2_RGBA8_UNORM:
-                return WebGlConverter.GL_COMPRESSED_RGBA8_ETC2_EAC;
+                return WebGlConstants.GL_COMPRESSED_RGBA8_ETC2_EAC;
             case TextureFormat.BC7_RGBA_UNORM:
-                return WebGlConverter.GL_COMPRESSED_RGBA_BPTC_UNORM;
-            case TextureFormat.ASTC_4X4_RGBA:
-                return WebGlConverter.GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
+                return WebGlConstants.GL_COMPRESSED_RGBA_BPTC_UNORM;
+            case TextureFormat.BC7_RGBA_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM;
+            case TextureFormat.BC3_RGBA_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+            case TextureFormat.BC1_RGB_UNORM:
+                return WebGlConstants.GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+            case TextureFormat.BC1_RGB_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
+            case TextureFormat.ETC2_RGBA8_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC;
+            case TextureFormat.ETC2_RGB8_UNORM:
+                return WebGlConstants.GL_COMPRESSED_RGB8_ETC2;
+            case TextureFormat.ETC2_RGB8_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB8_ETC2;
+
+            // ASTC
+            case TextureFormat.ASTC_4X4_RGBA_UNORM:
+                return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
+            case TextureFormat.ASTC_4X4_RGBA_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR;
+            case TextureFormat.ASTC_5X4_RGBA_UNORM:
+                return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_5x4_KHR;
+            case TextureFormat.ASTC_5X4_RGBA_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR;
+            case TextureFormat.ASTC_5X5_RGBA_UNORM:
+                return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_5x5_KHR;
+            case TextureFormat.ASTC_5X5_RGBA_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR;
+            case TextureFormat.ASTC_6X5_RGBA_UNORM:
+                return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_6x5_KHR;
+            case TextureFormat.ASTC_6X5_RGBA_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR;
+            case TextureFormat.ASTC_6X6_RGBA_UNORM:
+                return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_6x6_KHR;
+            case TextureFormat.ASTC_6X6_RGBA_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR;
+            case TextureFormat.ASTC_8X5_RGBA_UNORM:
+                return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_8x5_KHR;
+            case TextureFormat.ASTC_8X5_RGBA_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR;
+            case TextureFormat.ASTC_8X6_RGBA_UNORM:
+                return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_8x6_KHR;
+            case TextureFormat.ASTC_8X6_RGBA_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR;
+            case TextureFormat.ASTC_8X8_RGBA_UNORM:
+                return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_8x8_KHR;
+            case TextureFormat.ASTC_8X8_RGBA_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR;
+            case TextureFormat.ASTC_10X5_RGBA_UNORM:
+                return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_10x5_KHR;
+            case TextureFormat.ASTC_10X5_RGBA_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR;
+            case TextureFormat.ASTC_10X6_RGBA_UNORM:
+                return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_10x6_KHR;
+            case TextureFormat.ASTC_10X6_RGBA_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR;
+            case TextureFormat.ASTC_10X8_RGBA_UNORM:
+                return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_10x8_KHR;
+            case TextureFormat.ASTC_10X8_RGBA_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR;
+            case TextureFormat.ASTC_10X10_RGBA_UNORM:
+                return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_10x10_KHR;
+            case TextureFormat.ASTC_10X10_RGBA_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR;
+            case TextureFormat.ASTC_12X10_RGBA_UNORM:
+                return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_12x10_KHR;
+            case TextureFormat.ASTC_12X10_RGBA_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR;
+            case TextureFormat.ASTC_12X12_RGBA_UNORM:
+                return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_12x12_KHR;
+            case TextureFormat.ASTC_12X12_RGBA_SRGB:
+                return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR;
+
+            // PVRTC
+            case TextureFormat.PVRTC_4BPPV1_RGBA:
+                return WebGlConstants.GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG;
+            case TextureFormat.PVRTC_4BPPV1_RGB:
+                return WebGlConstants.GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG;
+
+            case TextureFormat.PVRTC_2BPPV1_RGBA:
+                return WebGlConstants.GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG;
+            case TextureFormat.PVRTC_2BPPV1_RGB:
+                return WebGlConstants.GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG;
 
             default:
                 throw new Error("NotImplementedException");

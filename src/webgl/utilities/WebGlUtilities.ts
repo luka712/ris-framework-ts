@@ -8,6 +8,7 @@ import { WebGLRenderbufferUtilities } from "./webgl-renderbuffer-utilities";
 import { WebGlSamplerUtilities } from "./WebGlSamplerUtilities.ts";
 import { WebGlShaderUtilities } from "./WebGlShaderUtilities.ts";
 import { WebGlTextureUtilities } from "./WebGlTextureUtilities.ts";
+import {WebGlErrorUtilities} from "./WebGlErrorUtilities.ts";
 
 /**
  * The utility class for WebGL operations.
@@ -68,4 +69,7 @@ export class WebGlUtilities {
      * The WebGL program utilities.
      */
     public static readonly program = new WebGLProgramUtilities();
+
+    /** The WebGL error utilities. Helper class for working with errors. */
+    public  static  readonly error = new WebGlErrorUtilities();
 }

@@ -3,10 +3,40 @@ import {TextureFormat} from "./texture/TextureFormat.ts";
 import {Color} from "../data/Color.ts";
 import {RenderingBackend} from "./RenderingBackend.ts";
 import {vec2} from "gl-matrix";
+import type {PowerPreferenceType} from "./PowerPreference.ts";
+import type {TextureSamplerFilteringPreset} from "../../core/rendering/enums.ts";
+import type {TextureColorSpace} from "./enums.ts";
 
 
 /**
+ * The configuration for the renderer. This is used to initialize the renderer.
+ * @internal
+ */
+export interface IRendererConfiguration {
+
+    /**The size of the main frame buffer. */
+    backBufferSize: vec2;
+
+    /** Should back buffer use alpha. */
+    alpha: boolean;
+
+    /** The preference when it comes to selecting GPU device. Only makes sense to set on multi-GPU devices. */
+    powerPreference: PowerPreferenceType;
+
+    /**
+     * The preset for texture sampler filtering.
+     * This is used to configure the default texture sampler in the graphics device.
+     * The default texture sampler is used when a texture is sampled without a specific sampler being bound.
+     */
+    textureFiltering: TextureSamplerFilteringPreset;
+
+    /** The desired texture color space. */
+    textureColorSpace: TextureColorSpace;
+}
+
+/**
  * The interface for a renderer.
+ * @public
  */
 export interface IRenderer {
 
@@ -16,7 +46,10 @@ export interface IRenderer {
     readonly graphicsDevice: IGraphicsDevice;
 
     /**
-     * The surface preferred a texture format.
+     * The preferred texture format.
+     * This will encode texture which do not specify texture format to:
+     * - {@link TextureFormat.} // TODO: describe SRGB depending on TextureSurfaceFormat requested
+     * - {@link TextureFormat.} // TODO: describe RGBA depending on TextureSurfaceFormat requested
      */
     readonly preferredTextureFormat: TextureFormat;
 

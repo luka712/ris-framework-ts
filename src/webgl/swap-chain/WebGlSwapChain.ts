@@ -1,4 +1,4 @@
-import { vec2 } from "gl-matrix";
+import {vec2} from "gl-matrix";
 import {type IGraphicsDevice, type ISwapChain, TextureFormat} from "../../api/index.ts";
 import type {WebGlGraphicsDevice} from "../WebGlGraphicsDevice.ts";
 
@@ -16,8 +16,9 @@ export class WebGlSwapChain implements ISwapChain {
      * The WebGLSwapChain constructor.
      * @param canvas The HTML canvas element that the swap chain will use for rendering.
      * @param graphicsDevice The graphics device.
+     * @param srgb Prefer use of
      */
-    public constructor(canvas: HTMLCanvasElement, graphicsDevice: IGraphicsDevice) {
+    public constructor(canvas: HTMLCanvasElement, graphicsDevice: IGraphicsDevice, srgb = true) {
         this._canvas = canvas;
         this._graphicsDevice = graphicsDevice as WebGlGraphicsDevice;
         this._backBufferSize = vec2.fromValues(this._canvas.width, this._canvas.height);
@@ -25,13 +26,13 @@ export class WebGlSwapChain implements ISwapChain {
             this._backBufferSize[0] = this._canvas.width;
             this._backBufferSize[1] = this._canvas.height;
         });
-    }
 
+        // Nothing else to do. Typically, framebuffer should be srgb, but that is already handled through canvas.
+        this.textureFormat = srgb ? TextureFormat.RGBA_8_UNORM_SRGB : TextureFormat.RGBA_8_UNORM;
+    }
 
     /** @inheritdoc */
-    public get textureFormat(): TextureFormat {
-        return TextureFormat.RGBA_8_UNORM;
-    }
+    public readonly textureFormat: TextureFormat;
 
     /** @inheritdoc */
     public get backBufferSize(): vec2 {

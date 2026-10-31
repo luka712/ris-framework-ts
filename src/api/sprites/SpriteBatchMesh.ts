@@ -34,7 +34,7 @@ export class SpriteBatchMesh extends Mesh {
      */
     public constructor(framework: IFramework, material: SpriteMaterial, numberOfInstances: number) {
         // Drawn by the sprite batch, not by a scene.
-        super(framework, null, material);
+        super(framework);
         this._spriteMaterial = material;
         this._maxInstances = numberOfInstances;
 

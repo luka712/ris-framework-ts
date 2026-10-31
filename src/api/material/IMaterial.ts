@@ -1,9 +1,8 @@
 import type { IDisposable } from "../core/IDisposable.ts";
 import {GeometryFormat} from "../geometry/GeometryFormat.ts";
-import type { IMesh } from "../meshes/IMesh.ts";
+import type { IRenderableMesh } from "../meshes/IRenderableMesh.ts";
 import type { IVertexBuffer } from "../rendering/buffers/IVertexBuffer.ts";
 import type { IIndexBuffer } from "../rendering/buffers/IIndexBuffer.ts";
-import type { ICamera } from "../camera/ICamera.ts";
 import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
 
 /**
@@ -11,12 +10,6 @@ import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
  * @public
  */
 export interface IMaterial extends IDisposable {
-
-    /**
-     * The camera this material renders with, for materials that use one (unlit, Blinn-Phong).
-     * A `Scene` assigns its camera to the materials of its meshes in `scene.update()`.
-     */
-    camera?: ICamera;
 
     /**
      * The model buffer (std140 `mat4`) for materials that use one (unlit, Blinn-Phong, inspect mips).
@@ -37,7 +30,7 @@ export interface IMaterial extends IDisposable {
      * Renders the mesh with this material, honouring the mesh's index range.
      * @param mesh - The mesh.
      */
-    renderMesh(mesh: IMesh): void;
+    renderMesh(mesh: IRenderableMesh): void;
 
     /**
      * Renders the material.

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { mat4 } from "gl-matrix";
-import { Mesh } from "../src/api/meshes/Mesh.ts";
+import { RenderableMesh } from "../src/api/meshes/RenderableMesh.ts";
 import type { IFramework } from "../src/api/IFramework.ts";
 import type { IMaterial } from "../src/api/material/IMaterial.ts";
 
@@ -24,9 +24,9 @@ const material = () => {
     return m;
 };
 
-describe("Mesh transform", () => {
+describe("RenderableMesh transform", () => {
     it("defaults to identity (position 0, rotation 0, scale 1)", () => {
-        const mesh = new Mesh(framework, null);
+        const mesh = new RenderableMesh(framework);
         expect([...mesh.position]).toEqual([0, 0, 0]);
         expect([...mesh.rotation]).toEqual([0, 0, 0]);
         expect([...mesh.scale]).toEqual([1, 1, 1]);
@@ -34,7 +34,7 @@ describe("Mesh transform", () => {
     });
 
     it("composes T * Ry * Rx * Rz * S and recomputes after in-place edits", () => {
-        const mesh = new Mesh(framework, null);
+        const mesh = new RenderableMesh(framework);
         mesh.position = [1, 2, 3];
         mesh.rotation = [0.3, 0.5, 0.7];
         mesh.scale[0] = 2; // in-place edit
@@ -54,7 +54,7 @@ describe("Mesh transform", () => {
     it("owns a model buffer, assigns it to its material and uploads only when the transform changed", () => {
         const { framework: fw, buffers } = bufferFramework();
         const m = material();
-        const mesh = new Mesh(fw, null, m as unknown as IMaterial);
+        const mesh = new RenderableMesh(fw, m as unknown as IMaterial);
         mesh.position = [4, 0, 0];
         mesh.render();
         expect(buffers).toHaveLength(1);
@@ -77,14 +77,14 @@ describe("Mesh transform", () => {
     it("skips materials without a modelBuffer property and creates no buffer for them", () => {
         const { framework: fw, buffers } = bufferFramework();
         const sprite = { beforeRender: vi.fn(), renderMesh: vi.fn() };
-        new Mesh(fw, null, sprite as unknown as IMaterial).render();
+        new RenderableMesh(fw, sprite as unknown as IMaterial).render();
         expect(buffers).toHaveLength(0);
         expect("modelBuffer" in sprite).toBe(false);
     });
 
     it("submeshes share the parent's model buffer and assign it to their materials", () => {
         const { framework: fw, buffers } = bufferFramework();
-        const mesh = new Mesh(fw, null);
+        const mesh = new RenderableMesh(fw);
         const a = material(), b = material();
         const subA = mesh.addSubMesh(a as unknown as IMaterial, 0, 3);
         mesh.addSubMesh(b as unknown as IMaterial, 3, 3);
@@ -98,5 +98,55 @@ describe("Mesh transform", () => {
         expect(b.seen[0]).toBe(buffers[0]);
         const expected = Array.from(mat4.fromYRotation(mat4.create(), Math.PI / 2));
         buffers[0].data.forEach((v, i) => expect(v).toBeCloseTo(expected[i]));
+    });
+});
+
+describe("RenderableMesh sub meshes", () => {
+    const buffers = () => ({ vertexBuffer: { dispose: vi.fn() }, indexBuffer: { dispose: vi.fn() } });
+
+    it("draws its own range first, then the sub meshes; a root without material draws only sub meshes", () => {
+        const { framework: fw } = bufferFramework();
+        const order: string[] = [];
+        const mat = (name: string) => ({ beforeRender: vi.fn(), renderMesh: vi.fn(() => order.push(name)) }) as unknown as IMaterial;
+        const root = new RenderableMesh(fw, mat("root"));
+        root.addSubMesh(mat("a"), 0, 3);
+        root.addSubMesh(mat("b"), 3, 6);
+        root.render();
+        expect(order).toEqual(["root", "a", "b"]);
+
+        order.length = 0;
+        const bare = new RenderableMesh(fw);
+        bare.addSubMesh(mat("c"), 0, 3);
+        bare.render();
+        expect(order).toEqual(["c"]);
+    });
+
+    it("sub meshes share the parent's buffers, store their range and default to all indices", () => {
+        const root = new RenderableMesh(framework);
+        const b = buffers();
+        Object.assign(root, { _vertexBuffer: b.vertexBuffer, _indexBuffer: b.indexBuffer });
+        const sub = root.addSubMesh(undefined, 6, 9);
+        expect(sub.parent).toBe(root);
+        expect(sub.vertexBuffer).toBe(b.vertexBuffer);
+        expect(sub.indexBuffer).toBe(b.indexBuffer);
+        expect([sub.indexStart, sub.indexCount]).toEqual([6, 9]);
+        expect([root.indexStart, root.indexCount]).toEqual([0, -1]);
+        expect(new RenderableMesh(framework, undefined, root, 1, 2).parent).toBe(root);
+        expect(root.subMeshes).toHaveLength(2);
+    });
+
+    it("disposing the root frees the shared buffers once and never the materials", () => {
+        const root = new RenderableMesh(framework);
+        const b = buffers();
+        Object.assign(root, { _vertexBuffer: b.vertexBuffer, _indexBuffer: b.indexBuffer });
+        const material = { dispose: vi.fn() } as unknown as IMaterial;
+        const sub = root.addSubMesh(material, 0, 3);
+        sub.dispose();
+        expect(b.vertexBuffer.dispose).not.toHaveBeenCalled();
+        root.dispose();
+        expect(b.vertexBuffer.dispose).toHaveBeenCalledOnce();
+        expect(b.indexBuffer.dispose).toHaveBeenCalledOnce();
+        expect(material.dispose).not.toHaveBeenCalled();
+        expect(root.subMeshes).toHaveLength(0);
     });
 });

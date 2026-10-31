@@ -36,8 +36,9 @@ export interface LightsBufferDescriptor {
 }
 
 /**
- * Holds the lights of a scene and owns the uniform buffer that shaders read them from.
- * Assign it to lit materials, e.g. `ForwardBlinnPhongMaterial.lightsBuffer`.
+ * Holds lights and owns the uniform buffer that shaders read them from.
+ * Each lit material (`ForwardBlinnPhongMaterial`) owns one.
+ *
  *
  * std140 layout of the `LightsBuffer` block:
  * Every light colour is written premultiplied by its intensity, so the layout has no intensity field.
@@ -52,14 +53,20 @@ export interface LightsBuffer extends IDisposable {
     /** The ambient light written to the buffer. */
     ambientLight: AmbientLight;
 
-    /** The directional lights written to the buffer. Read-only; use {@link add} and {@link remove}. Unused slots are black. */
-    readonly directionalLights: readonly DirectionalLight[];
+    /**
+     * The directional lights written to the buffer. Can be replaced by another list, which is then used by reference
+     * (a lit material uses the scene's list). Only the first {@link maxDirectionalLights} are written; unused slots are black.
+     */
+    directionalLights: DirectionalLight[];
 
     /** The number of directional light slots in the buffer. */
     readonly maxDirectionalLights: number;
 
-    /** The point lights written to the buffer. Read-only; use {@link add} and {@link remove}. Unused slots are black. */
-    readonly pointLights: readonly PointLight[];
+    /**
+     * The point lights written to the buffer. Can be replaced by another list, which is then used by reference.
+     * Only the first {@link maxPointLights} are written; unused slots are black.
+     */
+    pointLights: PointLight[];
 
     /** The number of point light slots in the buffer. */
     readonly maxPointLights: number;

@@ -9,7 +9,7 @@ import {
     TextureUtilities
 } from "../../api/index.ts"
 import {WebGlTexture2D} from "./WebGlTexture2D.ts";
-import {type IKtx2Texture, KtxTranscodeFlags, KtxTranscodeFormat, TextureFormatInfo, VkFormat} from "ris-ktx2";
+import {type IKtx2Texture, KtxTranscodeFlags, KtxTranscodeFormat, VkFormat} from "ris-ktx2";
 import {vec2} from "gl-matrix";
 
 export class WebGlTextureFactory implements ITextureFactory {
@@ -31,13 +31,13 @@ export class WebGlTextureFactory implements ITextureFactory {
         let transcodeFormat = KtxTranscodeFormat.NO_SELECTION;
         let textureFormat = descriptor.textureFormat;
         const gpuFeatures = this._framework.graphicsDevice.features;
-        let texFormatInfo: TextureFormatInfo | null = null;
 
         if (ktxTexture.needsTranscoding && vkFormat == VkFormat.UNDEFINED)
         {
             // If descriptor format is UNDEFINED, we will use format according to the GPU features.
             if(descriptor.textureFormat == TextureFormat.UNDEFINED)
             {
+                // BC7 needs BPTC (supportsTextureCompressionBC), BC3 needs S3TC.
                 if(gpuFeatures.supportsTextureCompressionBC)
                 {
                     transcodeFormat = KtxTranscodeFormat.BC7_RGBA;
@@ -46,7 +46,7 @@ export class WebGlTextureFactory implements ITextureFactory {
                 else if(gpuFeatures.supportsTextureCompressionASTC)
                 {
                     transcodeFormat = KtxTranscodeFormat.ASTC_4X4_RGBA;
-                    textureFormat = TextureFormat.ASTC_4X4_RGBA
+                    textureFormat = TextureFormat.ASTC_4X4_RGBA_UNORM
                 }
                 else if(gpuFeatures.supportsTextureCompressionS3TC)
                 {
@@ -58,6 +58,16 @@ export class WebGlTextureFactory implements ITextureFactory {
                     transcodeFormat = KtxTranscodeFormat.ETC2_RGBA;
                     textureFormat = TextureFormat.ETC2_RGBA8_UNORM;
                 }
+                else if(gpuFeatures.supportsTextureCompressionPVRTC)
+                {
+                    transcodeFormat = KtxTranscodeFormat.PVRTC1_4_RGBA;
+                    textureFormat = TextureFormat.PVRTC_4BPPV1_RGBA;
+                }
+                else
+                {
+                    transcodeFormat = KtxTranscodeFormat.RGBA32;
+                    textureFormat = TextureFormat.RGBA_8_UNORM;
+                }
             }
             else
             {
@@ -65,12 +75,23 @@ export class WebGlTextureFactory implements ITextureFactory {
             }
 
             ktxTexture.transcodeBasis(transcodeFormat, KtxTranscodeFlags.HIGH_QUALITY);
-            texFormatInfo = ktxTexture.getTextureFormatInfo(TextureUtilities.convertKtxTranscodeFormatToVkFormat(transcodeFormat));
+
+            // After transcoding, libktx reports the sRGB vkFormat when the file's DFD transfer function is sRGB.
+            if (descriptor.textureFormat == TextureFormat.UNDEFINED && WebGlTextureFactory._isSrgbVkFormat(ktxTexture.vkFormat))
+            {
+                textureFormat = TextureUtilities.toSrgbFormat(textureFormat);
+            }
         }
         else {
-            // No transcoding path, but still get info about the texture format.
+            // No transcoding path, the vkFormat already says linear or sRGB.
             textureFormat = TextureUtilities.convertVkFormatToTextureFormat(vkFormat);
-            texFormatInfo = ktxTexture.getTextureFormatInfo(vkFormat);
+        }
+
+        textureFormat = this._ensureSrgbSupported(textureFormat, ktxTexture.filePath);
+
+        const blockSize = TextureUtilities.getBlockSize(textureFormat);
+        if (!blockSize) {
+            throw new Error(`Unknown block size for texture format ${textureFormat}.`);
         }
 
         const data: Uint8Array[] = [];
@@ -85,11 +106,32 @@ export class WebGlTextureFactory implements ITextureFactory {
         textureDescriptor.data = data;
         textureDescriptor.textureFormat = textureFormat;
         textureDescriptor.generateMipmaps = descriptor.generateMipmaps;
-        textureDescriptor.blockSize = vec2.fromValues(texFormatInfo.blockWidth, texFormatInfo.blockHeight);
+        textureDescriptor.blockSize = vec2.fromValues(blockSize[0], blockSize[1]);
 
         const texture = new WebGlTexture2D(this._framework, textureDescriptor);
         texture.initialize();
         return texture;
+    }
+
+    /** Whether the Vulkan format is an sRGB format. */
+    private static _isSrgbVkFormat(vkFormat: VkFormat): boolean {
+        const name = (VkFormat as unknown as Record<number, string>)[vkFormat];
+        return typeof name === "string" && name.includes("_SRGB");
+    }
+
+    /**
+     * Falls back to the linear variant (with a warning) when the GPU cannot sample the sRGB format.
+     * Only S3TC sRGB (BC1/BC3) has its own WebGL extension; BC7, ETC2 and ASTC sRGB ship with their base extension.
+     */
+    private _ensureSrgbSupported(textureFormat: TextureFormat, source?: string): TextureFormat {
+        const isS3tcSrgb = textureFormat === TextureFormat.BC3_RGBA_SRGB || textureFormat === TextureFormat.BC1_RGB_SRGB;
+        if (isS3tcSrgb && !this._framework.graphicsDevice.features.supportsTextureCompressionS3TCSrgb) {
+            const linear = TextureUtilities.toLinearFormat(textureFormat);
+            console.warn(`sRGB S3TC is not supported (WEBGL_compressed_texture_s3tc_srgb missing); ` +
+                `loading ${source ?? "texture"} as ${linear}. Colours will look washed out.`);
+            return linear;
+        }
+        return textureFormat;
     }
 
     /** @inheritdoc */
