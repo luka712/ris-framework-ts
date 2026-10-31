@@ -343,4 +343,19 @@ export class TextureUtilities {
     public static isSrgbFormat(textureFormat: TextureFormat) : boolean {
         return this._srgbFormats.includes(textureFormat);
     }
+
+    /**
+     * Returns the requested format if it is the file's format or its sRGB/linear variant.
+     * @param fileFormat The format the data is stored in.
+     * @param requested The explicitly requested format.
+     * @throws If the requested format cannot reinterpret the data.
+     */
+    public static resolveExplicitFormat(fileFormat: TextureFormat, requested: TextureFormat): TextureFormat {
+        if (requested == fileFormat
+            || requested == TextureUtilities.convertToSrgbVariant(fileFormat)
+            || requested == TextureUtilities.convertToLinearVariant(fileFormat)) {
+            return requested;
+        }
+        throw new Error(`Texture format ${requested} is not compatible with the file's format ${fileFormat}; only its sRGB or linear variant can be used.`);
+    }
 }

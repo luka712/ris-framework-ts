@@ -1,3 +1,4 @@
+import {ColorSpace} from "../rendering/enums.ts";
 import {
     type IShaderModule,
     type IContentManager,
@@ -94,7 +95,10 @@ export class ContentManager implements IContentManager {
             return tex;
         }
 
-        let format = this._framework.renderer.preferredTextureFormat;
+        // The descriptor's color space overrides the renderer's; an explicit format overrides both.
+        let format = desc.preferredColorSpace
+            ? (desc.preferredColorSpace == ColorSpace.SRGB ? TextureFormat.RGBA_8_UNORM_SRGB : TextureFormat.RGBA_8_UNORM)
+            : this._framework.renderer.preferredTextureFormat;
 
         if (desc.textureFormat != TextureFormat.UNDEFINED) {
             format = desc.textureFormat;

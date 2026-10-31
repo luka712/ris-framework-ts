@@ -36,6 +36,7 @@ export abstract class ARenderer implements ITempRenderer {
     private _swapChainRequiresResize: boolean = false;
     private _mainRenderPassDirty = true;
     private _clearColor: Color = Color.lightPink();
+    private _colorSpace: ColorSpace;
 
     protected _mainRenderTargetRequiresResize: boolean = false;
     protected _swapChain: ISwapChain = null!;
@@ -45,6 +46,7 @@ export abstract class ARenderer implements ITempRenderer {
     protected _mainRenderTargetRenderPass?: IRenderPass;
     protected _mainRenderTargetPipeline?: IMainRenderTargetRenderPipeline;
     protected _renderConfiguration: IRendererConfiguration;
+
 
     /** @inheritdoc */
     public get graphicsDevice(): IGraphicsDevice {
@@ -67,10 +69,27 @@ export abstract class ARenderer implements ITempRenderer {
     }
 
     /** @inheritdoc */
-    public readonly preferredTextureFormat: TextureFormat;
+    public get preferredTextureFormat(): TextureFormat {
+        return this._colorSpace == ColorSpace.SRGB ? TextureFormat.RGBA_8_UNORM_SRGB : TextureFormat.RGBA_8_UNORM;
+    }
 
     /** @inheritDoc */
-    public readonly preferredColorSpace: ColorSpace;
+    public get colorSpace(): ColorSpace {
+        return this._colorSpace;
+    }
+
+    /** @inheritDoc */
+    public set colorSpace(colorSpace: ColorSpace) {
+        if (colorSpace == this._colorSpace) {
+            return;
+        }
+        this._colorSpace = colorSpace;
+        if (this._mainRenderTargetPipeline) {
+            this._mainRenderTargetPipeline.colorSpace = colorSpace;
+            // The main render target's format follows the color space, so recreate it on the next frame.
+            this._mainRenderTargetRequiresResize = true;
+        }
+    }
 
     /** @inheritdoc */
     public get preferredDepthStencilFormat(): TextureFormat {
@@ -111,9 +130,7 @@ export abstract class ARenderer implements ITempRenderer {
         this._windowManager = framework.windowManager;
         this._currentBackBufferSize[0] = this._windowManager.canvas.width;
         this._currentBackBufferSize[1] = this._windowManager.canvas.height;
-        this.preferredColorSpace = configuration.textureColorSpace;
-        this.preferredTextureFormat = configuration.textureColorSpace == ColorSpace.SRGB
-            ? TextureFormat.RGBA_8_UNORM_SRGB : TextureFormat.RGBA_8_UNORM;
+        this._colorSpace = configuration.textureColorSpace;
     }
 
      backend: RenderingBackend = RenderingBackend.WEB_GL;
@@ -192,6 +209,7 @@ export abstract class ARenderer implements ITempRenderer {
         this._mainRenderTargetPipeline = this._framework
             .renderPipelineFactory
             .createMainFrameBufferPipeline(this._mainRenderTarget);
+        this._mainRenderTargetPipeline.colorSpace = this._colorSpace;
 
         this._createMainRenderPass();
         this._mainRenderTargetRequiresResize = false;
