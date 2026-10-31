@@ -1,23 +1,23 @@
 import {
     Color,
     Framework,
-    FrameworkConfiguration,
-    Rect,
-    TextureSamplerFilteringPreset,
     type IFramework,
     type ITexture2D,
+    Rect,
+    TextureSamplerFilteringPreset,
 } from "../../src/index.ts";
 // Kodak test image kodim23 (parrots), resized to 512×341. See README.md for source and license.
-import parrotsUrl from "./assets/kodim23.png?url";
+import parrotsUrl from "./assets/kodim23.ktx2?url";
+import {TextureColorSpace} from "../../src/api/rendering/enums.ts";
 
 const status = document.querySelector<HTMLParagraphElement>("#status")!;
 const canvas = document.querySelector<HTMLCanvasElement>("#game-canvas")!;
 
-const config = new FrameworkConfiguration();
-config.canvas = canvas;
-config.textureFiltering = TextureSamplerFilteringPreset.BILINEAR;
-
-const framework: IFramework = new Framework(config);
+const framework: IFramework = new Framework({
+    canvas,
+    textureFiltering: TextureSamplerFilteringPreset.BILINEAR,
+    textureColorSpace: TextureColorSpace.SRGB
+});
 
 let parrots: ITexture2D | undefined;
 const drawRect = new Rect(16, 16, 512, 341);
@@ -28,7 +28,7 @@ framework.addOnLoadContentListener(async () => {
         parrots = await framework.content.loadTexture2DAsync(parrotsUrl);
         drawRect.width = parrots.width;
         drawRect.height = parrots.height;
-        status.textContent = `Loaded kodim23.png (${parrots.width}×${parrots.height}).`;
+        status.textContent = `Loaded kodim23.ktx2 (${parrots.width}×${parrots.height}).`;
     } catch (error) {
         status.textContent = error instanceof Error ? error.message : String(error);
     }

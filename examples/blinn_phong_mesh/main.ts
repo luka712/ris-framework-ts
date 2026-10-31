@@ -1,22 +1,22 @@
 import {
     Color,
     Framework,
-    FrameworkConfiguration,
     DirectionalLight,
     PointLight,
     Scene,
     type GameTime,
     type IFramework,
     type IRenderableMesh,
-    type PerspectiveCamera,
+    type PerspectiveCamera, IFrameworkConfiguration,
 } from "../../src";
 import cubeUrl from "./assets/cube.obj?url";
 
 const status = document.querySelector<HTMLParagraphElement>("#status")!;
 const canvas = document.querySelector<HTMLCanvasElement>("#game-canvas")!;
 
-const config = new FrameworkConfiguration();
-config.canvas = canvas;
+const config: IFrameworkConfiguration = {
+    canvas
+};
 
 const framework: IFramework = new Framework(config);
 

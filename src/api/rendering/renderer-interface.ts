@@ -1,34 +1,10 @@
 import { vec2 } from "gl-matrix";
-import { TextureSamplerFilteringPreset } from "../../core/rendering/enums.ts";
 import type {RenderingLimits} from "./rendering-limits.ts";
-import type {Color, IGraphicsDevice, IRenderer} from "../index.ts";
+import type { IRenderer} from "../index.ts";
 import type {TextureFormat} from "../index.ts";
-import {PowerPreferenceType} from "./PowerPreference.ts";
 
-export const RenderConfigurationSymbol = Symbol("RenderConfiguration");
 
-/**
- * The configuration for the renderer. This is used to initialize the renderer.
- * @internal
- */
-export interface IRendererConfiguration {
 
-    /**The size of the main frame buffer. */
-    backBufferSize: vec2;
-
-    /** Should back buffer use alpha. */
-    alpha: boolean;
-
-    /** The preference when it comes to selecting GPU device. Only makes sense to set on multi-GPU devices. */
-    powerPreference: PowerPreferenceType;
-
-    /**
-     * The preset for texture sampler filtering.
-     *  This is used to configure the default texture sampler in the graphics device. 
-     * The default texture sampler is used when a texture is sampled without a specific sampler being bound.
-     */
-    textureFiltering: TextureSamplerFilteringPreset;
-}
 
 /**
  * The interface for renderers.
@@ -36,20 +12,9 @@ export interface IRendererConfiguration {
 export interface ITempRenderer extends IRenderer {
 
     /**
-     * The clear color used by the renderer.
-     */
-    clearColor: Color
-
-    /**
      * The rendering limits of the renderer.
      */
     limits: RenderingLimits | null;
-
-    /**
-     * The graphics device used by the renderer. 
-     * This is used to create resources and manage the rendering context.
-     */
-    readonly graphicsDevice: IGraphicsDevice;
 
     /**
      * The preferred texture format for the renderer.

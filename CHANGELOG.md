@@ -34,6 +34,8 @@ Compared with `main` (0.1.0).
 - `SpriteMaterial` and `materialFactory.createSpriteMaterial`; sprite batches draw through it.
 - `UnlitMaterialDescriptor.camera` and a `camera` property on the unlit and Blinn-Phong materials. A scene assigns its camera through this property.
 - Examples: `unlit_mesh`, `blinn_phong_mesh` and `sprite_batch`, with `npm run dev:examples` and `npm run build:examples`.
+- WebGPU backend (first slice): set `renderingBackend` in the framework configuration and call `framework.initializeAsync()`. WebGL stays the default, and the framework falls back to WebGL with a warning when WebGPU is unavailable. Only the unlit pipeline is implemented; Blinn-Phong, sprite, inspect mips and KTX2 textures throw "not implemented for WebGPU" for now. Example: `unlit_mesh_webgpu`.
+- sRGB compressed texture formats: `BC7_RGBA_SRGB`, `BC3_RGBA_SRGB`, `ETC2_RGBA8_SRGB`, plus `BC1_RGB_UNORM`/`BC1_RGB_SRGB` and `ETC2_RGB8_UNORM`/`ETC2_RGB8_SRGB`, mapped for WebGL and WebGPU (WebGPU also maps BC3, BC7, ETC2 and every ASTC size). KTX2 loading picks the sRGB variant when the file is sRGB (from its vkFormat, or the transcoded vkFormat for Basis files) and falls back to linear with a warning when the GPU lacks sRGB S3TC. `IGraphicsDeviceFeatures.supportsTextureCompressionS3TCSrgb` reports `WEBGL_compressed_texture_s3tc_srgb`. The WebGPU device requests the texture-compression features the adapter has.
 
 ### Changed
 
@@ -46,6 +48,7 @@ Compared with `main` (0.1.0).
 - The default texture was a static shared by every `Framework` instance, so a second framework (a new GL context) reused a texture from the old one. It is now per framework.
 - The anisotropic filtering helper cached the extension object from the first GL context on a shared static. It is now looked up per context.
 - A leftover `debugger` statement in `WebGlGraphicsDevice` initialization is removed.
+- WebGL compression flags were swapped: `EXT_texture_compression_bptc` set `supportsTextureCompressionS3TC` and `WEBGL_compressed_texture_s3tc` set `supportsTextureCompressionBC`, so KTX2 loading could pick BC7 on a GPU without BPTC.
 
 ### Removed
 

@@ -8,36 +8,199 @@ import {AlignUtilities} from "../../utilities/AlignUtilities.ts";
 export class TextureUtilities {
 
     private static readonly _compressedTextureFormats = [
-        TextureFormat.ASTC_4X4_RGBA,
+
+        // ASTC
+        TextureFormat.ASTC_4X4_RGBA_UNORM,
+        TextureFormat.ASTC_4X4_RGBA_SRGB,
+        TextureFormat.ASTC_5X4_RGBA_UNORM,
+        TextureFormat.ASTC_5X4_RGBA_SRGB,
+        TextureFormat.ASTC_5X5_RGBA_UNORM,
+        TextureFormat.ASTC_5X5_RGBA_SRGB,
+        TextureFormat.ASTC_6X5_RGBA_UNORM,
+        TextureFormat.ASTC_6X5_RGBA_SRGB,
+        TextureFormat.ASTC_6X6_RGBA_UNORM,
+        TextureFormat.ASTC_6X6_RGBA_SRGB,
+        TextureFormat.ASTC_8X5_RGBA_UNORM,
+        TextureFormat.ASTC_8X5_RGBA_SRGB,
+        TextureFormat.ASTC_8X6_RGBA_UNORM,
+        TextureFormat.ASTC_8X6_RGBA_SRGB,
+        TextureFormat.ASTC_8X8_RGBA_UNORM,
+        TextureFormat.ASTC_8X8_RGBA_SRGB,
+        TextureFormat.ASTC_10X5_RGBA_UNORM,
+        TextureFormat.ASTC_10X5_RGBA_SRGB,
+        TextureFormat.ASTC_10X6_RGBA_UNORM,
+        TextureFormat.ASTC_10X6_RGBA_SRGB,
+        TextureFormat.ASTC_10X8_RGBA_UNORM,
+        TextureFormat.ASTC_10X8_RGBA_SRGB,
+        TextureFormat.ASTC_10X10_RGBA_UNORM,
+        TextureFormat.ASTC_10X10_RGBA_SRGB,
+        TextureFormat.ASTC_12X10_RGBA_UNORM,
+        TextureFormat.ASTC_12X10_RGBA_SRGB,
+        TextureFormat.ASTC_12X12_RGBA_UNORM,
+        TextureFormat.ASTC_12X12_RGBA_SRGB,
+
+        // PVRTC
+        TextureFormat.PVRTC_4BPPV1_RGBA,
+        TextureFormat.PVRTC_4BPPV1_RGB,
+        TextureFormat.PVRTC_2BPPV1_RGBA,
+        TextureFormat.PVRTC_2BPPV1_RGB,
+
         TextureFormat.BC3_RGBA_UNORM,
         TextureFormat.BC7_RGBA_UNORM,
-        TextureFormat.ETC2_RGBA8_UNORM
+        TextureFormat.ETC2_RGBA8_UNORM,
+
+        // sRGB and RGB variants
+        TextureFormat.BC7_RGBA_SRGB,
+        TextureFormat.BC3_RGBA_SRGB,
+        TextureFormat.BC1_RGB_UNORM,
+        TextureFormat.BC1_RGB_SRGB,
+        TextureFormat.ETC2_RGBA8_SRGB,
+        TextureFormat.ETC2_RGB8_UNORM,
+        TextureFormat.ETC2_RGB8_SRGB,
     ];
-    private static readonly _vkFormatTextureFormat: { [key: number]: number } = {
+
+    /** Linear compressed format → its sRGB variant. */
+    private static readonly _srgbVariant: { [key: string]: TextureFormat } = {
+        [TextureFormat.RGBA_8_UNORM]: TextureFormat.RGBA_8_UNORM_SRGB,
+        [TextureFormat.BC7_RGBA_UNORM]: TextureFormat.BC7_RGBA_SRGB,
+        [TextureFormat.BC3_RGBA_UNORM]: TextureFormat.BC3_RGBA_SRGB,
+        [TextureFormat.BC1_RGB_UNORM]: TextureFormat.BC1_RGB_SRGB,
+        [TextureFormat.ETC2_RGBA8_UNORM]: TextureFormat.ETC2_RGBA8_SRGB,
+        [TextureFormat.ETC2_RGB8_UNORM]: TextureFormat.ETC2_RGB8_SRGB,
+        [TextureFormat.ASTC_4X4_RGBA_UNORM]: TextureFormat.ASTC_4X4_RGBA_SRGB,
+        [TextureFormat.ASTC_5X4_RGBA_UNORM]: TextureFormat.ASTC_5X4_RGBA_SRGB,
+        [TextureFormat.ASTC_5X5_RGBA_UNORM]: TextureFormat.ASTC_5X5_RGBA_SRGB,
+        [TextureFormat.ASTC_6X5_RGBA_UNORM]: TextureFormat.ASTC_6X5_RGBA_SRGB,
+        [TextureFormat.ASTC_6X6_RGBA_UNORM]: TextureFormat.ASTC_6X6_RGBA_SRGB,
+        [TextureFormat.ASTC_8X5_RGBA_UNORM]: TextureFormat.ASTC_8X5_RGBA_SRGB,
+        [TextureFormat.ASTC_8X6_RGBA_UNORM]: TextureFormat.ASTC_8X6_RGBA_SRGB,
+        [TextureFormat.ASTC_8X8_RGBA_UNORM]: TextureFormat.ASTC_8X8_RGBA_SRGB,
+        [TextureFormat.ASTC_10X5_RGBA_UNORM]: TextureFormat.ASTC_10X5_RGBA_SRGB,
+        [TextureFormat.ASTC_10X6_RGBA_UNORM]: TextureFormat.ASTC_10X6_RGBA_SRGB,
+        [TextureFormat.ASTC_10X8_RGBA_UNORM]: TextureFormat.ASTC_10X8_RGBA_SRGB,
+        [TextureFormat.ASTC_10X10_RGBA_UNORM]: TextureFormat.ASTC_10X10_RGBA_SRGB,
+        [TextureFormat.ASTC_12X10_RGBA_UNORM]: TextureFormat.ASTC_12X10_RGBA_SRGB,
+        [TextureFormat.ASTC_12X12_RGBA_UNORM]: TextureFormat.ASTC_12X12_RGBA_SRGB,
+    };
+    private static readonly _vkFormatTextureFormat: { [key: number]: TextureFormat } = {
         [VkFormat.R8G8B8A8_UNORM]: TextureFormat.RGBA_8_UNORM,
         [VkFormat.R8G8B8A8_SRGB]: TextureFormat.RGBA_8_UNORM_SRGB,
         [VkFormat.BC7_UNORM_BLOCK]: TextureFormat.BC7_RGBA_UNORM,
-        [VkFormat.ASTC_4X4_UNORM_BLOCK]: TextureFormat.ASTC_4X4_RGBA,
+
+        // ASTC
+        [VkFormat.ASTC_4X4_UNORM_BLOCK]: TextureFormat.ASTC_4X4_RGBA_UNORM,
+        [VkFormat.ASTC_4X4_SRGB_BLOCK]: TextureFormat.ASTC_4X4_RGBA_SRGB,
+        [VkFormat.ASTC_5X4_UNORM_BLOCK]: TextureFormat.ASTC_5X4_RGBA_UNORM,
+        [VkFormat.ASTC_5X4_SRGB_BLOCK]: TextureFormat.ASTC_5X4_RGBA_SRGB,
+        [VkFormat.ASTC_5X5_UNORM_BLOCK]: TextureFormat.ASTC_5X5_RGBA_UNORM,
+        [VkFormat.ASTC_5X5_SRGB_BLOCK]: TextureFormat.ASTC_5X5_RGBA_SRGB,
+        [VkFormat.ASTC_6X5_UNORM_BLOCK]: TextureFormat.ASTC_6X5_RGBA_UNORM,
+        [VkFormat.ASTC_6X5_SRGB_BLOCK]: TextureFormat.ASTC_6X5_RGBA_SRGB,
+        [VkFormat.ASTC_6X6_UNORM_BLOCK]: TextureFormat.ASTC_6X6_RGBA_UNORM,
+        [VkFormat.ASTC_6X6_SRGB_BLOCK]: TextureFormat.ASTC_6X6_RGBA_SRGB,
+        [VkFormat.ASTC_8X5_UNORM_BLOCK]: TextureFormat.ASTC_8X5_RGBA_UNORM,
+        [VkFormat.ASTC_8X5_SRGB_BLOCK]: TextureFormat.ASTC_8X5_RGBA_SRGB,
+        [VkFormat.ASTC_8X6_UNORM_BLOCK]: TextureFormat.ASTC_8X6_RGBA_UNORM,
+        [VkFormat.ASTC_8X6_SRGB_BLOCK]: TextureFormat.ASTC_8X6_RGBA_SRGB,
+        [VkFormat.ASTC_8X8_UNORM_BLOCK]: TextureFormat.ASTC_8X8_RGBA_UNORM,
+        [VkFormat.ASTC_8X8_SRGB_BLOCK]: TextureFormat.ASTC_8X8_RGBA_SRGB,
+        [VkFormat.ASTC_10X5_UNORM_BLOCK]: TextureFormat.ASTC_10X5_RGBA_UNORM,
+        [VkFormat.ASTC_10X5_SRGB_BLOCK]: TextureFormat.ASTC_10X5_RGBA_SRGB,
+        [VkFormat.ASTC_10X6_UNORM_BLOCK]: TextureFormat.ASTC_10X6_RGBA_UNORM,
+        [VkFormat.ASTC_10X6_SRGB_BLOCK]: TextureFormat.ASTC_10X6_RGBA_SRGB,
+        [VkFormat.ASTC_10X8_UNORM_BLOCK]: TextureFormat.ASTC_10X8_RGBA_UNORM,
+        [VkFormat.ASTC_10X8_SRGB_BLOCK]: TextureFormat.ASTC_10X8_RGBA_SRGB,
+        [VkFormat.ASTC_10X10_UNORM_BLOCK]: TextureFormat.ASTC_10X10_RGBA_UNORM,
+        [VkFormat.ASTC_10X10_SRGB_BLOCK]: TextureFormat.ASTC_10X10_RGBA_SRGB,
+        [VkFormat.ASTC_12X10_UNORM_BLOCK]: TextureFormat.ASTC_12X10_RGBA_UNORM,
+        [VkFormat.ASTC_12X10_SRGB_BLOCK]: TextureFormat.ASTC_12X10_RGBA_SRGB,
+        [VkFormat.ASTC_12X12_UNORM_BLOCK]: TextureFormat.ASTC_12X12_RGBA_UNORM,
+        [VkFormat.ASTC_12X12_SRGB_BLOCK]: TextureFormat.ASTC_12X12_RGBA_SRGB,
+
         [VkFormat.BC3_UNORM_BLOCK]: TextureFormat.BC3_RGBA_UNORM,
         [VkFormat.ETC2_R8G8B8A8_UNORM_BLOCK]: TextureFormat.ETC2_RGBA8_UNORM,
+        [VkFormat.PVRTC1_4BPP_UNORM_BLOCK_IMG]: TextureFormat.PVRTC_4BPPV1_RGBA,
+
+        // sRGB and RGB variants
+        [VkFormat.BC7_SRGB_BLOCK]: TextureFormat.BC7_RGBA_SRGB,
+        [VkFormat.BC3_SRGB_BLOCK]: TextureFormat.BC3_RGBA_SRGB,
+        [VkFormat.BC1_RGB_UNORM_BLOCK]: TextureFormat.BC1_RGB_UNORM,
+        [VkFormat.BC1_RGB_SRGB_BLOCK]: TextureFormat.BC1_RGB_SRGB,
+        [VkFormat.ETC2_R8G8B8A8_SRGB_BLOCK]: TextureFormat.ETC2_RGBA8_SRGB,
+        [VkFormat.ETC2_R8G8B8_UNORM_BLOCK]: TextureFormat.ETC2_RGB8_UNORM,
+        [VkFormat.ETC2_R8G8B8_SRGB_BLOCK]: TextureFormat.ETC2_RGB8_SRGB,
+
     }
 
-    private static readonly _textureFormatVkFormat: { [key: number]: number } = {
+    private static readonly _textureFormatVkFormat: { [key: string]: number } = {
         [TextureFormat.RGBA_8_UNORM]: VkFormat.R8G8B8A8_UNORM,
         [TextureFormat.RGBA_8_UNORM_SRGB]: VkFormat.R8G8B8A8_SRGB,
         [TextureFormat.DEPTH_24_STENCIL_8]: VkFormat.D24_UNORM_S8_UINT,
         [TextureFormat.BC3_RGBA_UNORM]: VkFormat.BC3_UNORM_BLOCK,
         [TextureFormat.BC7_RGBA_UNORM]: VkFormat.BC7_UNORM_BLOCK,
-        [TextureFormat.ASTC_4X4_RGBA]: VkFormat.ASTC_4X4_UNORM_BLOCK,
+
+        // ASTC
+        [TextureFormat.ASTC_4X4_RGBA_UNORM]: VkFormat.ASTC_4X4_UNORM_BLOCK,
+        [TextureFormat.ASTC_4X4_RGBA_SRGB]: VkFormat.ASTC_4X4_SRGB_BLOCK,
+        [TextureFormat.ASTC_5X4_RGBA_UNORM]: VkFormat.ASTC_5X4_UNORM_BLOCK,
+        [TextureFormat.ASTC_5X4_RGBA_SRGB]: VkFormat.ASTC_5X4_SRGB_BLOCK,
+        [TextureFormat.ASTC_5X5_RGBA_UNORM]: VkFormat.ASTC_5X5_UNORM_BLOCK,
+        [TextureFormat.ASTC_5X5_RGBA_SRGB]: VkFormat.ASTC_5X5_SRGB_BLOCK,
+        [TextureFormat.ASTC_6X5_RGBA_UNORM]: VkFormat.ASTC_6X5_UNORM_BLOCK,
+        [TextureFormat.ASTC_6X5_RGBA_SRGB]: VkFormat.ASTC_6X5_SRGB_BLOCK,
+        [TextureFormat.ASTC_6X6_RGBA_UNORM]: VkFormat.ASTC_6X6_UNORM_BLOCK,
+        [TextureFormat.ASTC_6X6_RGBA_SRGB]: VkFormat.ASTC_6X6_SRGB_BLOCK,
+        [TextureFormat.ASTC_8X5_RGBA_UNORM]: VkFormat.ASTC_8X5_UNORM_BLOCK,
+        [TextureFormat.ASTC_8X5_RGBA_SRGB]: VkFormat.ASTC_8X5_SRGB_BLOCK,
+        [TextureFormat.ASTC_8X6_RGBA_UNORM]: VkFormat.ASTC_8X6_UNORM_BLOCK,
+        [TextureFormat.ASTC_8X6_RGBA_SRGB]: VkFormat.ASTC_8X6_SRGB_BLOCK,
+        [TextureFormat.ASTC_8X8_RGBA_UNORM]: VkFormat.ASTC_8X8_UNORM_BLOCK,
+        [TextureFormat.ASTC_8X8_RGBA_SRGB]: VkFormat.ASTC_8X8_SRGB_BLOCK,
+        [TextureFormat.ASTC_10X5_RGBA_UNORM]: VkFormat.ASTC_10X5_UNORM_BLOCK,
+        [TextureFormat.ASTC_10X5_RGBA_SRGB]: VkFormat.ASTC_10X5_SRGB_BLOCK,
+        [TextureFormat.ASTC_10X6_RGBA_UNORM]: VkFormat.ASTC_10X6_UNORM_BLOCK,
+        [TextureFormat.ASTC_10X6_RGBA_SRGB]: VkFormat.ASTC_10X6_SRGB_BLOCK,
+        [TextureFormat.ASTC_10X8_RGBA_UNORM]: VkFormat.ASTC_10X8_UNORM_BLOCK,
+        [TextureFormat.ASTC_10X8_RGBA_SRGB]: VkFormat.ASTC_10X8_SRGB_BLOCK,
+        [TextureFormat.ASTC_10X10_RGBA_UNORM]: VkFormat.ASTC_10X10_UNORM_BLOCK,
+        [TextureFormat.ASTC_10X10_RGBA_SRGB]: VkFormat.ASTC_10X10_SRGB_BLOCK,
+        [TextureFormat.ASTC_12X10_RGBA_UNORM]: VkFormat.ASTC_12X10_UNORM_BLOCK,
+        [TextureFormat.ASTC_12X10_RGBA_SRGB]: VkFormat.ASTC_12X10_SRGB_BLOCK,
+        [TextureFormat.ASTC_12X12_RGBA_UNORM]: VkFormat.ASTC_12X12_UNORM_BLOCK,
+        [TextureFormat.ASTC_12X12_RGBA_SRGB]: VkFormat.ASTC_12X12_SRGB_BLOCK,
+
+        // PVRTC
+        [TextureFormat.PVRTC_4BPPV1_RGBA]: VkFormat.PVRTC1_4BPP_UNORM_BLOCK_IMG,
+        [TextureFormat.PVRTC_4BPPV1_RGB]: VkFormat.PVRTC1_4BPP_UNORM_BLOCK_IMG,
+        [TextureFormat.PVRTC_2BPPV1_RGBA]: VkFormat.PVRTC1_2BPP_UNORM_BLOCK_IMG,
+        [TextureFormat.PVRTC_2BPPV1_RGB]: VkFormat.PVRTC1_2BPP_UNORM_BLOCK_IMG,
+
+
         [TextureFormat.ETC2_RGBA8_UNORM] : VkFormat.ETC2_R8G8B8A8_UNORM_BLOCK,
+
+        // sRGB and RGB variants
+        [TextureFormat.BC7_RGBA_SRGB]: VkFormat.BC7_SRGB_BLOCK,
+        [TextureFormat.BC3_RGBA_SRGB]: VkFormat.BC3_SRGB_BLOCK,
+        [TextureFormat.BC1_RGB_UNORM]: VkFormat.BC1_RGB_UNORM_BLOCK,
+        [TextureFormat.BC1_RGB_SRGB]: VkFormat.BC1_RGB_SRGB_BLOCK,
+        [TextureFormat.ETC2_RGBA8_SRGB]: VkFormat.ETC2_R8G8B8A8_SRGB_BLOCK,
+        [TextureFormat.ETC2_RGB8_UNORM]: VkFormat.ETC2_R8G8B8_UNORM_BLOCK,
+        [TextureFormat.ETC2_RGB8_SRGB]: VkFormat.ETC2_R8G8B8_SRGB_BLOCK,
     };
 
-    private static readonly _mapTextureFormatKtxTranscodeFormat: { [key: number]: number } = {
+    private static readonly _mapTextureFormatKtxTranscodeFormat: { [key: string]: number } = {
         [TextureFormat.RGBA_8_UNORM]: KtxTranscodeFormat.RGBA32,
-        [TextureFormat.ASTC_4X4_RGBA]: KtxTranscodeFormat.ASTC_4X4_RGBA,
+        [TextureFormat.ASTC_4X4_RGBA_UNORM]: KtxTranscodeFormat.ASTC_4X4_RGBA,
         [TextureFormat.BC3_RGBA_UNORM]: KtxTranscodeFormat.BC3_RGBA,
         [TextureFormat.BC7_RGBA_UNORM]: KtxTranscodeFormat.BC7_RGBA,
         [TextureFormat.ETC2_RGBA8_UNORM]: KtxTranscodeFormat.ETC2_RGBA,
+        [TextureFormat.PVRTC_4BPPV1_RGBA] : KtxTranscodeFormat.PVRTC1_4_RGBA,
+        // Basis transcodes to the same blocks for sRGB; only the GPU format differs.
+        [TextureFormat.RGBA_8_UNORM_SRGB]: KtxTranscodeFormat.RGBA32,
+        [TextureFormat.ASTC_4X4_RGBA_SRGB]: KtxTranscodeFormat.ASTC_4X4_RGBA,
+        [TextureFormat.BC3_RGBA_SRGB]: KtxTranscodeFormat.BC3_RGBA,
+        [TextureFormat.BC7_RGBA_SRGB]: KtxTranscodeFormat.BC7_RGBA,
+        [TextureFormat.ETC2_RGBA8_SRGB]: KtxTranscodeFormat.ETC2_RGBA,
     };
 
     private static readonly _mapKtxTranscodeFormatVkFormat: { [key: number]: number } = {
@@ -49,17 +212,69 @@ export class TextureUtilities {
         [KtxTranscodeFormat.KTX_TTF_BC5_RG]: VkFormat.BC5_UNORM_BLOCK,
         [KtxTranscodeFormat.BC7_RGBA]: VkFormat.BC7_UNORM_BLOCK,
         [KtxTranscodeFormat.KTX_TTF_PVRTC1_4_RGB]: VkFormat.PVRTC1_4BPP_UNORM_BLOCK_IMG,
-        [KtxTranscodeFormat.KTX_TTF_PVRTC1_4_RGBA]: VkFormat.PVRTC1_4BPP_UNORM_BLOCK_IMG,
+        [KtxTranscodeFormat.PVRTC1_4_RGBA]: VkFormat.PVRTC1_4BPP_UNORM_BLOCK_IMG,
         [KtxTranscodeFormat.ASTC_4X4_RGBA]: VkFormat.ASTC_4X4_UNORM_BLOCK,
         [KtxTranscodeFormat.RGBA32]: VkFormat.R8G8B8A8_UNORM,
         [KtxTranscodeFormat.KTX_TTF_RGB565]: VkFormat.R5G6B5_UNORM_PACK16,
         [KtxTranscodeFormat.KTX_TTF_BGR565]: VkFormat.B5G6R5_UNORM_PACK16,
         [KtxTranscodeFormat.KTX_TTF_RGBA4444]: VkFormat.R4G4B4A4_UNORM_PACK16,
         [KtxTranscodeFormat.KTX_TTF_PVRTC2_4_RGB]: VkFormat.PVRTC2_4BPP_UNORM_BLOCK_IMG,
-        [KtxTranscodeFormat.KTX_TTF_PVRTC2_4_RGBA]: VkFormat.PVRTC2_4BPP_UNORM_BLOCK_IMG,
+        [KtxTranscodeFormat.PVRTC2_4_RGBA]: VkFormat.PVRTC2_4BPP_UNORM_BLOCK_IMG,
         [KtxTranscodeFormat.KTX_TTF_ETC2_EAC_R11]: VkFormat.EAC_R11_UNORM_BLOCK,
         [KtxTranscodeFormat.KTX_TTF_ETC2_EAC_RG11]: VkFormat.EAC_R11G11_UNORM_BLOCK,
     };
+
+    /**
+     * Whether the format stores sRGB-encoded colour (sampled as linear by the GPU).
+     * @param format The texture format.
+     */
+    public static isSrgbFormat(format: TextureFormat): boolean {
+        return format.endsWith("_SRGB");
+    }
+
+    /**
+     * Gets the sRGB variant of a linear format, or the format itself if it has none or is already sRGB.
+     * @param format The texture format.
+     */
+    public static toSrgbFormat(format: TextureFormat): TextureFormat {
+        return this._srgbVariant[format] ?? format;
+    }
+
+    /**
+     * Gets the linear variant of an sRGB format, or the format itself.
+     * @param format The texture format.
+     */
+    public static toLinearFormat(format: TextureFormat): TextureFormat {
+        for (const linear in this._srgbVariant) {
+            if (this._srgbVariant[linear] === format) return linear as TextureFormat;
+        }
+        return format;
+    }
+
+    /**
+     * Gets the block size (width, height) of a format: 1x1 for uncompressed, 4x4 for BC/ETC2, and the ASTC block.
+     * Returns null for formats it does not know.
+     * @param format The texture format.
+     */
+    public static getBlockSize(format: TextureFormat): [number, number] | null {
+        if (!this.isCompressedTextureFormat(format)) {
+            return [1, 1];
+        }
+        const astc = /^ASTC_(\d+)X(\d+)_/.exec(format);
+        if (astc) {
+            return [Number(astc[1]), Number(astc[2])];
+        }
+        if (format.startsWith("BC") || format.startsWith("ETC2")) {
+            return [4, 4];
+        }
+        if (format.startsWith("PVRTC_2BPP")) {
+            return [8, 4];
+        }
+        if (format.startsWith("PVRTC_4BPP")) {
+            return [4, 4];
+        }
+        return null;
+    }
 
     /**
      * Checks if the given texture format is a compressed texture format.

@@ -5,7 +5,7 @@ import { TextureFormat, TextureUtilities } from "../src/api/index.ts";
 describe("TextureUtilities", () => {
     it("recognizes the compressed texture formats", () => {
         const compressed = [
-            TextureFormat.ASTC_4X4_RGBA,
+            TextureFormat.ASTC_4X4_RGBA_UNORM,
             TextureFormat.BC3_RGBA_UNORM,
             TextureFormat.BC7_RGBA_UNORM,
             TextureFormat.ETC2_RGBA8_UNORM,
@@ -46,7 +46,7 @@ describe("TextureUtilities", () => {
         expect(TextureUtilities.getVRamSize(TextureFormat.BC7_RGBA_UNORM, 4, 4)).toBe(16);
         expect(TextureUtilities.getVRamSize(TextureFormat.BC7_RGBA_UNORM, 5, 5)).toBe(64);
         expect(TextureUtilities.getVRamSize(TextureFormat.BC3_RGBA_UNORM, 5, 3)).toBe(32);
-        expect(TextureUtilities.getVRamSize(TextureFormat.ASTC_4X4_RGBA, 1, 1)).toBe(16);
+        expect(TextureUtilities.getVRamSize(TextureFormat.ASTC_4X4_RGBA_UNORM, 1, 1)).toBe(16);
         expect(TextureUtilities.getVRamSize(TextureFormat.ETC2_RGBA8_UNORM, 8, 4)).toBe(32);
     });
 
@@ -69,7 +69,7 @@ describe("TextureUtilities", () => {
         expect(TextureUtilities.convertVkFormatToTextureFormat(VkFormat.BC3_UNORM_BLOCK))
             .toBe(TextureFormat.BC3_RGBA_UNORM);
         expect(TextureUtilities.convertVkFormatToTextureFormat(VkFormat.ASTC_4X4_UNORM_BLOCK))
-            .toBe(TextureFormat.ASTC_4X4_RGBA);
+            .toBe(TextureFormat.ASTC_4X4_RGBA_UNORM);
         expect(TextureUtilities.convertVkFormatToTextureFormat(VkFormat.ETC2_R8G8B8A8_UNORM_BLOCK))
             .toBe(TextureFormat.ETC2_RGBA8_UNORM);
 
@@ -77,14 +77,14 @@ describe("TextureUtilities", () => {
             .toThrow(`Not implemented: ${VkFormat.R8_UNORM}`);
         expect(() => TextureUtilities.convertVkFormatToTextureFormat(VkFormat.D24_UNORM_S8_UINT))
             .toThrow(`Not implemented: ${VkFormat.D24_UNORM_S8_UINT}`);
-        expect(() => TextureUtilities.convertVkFormatToTextureFormat(VkFormat.ETC2_R8G8B8A8_SRGB_BLOCK))
-            .toThrow(`Not implemented: ${VkFormat.ETC2_R8G8B8A8_SRGB_BLOCK}`);
+        expect(() => TextureUtilities.convertVkFormatToTextureFormat(VkFormat.ETC2_R8G8B8A1_SRGB_BLOCK))
+            .toThrow(`Not implemented: ${VkFormat.ETC2_R8G8B8A1_SRGB_BLOCK}`);
     });
 
     it("maps texture formats onto KTX transcode targets", () => {
         expect(TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.RGBA_8_UNORM))
             .toBe(KtxTranscodeFormat.RGBA32);
-        expect(TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.ASTC_4X4_RGBA))
+        expect(TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.ASTC_4X4_RGBA_UNORM))
             .toBe(KtxTranscodeFormat.ASTC_4X4_RGBA);
         expect(TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.BC3_RGBA_UNORM))
             .toBe(KtxTranscodeFormat.BC3_RGBA);
@@ -93,8 +93,8 @@ describe("TextureUtilities", () => {
         expect(TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.ETC2_RGBA8_UNORM))
             .toBe(KtxTranscodeFormat.ETC2_RGBA);
 
-        expect(() => TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.RGBA_8_UNORM_SRGB))
-            .toThrow(`Not implemented: ${TextureFormat.RGBA_8_UNORM_SRGB}`);
+        expect(() => TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.RED_32_FLOAT))
+            .toThrow(`Not implemented: ${TextureFormat.RED_32_FLOAT}`);
         expect(() => TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.DEPTH_24_STENCIL_8))
             .toThrow(`Not implemented: ${TextureFormat.DEPTH_24_STENCIL_8}`);
     });
@@ -109,14 +109,14 @@ describe("TextureUtilities", () => {
             [KtxTranscodeFormat.KTX_TTF_BC5_RG, VkFormat.BC5_UNORM_BLOCK],
             [KtxTranscodeFormat.BC7_RGBA, VkFormat.BC7_UNORM_BLOCK],
             [KtxTranscodeFormat.KTX_TTF_PVRTC1_4_RGB, VkFormat.PVRTC1_4BPP_UNORM_BLOCK_IMG],
-            [KtxTranscodeFormat.KTX_TTF_PVRTC1_4_RGBA, VkFormat.PVRTC1_4BPP_UNORM_BLOCK_IMG],
+            [KtxTranscodeFormat.KTX_TTF_PVRTC1_4_RGB, VkFormat.PVRTC1_4BPP_UNORM_BLOCK_IMG],
             [KtxTranscodeFormat.ASTC_4X4_RGBA, VkFormat.ASTC_4X4_UNORM_BLOCK],
             [KtxTranscodeFormat.RGBA32, VkFormat.R8G8B8A8_UNORM],
             [KtxTranscodeFormat.KTX_TTF_RGB565, VkFormat.R5G6B5_UNORM_PACK16],
             [KtxTranscodeFormat.KTX_TTF_BGR565, VkFormat.B5G6R5_UNORM_PACK16],
             [KtxTranscodeFormat.KTX_TTF_RGBA4444, VkFormat.R4G4B4A4_UNORM_PACK16],
             [KtxTranscodeFormat.KTX_TTF_PVRTC2_4_RGB, VkFormat.PVRTC2_4BPP_UNORM_BLOCK_IMG],
-            [KtxTranscodeFormat.KTX_TTF_PVRTC2_4_RGBA, VkFormat.PVRTC2_4BPP_UNORM_BLOCK_IMG],
+            [KtxTranscodeFormat.KTX_TTF_PVRTC2_4_RGB, VkFormat.PVRTC2_4BPP_UNORM_BLOCK_IMG],
             [KtxTranscodeFormat.KTX_TTF_ETC2_EAC_R11, VkFormat.EAC_R11_UNORM_BLOCK],
             [KtxTranscodeFormat.KTX_TTF_ETC2_EAC_RG11, VkFormat.EAC_R11G11_UNORM_BLOCK],
         ];
@@ -127,7 +127,7 @@ describe("TextureUtilities", () => {
 
         const shared = [
             TextureFormat.RGBA_8_UNORM,
-            TextureFormat.ASTC_4X4_RGBA,
+            TextureFormat.ASTC_4X4_RGBA_UNORM,
             TextureFormat.BC3_RGBA_UNORM,
             TextureFormat.BC7_RGBA_UNORM,
             TextureFormat.ETC2_RGBA8_UNORM,

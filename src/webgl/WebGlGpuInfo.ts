@@ -34,7 +34,7 @@ export class WebGlGpuInfo implements IGPUInfo {
         const supportedCompressedTextureFormats = [];
 
         if(graphicsDevice.features.supportsTextureCompressionASTC){
-            supportedCompressedTextureFormats.push(TextureFormat.ASTC_4X4_RGBA)
+            supportedCompressedTextureFormats.push(TextureFormat.ASTC_4X4_RGBA_UNORM)
         }
 
         if(graphicsDevice.features.supportsTextureCompressionS3TC) {

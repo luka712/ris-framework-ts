@@ -20,6 +20,49 @@ import {GameTime} from "./time/GameTime.ts";
 import type { IImageProcessor } from "./image/IImageProcessor.ts";
 import type { IKtx2Factory } from "ris-ktx2";
 import type { IDisposable } from "./core/IDisposable.ts";
+import type {vec2} from "gl-matrix";
+import type {TextureSamplerFilteringPreset} from "../core/rendering/enums.ts";
+import type {PowerPreferenceType} from "./rendering/PowerPreference.ts";
+import type {TextureColorSpace} from "./rendering/enums.ts";
+
+
+/**
+ * The configuration for the framework.
+ * @public
+ **/
+export class IFrameworkConfiguration {
+
+    /** If true, creates and makes the KTX2 factory available. */
+    useKtx2?: boolean;
+
+    /** The size of back buffer. By default, if not specified (800, 600). */
+    backBufferSize?: vec2;
+
+    /** The texture filtering to configure */
+    textureFiltering?: TextureSamplerFilteringPreset;
+
+    /** The texture color space to use by default. By default, it is {@link TextureColorSpace.SRGB}. */
+     textureColorSpace?: TextureColorSpace;
+
+     /**
+     * The HTMLCanvasElement to use for rendering.
+     * If null, a new canvas will be created and added to the document body.
+     */
+    canvas?: HTMLCanvasElement;
+
+    /** Should back buffer use alpha. */
+    alpha?: boolean;
+
+    /** The preference when it comes to selecting GPU device. Only makes sense to set on multi-GPU devices. */
+    powerPreference ?: PowerPreferenceType;
+
+    /**
+     * The rendering backend. Defaults to WebGL.
+     * WebGPU requires `Framework.initializeAsync()`; when `navigator.gpu` is missing or no device is available,
+     * the framework falls back to WebGL with a warning.
+     */
+    renderingBackend?: RenderingBackend;
+}
 
 /** The framework interface. */
 export interface IFramework extends IDisposable {

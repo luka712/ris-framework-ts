@@ -12,9 +12,7 @@ export interface ISwapChain extends IDisposable {
      */
     readonly backBufferSize: vec2;
 
-    /**
-     * The texture format of the back buffer.
-     */
+    /** The texture format of the back buffer. */
     readonly textureFormat: TextureFormat;
 
     /**

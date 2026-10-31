@@ -1,8 +1,7 @@
-import {type IRendererConfiguration} from "../api/rendering/renderer-interface.ts";
 import {ARenderer} from "../core/rendering/ARenderer.ts";
-import {type IFramework, type IGraphicsDevice, PowerPreferenceType, RenderingBackend} from "../api/index.ts";
+import {type IFramework, type IGraphicsDevice, type IRendererConfiguration, RenderingBackend} from "../api/index.ts";
 import {WebGpuGraphicsDevice} from "./WebGpuGraphicsDevice.ts";
-import {getNavigatorGpu, type GpuAdapter, type GpuDevice} from "./WebGpuTypes.ts";
+import {getNavigatorGpu} from "./WebGpuTypes.ts";
 
 /**
  * The WebGPU renderer. WebGPU hands out the adapter and device asynchronously, so call
@@ -11,9 +10,7 @@ import {getNavigatorGpu, type GpuAdapter, type GpuDevice} from "./WebGpuTypes.ts
  */
 export class WebGpuRenderer extends ARenderer {
 
-    private readonly _renderConfiguration: IRendererConfiguration;
-    private _adapter: GpuAdapter | null = null;
-    private _device: GpuDevice | null = null;
+    private _createdDevice: WebGpuGraphicsDevice | null = null;
 
     /**
      * The constructor.
@@ -21,8 +18,7 @@ export class WebGpuRenderer extends ARenderer {
      * @param renderConfiguration The renderer configuration.
      */
     public constructor(framework: IFramework, renderConfiguration: IRendererConfiguration) {
-        super(framework);
-        this._renderConfiguration = renderConfiguration;
+        super(framework, renderConfiguration);
         this.backend = RenderingBackend.WEB_GPU;
     }
 
@@ -32,35 +28,22 @@ export class WebGpuRenderer extends ARenderer {
     }
 
     /**
-     * Requests the adapter and device. Throws when WebGPU is unavailable or no adapter is found.
+     * Creates the graphics device, which requests its own adapter and device.
+     * Throws when WebGPU is unavailable or no adapter is found.
      */
     public async acquireDeviceAsync(): Promise<void> {
-        const gpu = getNavigatorGpu();
-        if (!gpu) {
-            throw new Error("WebGPU is not supported: navigator.gpu is missing.");
-        }
-        const preference = this._renderConfiguration.powerPreference;
-        const adapter = await gpu.requestAdapter(
-            preference && preference !== PowerPreferenceType.DEFAULT
-                ? {powerPreference: preference as unknown as "low-power" | "high-performance"}
-                : undefined);
-        if (!adapter) {
-            throw new Error("WebGPU is not supported: no adapter was found.");
-        }
-        // Compression features are not requested yet; KTX2 is not implemented for WebGPU.
-        this._device = await adapter.requestDevice({label: "RisFramework WebGPU device"});
-        this._adapter = adapter;
+        this._createdDevice = await WebGpuGraphicsDevice.createAsync(this._framework.windowManager, {
+            samplerFilteringPreset: this._renderConfiguration.textureFiltering,
+            alpha: this._renderConfiguration.alpha,
+            powerPreference: this._renderConfiguration.powerPreference,
+        });
     }
 
     /** @inheritDoc */
     protected createGraphicsDevice(): IGraphicsDevice {
-        if (!this._adapter || !this._device) {
-            throw new Error("WebGpuRenderer: the device is not acquired. Use Framework.initializeAsync() for WebGPU.");
+        if (!this._createdDevice) {
+            throw new Error("WebGpuRenderer: the device is not created. Use Framework.initializeAsync() for WebGPU.");
         }
-        return new WebGpuGraphicsDevice(this._framework.windowManager, {
-            samplerFilteringPreset: this._renderConfiguration.textureFiltering,
-            alpha: this._renderConfiguration.alpha,
-            powerPreference: this._renderConfiguration.powerPreference,
-        }, this._adapter, this._device);
+        return this._createdDevice;
     }
 }

@@ -1,4 +1,4 @@
-import type { vec2 } from "gl-matrix";
+/**/import type { vec2 } from "gl-matrix";
 import {WindowBounds, type IWindowManager} from "../index.ts";
 
 /**

@@ -20,6 +20,8 @@ import {ObjLoader} from "../loaders/ObjLoader.ts";
 import {Ktx2Factory} from "ris-ktx2";
 import type {IKtx2Texture} from "ris-ktx2";
 
+const KTX2_EXTENSION = ".ktx2";
+
 /**
  * The content manager.
  * The content manager is responsible for managing the content modules and loading the content with the given asset file path or identifier.
@@ -27,7 +29,7 @@ import type {IKtx2Texture} from "ris-ktx2";
 export class ContentManager implements IContentManager {
 
     private readonly _ktx2Factory = new Ktx2Factory();
-    private readonly _ktx2TextureCache: {[key: string]: IKtx2Texture} = {};
+    private readonly _ktx2TextureCache: { [key: string]: IKtx2Texture } = {};
 
     /**
      * The constructor.
@@ -40,13 +42,16 @@ export class ContentManager implements IContentManager {
     /** @inheritDoc */
     public async loadKtx2Async(path: string, contentConfig?: ContentConfig): Promise<IKtx2Texture> {
 
+        // it's fine to call it, handled internally if called multiple times.
+        await this._ktx2Factory.initializeAsync();
+
         let ktx2Texture = this._ktx2TextureCache[path];
-        if(ktx2Texture) {
+        if (ktx2Texture) {
             return ktx2Texture;
         }
 
         ktx2Texture = await this._ktx2Factory.loadAsync(path);
-        if(contentConfig?.keepDataCached == true){
+        if (contentConfig?.keepDataCached == true) {
             this._ktx2TextureCache[path] = ktx2Texture;
         }
         return ktx2Texture;
@@ -59,52 +64,53 @@ export class ContentManager implements IContentManager {
     public dispose(): void {
         (this.shaderModuleLoader as Partial<IDisposable>).dispose?.();
         for (const key of Object.keys(this._ktx2TextureCache)) {
+            this._ktx2TextureCache[key].delete();
             delete this._ktx2TextureCache[key];
         }
     }
 
     /** @inheritDoc */
-    public loadShaderModule(shaderModuleId: string,  keyValueDictionary?: { [id:string]: number}): IShaderModule {
-        return this.shaderModuleLoader.load(shaderModuleId,  keyValueDictionary);
+    public loadShaderModule(shaderModuleId: string, keyValueDictionary?: { [id: string]: number }): IShaderModule {
+        return this.shaderModuleLoader.load(shaderModuleId, keyValueDictionary);
     }
 
     /** @inheritDoc */
     public async loadTexture2DAsync(path: string,
                                     textureDescriptor?: TextureDescriptor,
                                     contentConfig?: ContentConfig,
-                                    ): Promise<ITexture2D> {
+    ): Promise<ITexture2D> {
 
         // TODO: check texture cache
+        if (path.endsWith(KTX2_EXTENSION)) {
 
-        if(path.endsWith(".ktx2")) {
             const ktx2Texture = await this.loadKtx2Async(path);
             textureDescriptor = textureDescriptor ?? new TextureDescriptor();
             const tex = this._framework.textureFactory.createFromKtx2(ktx2Texture, textureDescriptor);
-            if(contentConfig?.keepDataCached ){
-                // TDOO: add to texture cache
+            if (contentConfig?.keepDataCached !== true) {
+                ktx2Texture.delete();
             }
-            ktx2Texture.delete();
             return tex;
         }
 
-        let format =  this._framework.renderer.preferredTextureFormat;
+        let format = this._framework.renderer.preferredTextureFormat;
 
-        if(textureDescriptor && textureDescriptor.textureFormat != TextureFormat.UNDEFINED) {
+        if (textureDescriptor && textureDescriptor.textureFormat != TextureFormat.UNDEFINED) {
             format = textureDescriptor.textureFormat;
         }
 
-        // TODO: pass texture descriptor
         const imageLoader = this._framework.imageLoader;
         const data = await imageLoader.loadAsync(path, contentConfig?.keepDataCached);
+
+        // TODO: pass texture descriptor
         return this._framework.textureFactory.create(
             data.baseWidth, data.baseHeight,
             data.getData(0) as Uint8Array,
             data.channels,
-            undefined,
+            path,
             TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_SRC,
             format,
             textureDescriptor?.generateMipmaps
-            );
+        );
     }
 
     /** @inheritDoc */

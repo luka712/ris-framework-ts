@@ -6,7 +6,13 @@ import {VertexBufferLayout} from "../../core/rendering/vertex-buffer-layout";
 import type {WebGlTexture2D} from "../texture/WebGlTexture2D.ts";
 import WebGlShaderModule from "../shader/WebGlShaderModule.ts";
 import {AWebGlRenderPipeline} from "./AWebGlRenderPipeline.ts";
-import {BufferUsage, type IFramework, type IMainRenderTargetRenderPipeline, type ITexture2D} from "../../api/index.ts";
+import {
+    BufferUsage,
+    type IFramework,
+    type IMainRenderTargetRenderPipeline,
+    type ITexture2D,
+    TextureFormat
+} from "../../api/index.ts";
 
 /**
  * The WebGL implementation of the main render target render pipeline.
@@ -17,6 +23,9 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
     private _indexBuffer: WebGLIndexBuffer = null!;
     private _mainRenderTarget: WebGlTexture2D = null!;
 
+    private _colorConversionUniformLocation: WebGLUniformLocation = null!;
+    private _colorSpaceValue = 0;
+
     /**
      * The constructor.
      * @param framework The framework.
@@ -25,6 +34,10 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
     public constructor(framework: IFramework, mainRenderTarget: ITexture2D) {
         super(framework);
         this._mainRenderTarget = mainRenderTarget as WebGlTexture2D;
+
+        if(framework.renderer.preferredTextureFormat == TextureFormat.RGBA_8_UNORM_SRGB) {
+            this._colorSpaceValue = 1;
+        }
     }
 
     /** @inheritDoc */
@@ -55,6 +68,8 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
         this._createResources();
         this.vertexBufferLayouts = [VertexBufferLayout.createFloat3Float2Layout()];
         super.initialize();
+
+        this._colorConversionUniformLocation = this._gl.getUniformLocation(this._program, "u_colorConversion")!;
     }
 
     private _createResources(): void {
@@ -92,6 +107,8 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
         this._gl.activeTexture(this._gl.TEXTURE0);
         this._gl.bindTexture(this._gl.TEXTURE_2D, this._mainRenderTarget.glTexture);
         this._gl.bindSampler(0, this._defaultTextureSampler.glSampler);
+
+        this._gl.uniform1i(this._colorConversionUniformLocation, this._colorSpaceValue)
 
         this._gl.drawElements(this._gl.TRIANGLES, this._indexBuffer.indicesCount, this._gl.UNSIGNED_SHORT, 0);
     }

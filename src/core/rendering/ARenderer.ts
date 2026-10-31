@@ -1,15 +1,24 @@
-import type { ITempRenderer } from "../../api/rendering/renderer-interface.ts";
-import type { vec2 } from "gl-matrix";
-import type { RenderingLimits } from "../../api/rendering/rendering-limits.ts";
+import type {ITempRenderer} from "../../api/rendering/renderer-interface.ts";
+import type {vec2} from "gl-matrix";
+import type {RenderingLimits} from "../../api/rendering/rendering-limits.ts";
 import {
-    type IFramework, type IGraphicsDevice, type IMainRenderTargetRenderPipeline, type IRenderPass, type ISwapChain,
-    type ITexture2D, type IWindowManager,
+    Color,
+    type IFramework,
+    type IGraphicsDevice,
+    type IMainRenderTargetRenderPipeline, type IRendererConfiguration,
+    type IRenderPass,
+    type ISwapChain,
+    type ITexture2D,
+    type IWindowManager,
     RenderingBackend,
-    RenderPassColorAttachment, RenderPassDepthStencilAttachment,
-    RenderPassDescriptor, SwapChainDescriptor,
+    RenderPassColorAttachment,
+    RenderPassDepthStencilAttachment,
+    RenderPassDescriptor,
+    SwapChainDescriptor,
+    TextureFormat,
     TextureUsage
 } from "../../api/index.ts";
-import {TextureFormat, Color} from "../../api/index.ts";
+import {TextureColorSpace} from "../../api/rendering/enums.ts";
 
 export abstract class ARenderer implements ITempRenderer {
 
@@ -22,7 +31,6 @@ export abstract class ARenderer implements ITempRenderer {
 
     private readonly _windowManager: IWindowManager;
     private _graphicsDevice: IGraphicsDevice = null!;
-    private _preferredTextureFormat: TextureFormat = TextureFormat.RGBA_8_UNORM;
     private _preferredDepthStencilFormat: TextureFormat = TextureFormat.DEPTH_24_STENCIL_8;
     private readonly _currentBackBufferSize: vec2 = [0, 0];
     private _swapChainRequiresResize: boolean = false;
@@ -36,6 +44,7 @@ export abstract class ARenderer implements ITempRenderer {
     protected _swapChainRenderPass: IRenderPass = null!;
     protected _mainRenderTargetRenderPass?: IRenderPass;
     protected _mainRenderTargetPipeline?: IMainRenderTargetRenderPipeline;
+    protected _renderConfiguration: IRendererConfiguration;
 
     /** @inheritdoc */
     public get graphicsDevice(): IGraphicsDevice {
@@ -58,9 +67,7 @@ export abstract class ARenderer implements ITempRenderer {
     }
 
     /** @inheritdoc */
-    public get preferredTextureFormat(): TextureFormat {
-        return this._preferredTextureFormat;
-    }
+    public readonly preferredTextureFormat: TextureFormat;
 
     /** @inheritdoc */
     public get preferredDepthStencilFormat(): TextureFormat {
@@ -93,12 +100,16 @@ export abstract class ARenderer implements ITempRenderer {
     /**
      * The constructor.
      * @param framework The framework.
+     * @param configuration The renderer configuration.
      */
-    constructor(framework: IFramework) {
+    protected constructor(framework: IFramework, configuration: IRendererConfiguration) {
         this._framework = framework;
+        this._renderConfiguration = configuration;
         this._windowManager = framework.windowManager;
         this._currentBackBufferSize[0] = this._windowManager.canvas.width;
         this._currentBackBufferSize[1] = this._windowManager.canvas.height;
+        this.preferredTextureFormat = configuration.textureColorSpace == TextureColorSpace.SRGB
+            ? TextureFormat.RGBA_8_UNORM_SRGB : TextureFormat.RGBA_8_UNORM;
     }
 
      backend: RenderingBackend = RenderingBackend.WEB_GL;
@@ -136,8 +147,6 @@ export abstract class ARenderer implements ITempRenderer {
         this._swapChain = this._graphicsDevice.createSwapChain(
             this._windowManager.canvas,
             new SwapChainDescriptor());
-        this._preferredTextureFormat = this._swapChain.textureFormat
-
         // TODO: RESIZE EVENT
 
     }

@@ -74,8 +74,90 @@ export class WebGpuConverter {
                 return "depth32float";
             case TextureFormat.RED_32_FLOAT:
                 return "r32float";
+
+            // BC (texture-compression-bc). WebGPU has no BC1 RGB, the RGBA variant decodes the same blocks.
+            case TextureFormat.BC1_RGB_UNORM:
+                return "bc1-rgba-unorm";
+            case TextureFormat.BC1_RGB_SRGB:
+                return "bc1-rgba-unorm-srgb";
+            case TextureFormat.BC3_RGBA_UNORM:
+                return "bc3-rgba-unorm";
+            case TextureFormat.BC3_RGBA_SRGB:
+                return "bc3-rgba-unorm-srgb";
+            case TextureFormat.BC7_RGBA_UNORM:
+                return "bc7-rgba-unorm";
+            case TextureFormat.BC7_RGBA_SRGB:
+                return "bc7-rgba-unorm-srgb";
+
+            // ETC2 (texture-compression-etc2)
+            case TextureFormat.ETC2_RGB8_UNORM:
+                return "etc2-rgb8unorm";
+            case TextureFormat.ETC2_RGB8_SRGB:
+                return "etc2-rgb8unorm-srgb";
+            case TextureFormat.ETC2_RGBA8_UNORM:
+                return "etc2-rgba8unorm";
+            case TextureFormat.ETC2_RGBA8_SRGB:
+                return "etc2-rgba8unorm-srgb";
+
+            // ASTC (texture-compression-astc)
+            case TextureFormat.ASTC_4X4_RGBA_UNORM:
+                return "astc-4x4-unorm";
+            case TextureFormat.ASTC_4X4_RGBA_SRGB:
+                return "astc-4x4-unorm-srgb";
+            case TextureFormat.ASTC_5X4_RGBA_UNORM:
+                return "astc-5x4-unorm";
+            case TextureFormat.ASTC_5X4_RGBA_SRGB:
+                return "astc-5x4-unorm-srgb";
+            case TextureFormat.ASTC_5X5_RGBA_UNORM:
+                return "astc-5x5-unorm";
+            case TextureFormat.ASTC_5X5_RGBA_SRGB:
+                return "astc-5x5-unorm-srgb";
+            case TextureFormat.ASTC_6X5_RGBA_UNORM:
+                return "astc-6x5-unorm";
+            case TextureFormat.ASTC_6X5_RGBA_SRGB:
+                return "astc-6x5-unorm-srgb";
+            case TextureFormat.ASTC_6X6_RGBA_UNORM:
+                return "astc-6x6-unorm";
+            case TextureFormat.ASTC_6X6_RGBA_SRGB:
+                return "astc-6x6-unorm-srgb";
+            case TextureFormat.ASTC_8X5_RGBA_UNORM:
+                return "astc-8x5-unorm";
+            case TextureFormat.ASTC_8X5_RGBA_SRGB:
+                return "astc-8x5-unorm-srgb";
+            case TextureFormat.ASTC_8X6_RGBA_UNORM:
+                return "astc-8x6-unorm";
+            case TextureFormat.ASTC_8X6_RGBA_SRGB:
+                return "astc-8x6-unorm-srgb";
+            case TextureFormat.ASTC_8X8_RGBA_UNORM:
+                return "astc-8x8-unorm";
+            case TextureFormat.ASTC_8X8_RGBA_SRGB:
+                return "astc-8x8-unorm-srgb";
+            case TextureFormat.ASTC_10X5_RGBA_UNORM:
+                return "astc-10x5-unorm";
+            case TextureFormat.ASTC_10X5_RGBA_SRGB:
+                return "astc-10x5-unorm-srgb";
+            case TextureFormat.ASTC_10X6_RGBA_UNORM:
+                return "astc-10x6-unorm";
+            case TextureFormat.ASTC_10X6_RGBA_SRGB:
+                return "astc-10x6-unorm-srgb";
+            case TextureFormat.ASTC_10X8_RGBA_UNORM:
+                return "astc-10x8-unorm";
+            case TextureFormat.ASTC_10X8_RGBA_SRGB:
+                return "astc-10x8-unorm-srgb";
+            case TextureFormat.ASTC_10X10_RGBA_UNORM:
+                return "astc-10x10-unorm";
+            case TextureFormat.ASTC_10X10_RGBA_SRGB:
+                return "astc-10x10-unorm-srgb";
+            case TextureFormat.ASTC_12X10_RGBA_UNORM:
+                return "astc-12x10-unorm";
+            case TextureFormat.ASTC_12X10_RGBA_SRGB:
+                return "astc-12x10-unorm-srgb";
+            case TextureFormat.ASTC_12X12_RGBA_UNORM:
+                return "astc-12x12-unorm";
+            case TextureFormat.ASTC_12X12_RGBA_SRGB:
+                return "astc-12x12-unorm-srgb";
             default:
-                throw new Error(`Texture format ${TextureFormat[format]} is not implemented for WebGPU.`);
+                throw new Error(`Texture format ${format} is not implemented for WebGPU.`);
         }
     }
 

@@ -2,19 +2,18 @@ import {
     Color,
     Framework,
     RenderingBackend,
-    FrameworkConfiguration,
     type GameTime,
     type IFramework,
     type IRenderableMesh,
     type PerspectiveCamera,
-    Scene,
+    Scene, IFrameworkConfiguration,
 } from "../../src";
 import cubeUrl from "../unlit_mesh/assets/cube.obj?url";
 
 const status = document.querySelector<HTMLParagraphElement>("#status")!;
 const canvas = document.querySelector<HTMLCanvasElement>("#game-canvas")!;
 
-const config = new FrameworkConfiguration();
+const config : IFrameworkConfiguration={};
 config.canvas = canvas;
 // Ask for WebGPU. Without navigator.gpu (or a device), the framework falls back to WebGL with a warning.
 config.renderingBackend = RenderingBackend.WEB_GPU;

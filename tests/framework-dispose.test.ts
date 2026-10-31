@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Framework } from "../src/Framework.ts";
-import { FrameworkConfiguration } from "../src/api/FrameworkConfiguration.ts";
 import { TextureFormat } from "../src/api/rendering/texture/TextureFormat.ts";
 import { WebGlTexture2D } from "../src/webgl/texture/WebGlTexture2D.ts";
+import {IFrameworkConfiguration} from "../src";
 
 /** A WebGL2 context stand-in: every call is recorded; created objects remember the context that made them. */
 function fakeGl(name: string) {
@@ -36,7 +36,7 @@ function fakeGl(name: string) {
 
 function createFramework(name: string) {
     const canvas = { addEventListener: vi.fn(), style: {}, width: 800, height: 600 } as unknown as HTMLCanvasElement;
-    const config = new FrameworkConfiguration();
+    const config: IFrameworkConfiguration = {};
     config.canvas = canvas;
     const framework = new Framework(config);
     const context = fakeGl(name);

@@ -13,7 +13,8 @@ import {
     RenderPassDescriptor,
     SwapChainDescriptor,
 } from "../api/index.ts";
-import type {GpuAdapter, GpuDevice, GpuRenderPassEncoder} from "./WebGpuTypes.ts";
+import {getNavigatorGpu, type GpuAdapter, type GpuDevice, type GpuRenderPassEncoder} from "./WebGpuTypes.ts";
+import {PowerPreferenceType} from "../api/rendering/PowerPreference.ts";
 import {WebGpuGraphicsDeviceFeatures} from "./WebGpuGraphicsDeviceFeatures.ts";
 import {WebGpuGpuInfo} from "./WebGpuGpuInfo.ts";
 import {WebGpuSwapChain} from "./swap-chain/WebGpuSwapChain.ts";
@@ -23,8 +24,8 @@ import {WebGpuBlendState} from "./blending/WebGpuBlendState.ts";
 import {WebGpuPrimitiveState} from "./primitive/WebGpuPrimitiveState.ts";
 
 /**
- * The WebGPU graphics device. The adapter and device are acquired asynchronously by
- * {@link WebGpuRenderer.initializeAsync} and handed in, so everything after that is synchronous like WebGL.
+ * The WebGPU graphics device. It requests its own adapter and device in {@link createAsync},
+ * so everything after creation is synchronous like WebGL.
  * @internal
  */
 export class WebGpuGraphicsDevice extends AGraphicsDevice {
@@ -43,13 +44,40 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
     public currentRenderPassEncoder: GpuRenderPassEncoder | null = null;
 
     /**
-     * The constructor.
+     * Creates the graphics device: requests the WebGPU adapter and device.
+     * Throws when WebGPU is unavailable or no adapter is found.
+     * @param windowManager The window manager.
+     * @param descriptor The device descriptor.
+     * @returns The created graphics device.
+     */
+    public static async createAsync(windowManager: IWindowManager, descriptor: IGraphicsDeviceDescriptor): Promise<WebGpuGraphicsDevice> {
+        const gpu = getNavigatorGpu();
+        if (!gpu) {
+            throw new Error("WebGPU is not supported: navigator.gpu is missing.");
+        }
+        const preference = descriptor.powerPreference;
+        const adapter = await gpu.requestAdapter(
+            preference && preference !== PowerPreferenceType.DEFAULT
+                ? {powerPreference: preference as unknown as "low-power" | "high-performance"}
+                : undefined);
+        if (!adapter) {
+            throw new Error("WebGPU is not supported: no adapter was found.");
+        }
+        // WebGPU only enables the features that are requested, so ask for every compression family the adapter has.
+        const requiredFeatures = ["texture-compression-bc", "texture-compression-etc2", "texture-compression-astc"]
+            .filter(feature => adapter.features.has(feature));
+        const device = await adapter.requestDevice({label: "RisFramework WebGPU device", requiredFeatures});
+        return new WebGpuGraphicsDevice(windowManager, descriptor, adapter, device);
+    }
+
+    /**
+     * The constructor. Use {@link createAsync} to create the device.
      * @param windowManager The window manager.
      * @param descriptor The device descriptor.
      * @param adapter The WebGPU adapter.
      * @param device The WebGPU device.
      */
-    public constructor(windowManager: IWindowManager, descriptor: IGraphicsDeviceDescriptor, adapter: GpuAdapter, device: GpuDevice) {
+    private constructor(windowManager: IWindowManager, descriptor: IGraphicsDeviceDescriptor, adapter: GpuAdapter, device: GpuDevice) {
         super(descriptor);
         this._windowManager = windowManager;
         this._adapter = adapter;
