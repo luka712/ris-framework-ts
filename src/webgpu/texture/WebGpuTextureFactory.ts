@@ -36,7 +36,7 @@ export class WebGpuTextureFactory implements ITextureFactory {
         channels: number = 4,
         label: string | null | undefined = null,
         textureUsage = TextureUsage.COPY_DST | TextureUsage.TEXTURE_BINDING,
-        textureFormat = TextureFormat.RGBA_8_UNORM,
+        textureFormat = TextureFormat.UNDEFINED,
         useMipMaps = false): ITexture2D {
 
         if (!data) {

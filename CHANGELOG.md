@@ -27,14 +27,16 @@ Compared with `main` (0.1.0).
 - OBJ/MTL loading through `framework.objLoader`, `ObjParser`, and `content.loadMeshAsync`, `loadUnlitMeshAsync` and `loadBlinnPhongMeshAsync`.
 - `geometryBuilder.create(descriptor)` and the exported `BaseGeometry`.
 - sRGB compressed texture formats (BC1, BC3, BC7, ETC2), with KTX2 loading choosing sRGB automatically.
-- `ColorSpace` enum, the `textureColorSpace` configuration option (default `SRGB`) and `IRenderer.preferredColorSpace`.
+- `ColorSpace` enum, the `textureColorSpace` configuration option (default `LINEAR`) and `IRenderer.colorSpace`, which can be switched at runtime.
+- `ITextureDescriptor.preferredColorSpace` to choose the color space per texture.
 - `TextureUtilities.convertToSrgbVariant`, `convertToLinearVariant` and `isSrgbFormat`.
 - Examples: `unlit_mesh`, `blinn_phong_mesh` and `sprite_batch`.
 
 ### Changed
 
 - `content.loadShaderModule` accepts optional replacement values.
-- Textures without a format, and KTX2 textures, follow the configured color space.
+- Textures without a format, including KTX2 and `textureFactory.create`, follow the renderer's color space. An explicit `textureFormat` overrides it.
+- Basis KTX2 textures can be transcoded to PVRTC1 RGB.
 
 ### Fixed
 

@@ -132,8 +132,12 @@ export class WebGlTextureFactory implements ITextureFactory {
         channels: number = 4,
         label: string | null | undefined = null,
         textureUsage = TextureUsage.COPY_DST | TextureUsage.TEXTURE_BINDING,
-        textureFormat= TextureFormat.RGBA_8_UNORM,
+        textureFormat = TextureFormat.UNDEFINED,
         useMipMaps = false): ITexture2D {
+        if (textureFormat == TextureFormat.UNDEFINED) {
+            textureFormat = this._framework.renderer.preferredTextureFormat;
+        }
+
 
         if (!data) {
             throw new Error("Data must not be null.");

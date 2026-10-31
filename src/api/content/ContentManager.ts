@@ -107,13 +107,12 @@ export class ContentManager implements IContentManager {
         const imageLoader = this._framework.imageLoader;
         const data = await imageLoader.loadAsync(path, contentConfig?.keepDataCached);
 
-        // TODO: pass texture descriptor
         return this._framework.textureFactory.create(
             data.baseWidth, data.baseHeight,
             data.getData(0) as Uint8Array,
             data.channels,
-            path,
-            TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_SRC,
+            desc.label ?? path,
+            textureDescriptor?.textureUsage ?? (TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_SRC),
             format,
             desc.generateMipmaps
         );
@@ -122,7 +121,8 @@ export class ContentManager implements IContentManager {
     /** @inheritDoc */
     public loadTexture2DFromPixels(width: number, height: number, pixels: ArrayBuffer): ITexture2D {
         const view = new Uint8Array(pixels);
-        return this._framework.textureFactory.create(width, height, view);
+        // Raw pixels keep the old linear default.
+        return this._framework.textureFactory.create(width, height, view, 4, undefined, undefined, TextureFormat.RGBA_8_UNORM);
     }
 
     /** @inheritDoc */

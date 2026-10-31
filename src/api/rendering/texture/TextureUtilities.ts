@@ -195,6 +195,7 @@ export class TextureUtilities {
         [TextureFormat.BC7_RGBA_UNORM]: KtxTranscodeFormat.BC7_RGBA,
         [TextureFormat.ETC2_RGBA8_UNORM]: KtxTranscodeFormat.ETC2_RGBA,
         [TextureFormat.PVRTC_4BPPV1_RGBA] : KtxTranscodeFormat.PVRTC1_4_RGBA,
+        [TextureFormat.PVRTC_4BPPV1_RGB] : KtxTranscodeFormat.PVRTC1_4_RGB,
         // Basis transcodes to the same blocks for sRGB; only the GPU format differs.
         [TextureFormat.RGBA_8_UNORM_SRGB]: KtxTranscodeFormat.RGBA32,
         [TextureFormat.ASTC_4X4_RGBA_SRGB]: KtxTranscodeFormat.ASTC_4X4_RGBA,
