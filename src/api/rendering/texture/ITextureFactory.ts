@@ -2,7 +2,7 @@ import {Color} from "../../data/Color.ts";
 import {TextureUsage} from "./TextureUsage.ts";
 import {TextureFormat} from "./TextureFormat.ts";
 import type { ITexture2D } from "./ITexture2D.ts";
-import {TextureDescriptor} from "./TextureDescriptor.ts";
+import type {ITextureDescriptor} from "./ITextureDescriptor.ts";
 import type {IKtx2Texture} from "ris-ktx2";
 
 /**
@@ -52,5 +52,5 @@ export interface ITextureFactory {
      * @param descriptor - The optional texture descriptor.
      * @returns The 2D texture.
      */
-    createFromKtx2(ktxTexture: IKtx2Texture, descriptor?: TextureDescriptor): ITexture2D;
+    createFromKtx2(ktxTexture: IKtx2Texture, descriptor?: ITextureDescriptor): ITexture2D;
 }

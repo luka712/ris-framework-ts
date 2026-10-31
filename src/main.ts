@@ -11,7 +11,7 @@ import {
   type ITexture2D,
   Rect,
   SamplerDescriptor,
-  SamplerFilter, TextureDescriptor, TextureFormat
+  SamplerFilter, type ITextureDescriptor, TextureFormat
 } from "./api/index.ts";
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
@@ -46,9 +46,10 @@ let sampler: ISampler;
 framework.addOnLoadContentListener(async () =>
 {
 
-  const texDesc = new TextureDescriptor();
-  texDesc.generateMipmaps = true;
-  texDesc.textureFormat = TextureFormat.RGBA_8_UNORM;
+  const texDesc: ITextureDescriptor = {
+    generateMipmaps: true,
+    textureFormat: TextureFormat.RGBA_8_UNORM,
+  };
 
   tex = await framework.content.loadTexture2DAsync("/assets/test.png", texDesc);
   tex2 = await framework.content.loadTexture2DAsync("/assets/cat.jpg", texDesc);

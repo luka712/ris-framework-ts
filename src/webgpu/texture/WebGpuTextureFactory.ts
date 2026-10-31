@@ -3,12 +3,13 @@ import {
     type IFramework,
     type ITexture2D,
     type ITextureFactory,
-    TextureDescriptor,
+    type ITextureDescriptor,
     TextureFormat,
     TextureUsage,
 } from "../../api/index.ts";
 import type {IKtx2Texture} from "ris-ktx2";
 import {WebGpuTexture2D} from "./WebGpuTexture2D.ts";
+import {resolveTextureDescriptor} from "../../core/rendering/texture/TextureDescriptorUtilities.ts";
 
 /**
  * The WebGPU texture factory.
@@ -24,7 +25,7 @@ export class WebGpuTextureFactory implements ITextureFactory {
     }
 
     /** @inheritDoc */
-    public createFromKtx2(_ktxTexture: IKtx2Texture, _descriptor?: TextureDescriptor): ITexture2D {
+    public createFromKtx2(_ktxTexture: IKtx2Texture, _descriptor?: ITextureDescriptor): ITexture2D {
         throw new Error("createFromKtx2 is not implemented for WebGPU.");
     }
 
@@ -51,13 +52,14 @@ export class WebGpuTextureFactory implements ITextureFactory {
             textureFormat = this._framework.renderer.preferredTextureFormat;
         }
 
-        const desc = new TextureDescriptor();
-        desc.width = width;
-        desc.height = height;
-        desc.textureFormat = textureFormat;
-        desc.textureUsage = textureUsage;
-        desc.generateMipmaps = useMipMaps;
-        desc.label = label ?? null;
+        const desc = resolveTextureDescriptor({
+            width,
+            height,
+            textureFormat,
+            textureUsage,
+            generateMipmaps: useMipMaps,
+            label: label ?? null,
+        });
 
         let image: HTMLImageElement | undefined;
         if (typeof HTMLImageElement !== "undefined" && data instanceof HTMLImageElement) {
@@ -90,13 +92,14 @@ export class WebGpuTextureFactory implements ITextureFactory {
             textureFormat = this._framework.renderer.preferredTextureFormat;
         }
 
-        const desc = new TextureDescriptor();
-        desc.width = width;
-        desc.height = height;
-        desc.textureUsage = textureUsage;
-        desc.textureFormat = textureFormat;
-        desc.label = label;
-        desc.generateMipmaps = useMipmap;
+        const desc = resolveTextureDescriptor({
+            width,
+            height,
+            textureUsage,
+            textureFormat,
+            label,
+            generateMipmaps: useMipmap,
+        });
 
         // WebGPU zero-initializes textures, so transparent black needs no upload; neither do depth textures.
         if (!color || (color.r === 0 && color.g === 0 && color.b === 0 && color.a === 0)) {

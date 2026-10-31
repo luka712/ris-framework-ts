@@ -16,6 +16,7 @@ Compared with `main` (0.1.0).
 - Materials take a `modelBuffer` owned by the mesh instead of `modelMatrix`, and `renderMesh` takes an `IRenderableMesh`.
 - Render pipelines throw when no model buffer is passed.
 - Requires `ris-ktx2` 0.2.
+- `TextureDescriptor` class is replaced by the `ITextureDescriptor` interface; all fields are optional and factories fill in defaults.
 
 ### Added
 
@@ -26,11 +27,14 @@ Compared with `main` (0.1.0).
 - OBJ/MTL loading through `framework.objLoader`, `ObjParser`, and `content.loadMeshAsync`, `loadUnlitMeshAsync` and `loadBlinnPhongMeshAsync`.
 - `geometryBuilder.create(descriptor)` and the exported `BaseGeometry`.
 - sRGB compressed texture formats (BC1, BC3, BC7, ETC2), with KTX2 loading choosing sRGB automatically.
+- `ColorSpace` enum, the `textureColorSpace` configuration option (default `SRGB`) and `IRenderer.preferredColorSpace`.
+- `TextureUtilities.convertToSrgbVariant`, `convertToLinearVariant` and `isSrgbFormat`.
 - Examples: `unlit_mesh`, `blinn_phong_mesh` and `sprite_batch`.
 
 ### Changed
 
 - `content.loadShaderModule` accepts optional replacement values.
+- Textures without a format, and KTX2 textures, follow the configured color space.
 
 ### Fixed
 

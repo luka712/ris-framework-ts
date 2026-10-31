@@ -4,7 +4,7 @@ import type { IRenderableMesh } from "../meshes/IRenderableMesh.ts";
 import type { IShaderModuleLoader } from "../shader/IShaderModuleLoader.ts";
 import type { IShaderModule } from "../shader/IShaderModule.ts";
 import type { ITexture2D } from "../rendering/texture/ITexture2D.ts";
-import {TextureDescriptor} from "../rendering/texture/TextureDescriptor.ts";
+import type {ITextureDescriptor} from "../rendering/texture/ITextureDescriptor.ts";
 import {ContentConfig} from "./ContentConfig.ts";
 import type { IKtx2Texture } from "ris-ktx2";
 import type {IMesh} from "../meshes/IMesh.ts";
@@ -42,7 +42,7 @@ export interface IContentManager {
      * @param contentConfig - The content config.
      * @returns The Texture2D.
      */
-    loadTexture2DAsync(path: string, desc?: TextureDescriptor, contentConfig?: ContentConfig): Promise<ITexture2D>;
+    loadTexture2DAsync(path: string, desc?: ITextureDescriptor, contentConfig?: ContentConfig): Promise<ITexture2D>;
 
     /**
      * Loads a plain mesh (geometry and buffers only, no material or transform) from an OBJ (Wavefront) file,

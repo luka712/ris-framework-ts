@@ -1,12 +1,12 @@
 import {
     type ITexture2D, type ITextureView,
     State,
-    type TextureDescriptor,
     type TextureFormat,
     TextureUsage,
     TextureViewDescriptor
 } from "../../../api/index.ts";
 import {vec2} from "gl-matrix";
+import type {ResolvedTextureDescriptor} from "./TextureDescriptorUtilities.ts";
 
 /**
  * The ATexture2D class is an abstract base class that implements the ITexture2D interface. It provides common properties and a constructor for initializing a 2D texture, but it does not implement the actual texture creation and management logic, which must be provided by subclasses that extend this base class.
@@ -30,7 +30,7 @@ export abstract class ATexture2D implements ITexture2D {
      * @param descriptor - The texture descriptor.
      */
     protected constructor(
-        descriptor: TextureDescriptor,
+        descriptor: ResolvedTextureDescriptor,
     ) {
 
         if (!descriptor.textureFormat) {

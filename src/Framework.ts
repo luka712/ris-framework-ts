@@ -54,7 +54,7 @@ import {WebGpuRenderPipelineFactory} from "./webgpu/render-pipelines/WebGpuRende
 import {WebGpuShaderModuleLoader} from "./webgpu/shader/WebGpuShaderModuleLoader.ts";
 import {WebGpuBuffersFactory} from "./webgpu/buffers/WebGpuBuffersFactory.ts";
 import {WebGpuTexture2D} from "./webgpu/texture/WebGpuTexture2D.ts";
-import {TextureColorSpace} from "./api/rendering/enums.ts";
+import {ColorSpace} from "./api/rendering/enums.ts";
 
 /** The Ris framework */
 export class Framework implements IFramework {
@@ -100,7 +100,7 @@ export class Framework implements IFramework {
             textureFiltering: this._configuration.textureFiltering ?? TextureSamplerFilteringPreset.BILINEAR,
             alpha: this._configuration.alpha ?? false,
             powerPreference: this._configuration.powerPreference ?? PowerPreferenceType.DEFAULT,
-            textureColorSpace: this._configuration.textureColorSpace ?? TextureColorSpace.SRGB
+            textureColorSpace: this._configuration.textureColorSpace ?? ColorSpace.SRGB
         };
 
 

@@ -5,5 +5,5 @@ export * from "./TextureViewDimension.ts";
 export * from "./TextureFormat.ts";
 export * from "./ITextureView.ts";
 export * from "./ITextureFactory.ts";
-export * from "./TextureDescriptor.ts";
+export * from "./ITextureDescriptor.ts";
 export * from "./TextureUtilities.ts";
