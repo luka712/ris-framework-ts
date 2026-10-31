@@ -9,51 +9,37 @@ Compared with `main` (0.1.0).
 
 ### Breaking changes
 
-- **tsyringe and reflect-metadata removed.** Services are created by `Framework` and get their dependencies through constructors. Consumers no longer need `reflect-metadata` or decorator settings.
-- **Perspective camera.** `cameraFactory.createPerspectiveCamera(descriptor?, scene?)` takes a `PerspectiveCameraDescriptor` (`fov` in degrees, `aspectRatio`, `near`, `far`, `eye`, `target`, `up`) instead of `(fov, aspectRatio, near, far)`. The `PerspectiveCamera` constructor is `(framework, descriptor?, scene?)` instead of `(framework, fov, aspectRatio, nearPlane, farPlane)`.
-- **`ICamera.positionBuffer`.** This new member is required (std140 world-space eye). Custom `ICamera` implementations must provide it. `PerspectiveCamera`, `OrthographicCamera` and `OrbitCamera` implement it.
-- **Meshes.** Split like the C# framework: `IMesh`/`Mesh` hold only geometry and the vertex and index buffers, and `IRenderableMesh`/`RenderableMesh` add the material, index range, sub meshes and transform. `meshFactory.createMesh(geometry, geometryFormat)` replaces `create(geometry, geometryFormat)`; `meshFactory.create(geometry, material)` now returns an `IRenderableMesh`. The `QuadMesh` constructor is `(framework, material, isUpdatable, scale?)` and it extends `RenderableMesh`.
-- **Materials.** `IMaterial.renderMesh` takes an `IRenderableMesh` instead of an `IMesh`. `IMaterial.modelMatrix` is replaced by `IMaterial.modelBuffer`. The mesh owns the model buffer and assigns it before drawing. `UnlitMaterial` and `InspectTextureMipsMaterial` no longer create their own model buffer. They create their render pipeline once a model buffer is assigned, and rendering without one throws.
-- **Render pipelines.** `createUnlitRenderPipeline` and `createInspectTextureMipsRenderPipeline` throw when no model buffer is passed.
+- `FrameworkConfiguration` is no longer exported; pass an `IFrameworkConfiguration` object to `new Framework(...)`.
+- `tsyringe` and `reflect-metadata` are removed; services use plain constructor wiring.
+- `cameraFactory.createPerspectiveCamera` takes a descriptor object, and every `ICamera` now requires a `positionBuffer`.
+- Meshes are split into `IMesh`/`Mesh` (geometry and buffers) and `IRenderableMesh`/`RenderableMesh` (material, index range, sub meshes, transform).
+- Materials take a `modelBuffer` owned by the mesh instead of `modelMatrix`, and `renderMesh` takes an `IRenderableMesh`.
+- Render pipelines throw when no model buffer is passed.
+- Requires `ris-ktx2` 0.2.
 
 ### Added
 
-- `Scene` holds meshes, lights and the active camera. `scene.add(item)` and `scene.remove(item)` accept a renderable mesh, a `SceneMesh`, `AmbientLight`, `DirectionalLight`, `PointLight` or camera. Adding the same item twice does nothing. Lights and the perspective camera given a scene in their constructor add themselves; meshes are added with `scene.add(mesh)`. Removing the active camera clears `scene.camera`. The scene keeps up to 3 directional and 5 point lights, and `scene.update(time)` hands its camera, its active ambient light and its light lists (by reference) to the mesh materials. `scene.render()` draws every mesh.
-- `SceneMesh`: `new SceneMesh(renderableMesh)` is how a scene holds a mesh. It covers the mesh and its sub meshes and owns their materials, so `sceneMesh.dispose()` (and `scene.dispose()`) disposes the mesh and each distinct material once.
-- `IRenderableMesh`/`RenderableMesh`: a mesh plus an optional material, `indexStart`, `indexCount` (-1 draws all) and sub meshes. Sub meshes (`mesh.addSubMesh(material, start, count)` or `new RenderableMesh(framework, material, parent, start, count)`) share the parent's vertex and index buffers. A mesh with a material draws its range, then its sub meshes; a root without one draws only its sub meshes. Disposing the root frees the shared buffers once and never disposes materials.
-- Material interfaces `ICameraMaterial` (`camera`) and `ILightsMaterial` (`ambientLight`, `directionalLights`, `pointLights`), with `isCameraMaterial` and `isLightsMaterial`.
-- Lights: `AmbientLight`, `DirectionalLight` and `PointLight` (constant, linear and quadratic attenuation) are plain data classes with descriptors, `intensity`, auto-assigned ids and an optional `scene` constructor argument. `framework.lightsFactory` creates ambient lights.
-- `ForwardBlinnPhongMaterial` with ambient, diffuse and Blinn-Phong specular lighting from directional and point lights. Normals use the normal matrix, so non-uniform scale is handled. Specular colour and shininess come from MTL `Ks` and `Ns`, and shader variants are cached per light count. Each material owns its lights buffer (3 directional and 5 point slots, 88 floats) and uploads it only when the light data changed. Its descriptor requires `projectionViewBuffer` and `cameraPositionBuffer`, and `materialFactory.createForwardBlinnPhongMaterial(descriptor)` creates it.
-- Renderable mesh transforms: `mesh.position`, `mesh.rotation` (Euler radians, applied Y, then X, then Z), `mesh.scale` and a lazily computed `mesh.modelMatrix` / `mesh.modelBuffer`. The root owns one model buffer that all its sub meshes and their materials share.
-- `meshFactory.createWithSubMeshes(geometry, subMeshes)` creates a root renderable mesh with one sub mesh per index range.
-- OBJ/MTL loading:
-  - `ObjParser` is framework-independent and produces plain definitions. `parser.loadAsync(path, options)` supports `resolveMaterialUrl` and `ignoreMaterials`, and `parser.parseAsync(path)` returns an `ObjModel` (geometry, `ObjSubMesh` per `usemtl` range with its `ObjMaterialDefinition`).
-  - `ObjLoader`, available as `framework.objLoader`: `loadAsync(path, blinnPhongDescriptor)` returns a renderable mesh with one Blinn-Phong material per material name (`Kd`, `Ka` falling back to `Kd`, `Ks` default 0.5, `Ns` default 32), `loadAsync(path, subMesh => material)` lets the caller create the materials, and the static `ObjLoader.parseAsync(path)` parses without creating GPU resources. The root has no material and white vertex colours.
-  - `content.loadMeshAsync(path, geometryFormat)` returns a plain `IMesh` (buffers only). `content.loadUnlitMeshAsync(path, camera?)` and `content.loadBlinnPhongMeshAsync(path, camera)` delegate to `framework.objLoader`; add the result with `scene.add(mesh)`.
-- `geometryBuilder.create(descriptor)` with `GeometryDescriptor`. `BaseGeometry` is exported.
-- `SpriteMaterial` and `materialFactory.createSpriteMaterial`; sprite batches draw through it.
-- `UnlitMaterialDescriptor.camera` and a `camera` property on the unlit and Blinn-Phong materials. A scene assigns its camera through this property.
-- Examples: `unlit_mesh`, `blinn_phong_mesh` and `sprite_batch`, with `npm run dev:examples` and `npm run build:examples`.
-- WebGPU backend (first slice): set `renderingBackend` in the framework configuration and call `framework.initializeAsync()`. WebGL stays the default, and the framework falls back to WebGL with a warning when WebGPU is unavailable. Only the unlit pipeline is implemented; Blinn-Phong, sprite, inspect mips and KTX2 textures throw "not implemented for WebGPU" for now. Example: `unlit_mesh_webgpu`.
-- sRGB compressed texture formats: `BC7_RGBA_SRGB`, `BC3_RGBA_SRGB`, `ETC2_RGBA8_SRGB`, plus `BC1_RGB_UNORM`/`BC1_RGB_SRGB` and `ETC2_RGB8_UNORM`/`ETC2_RGB8_SRGB`, mapped for WebGL and WebGPU (WebGPU also maps BC3, BC7, ETC2 and every ASTC size). KTX2 loading picks the sRGB variant when the file is sRGB (from its vkFormat, or the transcoded vkFormat for Basis files) and falls back to linear with a warning when the GPU lacks sRGB S3TC. `IGraphicsDeviceFeatures.supportsTextureCompressionS3TCSrgb` reports `WEBGL_compressed_texture_s3tc_srgb`. The WebGPU device requests the texture-compression features the adapter has.
+- WebGPU backend (preview): set `renderingBackend` and call `framework.initializeAsync()`. Only unlit materials are supported so far; WebGL stays the default and is used as a fallback.
+- `Scene` with `add`/`remove` for meshes, lights and the camera, plus `SceneMesh` for owning a mesh and its materials.
+- Lights: `AmbientLight`, `DirectionalLight` and `PointLight`.
+- `ForwardBlinnPhongMaterial`, `SpriteMaterial`, and the `ICameraMaterial`/`ILightsMaterial` interfaces.
+- Mesh transforms (`position`, `rotation`, `scale`) and sub meshes (`addSubMesh`, `meshFactory.createWithSubMeshes`).
+- OBJ/MTL loading through `framework.objLoader`, `ObjParser`, and `content.loadMeshAsync`, `loadUnlitMeshAsync` and `loadBlinnPhongMeshAsync`.
+- `geometryBuilder.create(descriptor)` and the exported `BaseGeometry`.
+- sRGB compressed texture formats (BC1, BC3, BC7, ETC2), with KTX2 loading choosing sRGB automatically.
+- Examples: `unlit_mesh`, `unlit_mesh_webgpu`, `blinn_phong_mesh` and `sprite_batch`.
 
 ### Changed
 
-- `content.loadShaderModule(id, replacements?)` takes optional `##KEY##` replacement values, and they are part of the shader cache key.
+- `content.loadShaderModule` accepts optional replacement values.
 
 ### Fixed
 
-- The sprite fragment shader added `vec4(1.0)` to every pixel, so sprites rendered white.
-- The orthographic camera's default eye was at z = -1 instead of z = 1.
-- The default texture was a static shared by every `Framework` instance, so a second framework (a new GL context) reused a texture from the old one. It is now per framework.
-- The anisotropic filtering helper cached the extension object from the first GL context on a shared static. It is now looked up per context.
-- A leftover `debugger` statement in `WebGlGraphicsDevice` initialization is removed.
-- WebGL compression flags were swapped: `EXT_texture_compression_bptc` set `supportsTextureCompressionS3TC` and `WEBGL_compressed_texture_s3tc` set `supportsTextureCompressionBC`, so KTX2 loading could pick BC7 on a GPU without BPTC.
-
-### Removed
-
-- The `tsyringe` and `reflect-metadata` dependencies.
-- `IMaterial.modelMatrix`, replaced by `modelBuffer` (see Breaking changes).
+- Sprites rendered white because of a stray value in the sprite shader.
+- The orthographic camera's default eye was on the wrong side (z = -1).
+- A second `Framework` instance reused the default texture and anisotropic-filtering extension from the first.
+- A leftover `debugger` statement in WebGL device initialization.
+- Swapped BC/S3TC compression flags could select BC7 on GPUs without BPTC support.
 
 ## [0.1.0]
 
