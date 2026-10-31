@@ -19,7 +19,6 @@ Compared with `main` (0.1.0).
 
 ### Added
 
-- WebGPU backend (preview): set `renderingBackend` and call `framework.initializeAsync()`. Only unlit materials are supported so far; WebGL stays the default and is used as a fallback.
 - `Scene` with `add`/`remove` for meshes, lights and the camera, plus `SceneMesh` for owning a mesh and its materials.
 - Lights: `AmbientLight`, `DirectionalLight` and `PointLight`.
 - `ForwardBlinnPhongMaterial`, `SpriteMaterial`, and the `ICameraMaterial`/`ILightsMaterial` interfaces.
@@ -27,7 +26,7 @@ Compared with `main` (0.1.0).
 - OBJ/MTL loading through `framework.objLoader`, `ObjParser`, and `content.loadMeshAsync`, `loadUnlitMeshAsync` and `loadBlinnPhongMeshAsync`.
 - `geometryBuilder.create(descriptor)` and the exported `BaseGeometry`.
 - sRGB compressed texture formats (BC1, BC3, BC7, ETC2), with KTX2 loading choosing sRGB automatically.
-- Examples: `unlit_mesh`, `unlit_mesh_webgpu`, `blinn_phong_mesh` and `sprite_batch`.
+- Examples: `unlit_mesh`, `blinn_phong_mesh` and `sprite_batch`.
 
 ### Changed
 
