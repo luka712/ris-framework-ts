@@ -14,7 +14,7 @@ import type {LightsBuffer} from "../lights/LightsBuffer.ts";
 import type {AmbientLight} from "../lights/AmbientLight.ts";
 import type {DirectionalLight} from "../lights/DirectionalLight.ts";
 import type {PointLight} from "../lights/PointLight.ts";
-import type {ICameraMaterial} from "./ICameraMaterial.ts";
+import type {IMaterial} from "./IMaterial.ts";
 import type {ILightsMaterial} from "./ILightsMaterial.ts";
 import type {IForwardBlinnPhongRenderPipeline} from "../rendering/render-pipelines/IForwardBlinnPhongRenderPipeline.ts";
 
@@ -39,7 +39,7 @@ export class ForwardBlinnPhongMaterialDescriptor {
  * The Blinn-Phong material with forward calculated lighting.
  * @public
  */
-export class ForwardBlinnPhongMaterial implements ICameraMaterial, ILightsMaterial {
+export class ForwardBlinnPhongMaterial implements IMaterial, ILightsMaterial {
 
     /** The directional light slots of the material's lights buffer and shader. */
     public static readonly MAX_DIRECTIONAL_LIGHTS = 3;

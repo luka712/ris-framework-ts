@@ -1,7 +1,7 @@
-import type { mat4, vec3 } from "gl-matrix";
 import type { IMesh } from "./IMesh.ts";
 import type { IMaterial } from "../material/IMaterial.ts";
 import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
+import type {ISceneObject} from "../scene/ISceneObject.ts";
 
 /**
  * A mesh that can be drawn: a mesh plus an optional material, an index range and sub meshes.
@@ -15,7 +15,7 @@ import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
  *   (a `SceneMesh` does that).
  * @public
  */
-export interface IRenderableMesh extends IMesh {
+export interface IRenderableMesh extends IMesh, ISceneObject {
 
     /** The material, if any. A root mesh made only of sub meshes has none. */
     material?: IMaterial;
@@ -32,23 +32,8 @@ export interface IRenderableMesh extends IMesh {
     /** Number of indices to draw; -1 (the default) draws all indices. */
     readonly indexCount: number;
 
-    /** World position. Defaults to the origin. In-place edits are detected. A sub mesh uses the root's. */
-    position: vec3;
-
     /**
-     * Euler rotation in radians, applied in Y, X, Z order (yaw, pitch, roll): `R = Ry * Rx * Rz`.
-     * Defaults to (0, 0, 0). In-place edits are detected. A sub mesh uses the root's.
-     */
-    rotation: vec3;
-
-    /** Scale. Defaults to (1, 1, 1). In-place edits are detected. A sub mesh uses the root's. */
-    scale: vec3;
-
-    /** The model matrix `T * R * S`, recomputed only when position, rotation or scale changed. */
-    readonly modelMatrix: mat4;
-
-    /**
-     * The model buffer (std140 `mat4`) holding {@link modelMatrix}. Owned by the root mesh (sub meshes share it),
+     * The model buffer (std140 `mat4`) holding the root's `transform.modelMatrix`. Owned by the root mesh (sub meshes share it),
      * uploaded when the transform changed and assigned to the material(s) before drawing. Created on first use.
      */
     readonly modelBuffer: IUniformBuffer;

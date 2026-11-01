@@ -4,6 +4,7 @@ import type { IRenderableMesh } from "../meshes/IRenderableMesh.ts";
 import type { IVertexBuffer } from "../rendering/buffers/IVertexBuffer.ts";
 import type { IIndexBuffer } from "../rendering/buffers/IIndexBuffer.ts";
 import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
+import type {ICamera} from "../camera/ICamera.ts";
 
 /**
  * The material interface.
@@ -20,6 +21,13 @@ export interface IMaterial extends IDisposable {
 
     /** The geometry format required by the material.*/
     readonly geometryFormat: GeometryFormat;
+
+    /**
+     * The camera.
+     * Setting it binds the camera's buffers, if material uses them.
+     * For some materials, setting camera plays no role as they might not use camera.
+     */
+    camera?: ICamera;
 
     /**
      * Called before rendering.

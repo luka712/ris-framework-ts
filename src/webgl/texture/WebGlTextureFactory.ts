@@ -2,14 +2,14 @@ import {
     Color,
     type IFramework,
     type ITexture2D,
-    type ITextureFactory,
     type ITextureDescriptor,
+    type ITextureFactory,
     TextureFormat,
     TextureUsage,
     TextureUtilities
 } from "../../api/index.ts"
 import {WebGlTexture2D} from "./WebGlTexture2D.ts";
-import {type IKtx2Texture, KtxDFTransfer, KtxTranscodeFlags, KtxTranscodeFormat, VkFormat} from "ris-ktx2";
+import {type IKtx2Texture, KtxTranscodeFlags, KtxTranscodeFormat, VkFormat} from "ris-ktx2";
 import {vec2} from "gl-matrix";
 import {ColorSpace} from "../../api/rendering/enums.ts";
 import {resolveTextureDescriptor} from "../../core/rendering/texture/TextureDescriptorUtilities.ts";
@@ -34,8 +34,10 @@ export class WebGlTextureFactory implements ITextureFactory {
         let textureFormat = desc.textureFormat;
         const gpuFeatures = this._framework.graphicsDevice.features;
 
-        const srgb = ktxTexture.oetf == KtxDFTransfer.SRGB;
-        const preferSrgb = this._framework.renderer.preferredColorSpace == ColorSpace.SRGB;
+        // Textures always adapt to the framework's preferred color space, unless user defined it's preferred.
+        const preferSrgb = (descriptor?.preferredColorSpace ?? this._framework.renderer.colorSpace) == ColorSpace.SRGB;
+        // An explicit texture format overrides both color space preferences.
+        const userSpecifiedTextureFormat = desc.textureFormat != TextureFormat.UNDEFINED;
 
         if (ktxTexture.needsTranscoding && vkFormat == VkFormat.UNDEFINED)
         {
@@ -46,22 +48,22 @@ export class WebGlTextureFactory implements ITextureFactory {
                 if(gpuFeatures.supportsTextureCompressionBC)
                 {
                     transcodeFormat = KtxTranscodeFormat.BC7_RGBA;
-                    textureFormat = srgb ? TextureFormat.BC7_RGBA_SRGB : TextureFormat.BC7_RGBA_UNORM;
+                    textureFormat = preferSrgb ? TextureFormat.BC7_RGBA_SRGB : TextureFormat.BC7_RGBA_UNORM;
                 }
                 else if(gpuFeatures.supportsTextureCompressionASTC)
                 {
                     transcodeFormat = KtxTranscodeFormat.ASTC_4X4_RGBA;
-                    textureFormat = srgb ? TextureFormat.ASTC_4X4_RGBA_SRGB : TextureFormat.ASTC_4X4_RGBA_UNORM;
+                    textureFormat = preferSrgb ? TextureFormat.ASTC_4X4_RGBA_SRGB : TextureFormat.ASTC_4X4_RGBA_UNORM;
                 }
                 else if(gpuFeatures.supportsTextureCompressionS3TC)
                 {
                     transcodeFormat = KtxTranscodeFormat.BC3_RGBA;
-                    textureFormat = srgb ? TextureFormat.BC3_RGBA_SRGB : TextureFormat.BC3_RGBA_UNORM;
+                    textureFormat = preferSrgb ? TextureFormat.BC3_RGBA_SRGB : TextureFormat.BC3_RGBA_UNORM;
                 }
                 else if(gpuFeatures.supportsTextureCompressionETC2)
                 {
                     transcodeFormat = KtxTranscodeFormat.ETC2_RGBA;
-                    textureFormat = srgb ? TextureFormat.ETC2_RGBA8_SRGB : TextureFormat.ETC2_RGBA8_UNORM;
+                    textureFormat = preferSrgb ? TextureFormat.ETC2_RGBA8_SRGB : TextureFormat.ETC2_RGBA8_UNORM;
                 }
                 else if(gpuFeatures.supportsTextureCompressionPVRTC)
                 {
@@ -72,7 +74,7 @@ export class WebGlTextureFactory implements ITextureFactory {
                 else
                 {
                     transcodeFormat = KtxTranscodeFormat.RGBA32;
-                    textureFormat = srgb ? TextureFormat.RGBA_8_UNORM_SRGB : TextureFormat.RGBA_8_UNORM;
+                    textureFormat = preferSrgb ? TextureFormat.RGBA_8_UNORM_SRGB : TextureFormat.RGBA_8_UNORM;
                 }
             }
             else
@@ -83,13 +85,18 @@ export class WebGlTextureFactory implements ITextureFactory {
             ktxTexture.transcodeBasis(transcodeFormat, KtxTranscodeFlags.HIGH_QUALITY);
         }
         else {
-            // No transcoding path, the vkFormat already says linear or sRGB.
+            // No transcoding path: map the vkFormat, then switch to the preferred color space variant.
             textureFormat = TextureUtilities.convertVkFormatToTextureFormat(vkFormat);
-            if(!srgb && preferSrgb && !TextureUtilities.isSrgbFormat(textureFormat)){
-                textureFormat = TextureUtilities.convertToSrgbVariant(textureFormat);
-            }
-            else if(srgb && !preferSrgb && TextureUtilities.isSrgbFormat(textureFormat)){
-                textureFormat = TextureUtilities.convertToLinearVariant(textureFormat);
+
+            if (userSpecifiedTextureFormat) {
+                // The data can only be reinterpreted as the file's format or its sRGB/linear variant.
+                textureFormat = TextureUtilities.resolveExplicitFormat(textureFormat, desc.textureFormat);
+            } else {
+                if (preferSrgb && !TextureUtilities.isSrgbFormat(textureFormat)) {
+                    textureFormat = TextureUtilities.convertToSrgbVariant(textureFormat);
+                } else if (!preferSrgb && TextureUtilities.isSrgbFormat(textureFormat)) {
+                    textureFormat = TextureUtilities.convertToLinearVariant(textureFormat);
+                }
             }
         }
 
@@ -125,8 +132,12 @@ export class WebGlTextureFactory implements ITextureFactory {
         channels: number = 4,
         label: string | null | undefined = null,
         textureUsage = TextureUsage.COPY_DST | TextureUsage.TEXTURE_BINDING,
-        textureFormat= TextureFormat.RGBA_8_UNORM,
+        textureFormat = TextureFormat.UNDEFINED,
         useMipMaps = false): ITexture2D {
+        if (textureFormat == TextureFormat.UNDEFINED) {
+            textureFormat = this._framework.renderer.preferredTextureFormat;
+        }
+
 
         if (!data) {
             throw new Error("Data must not be null.");

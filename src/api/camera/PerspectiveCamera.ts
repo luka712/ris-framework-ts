@@ -6,6 +6,8 @@ import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
 import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
 import {GameTime} from "../time/GameTime.ts";
 import type {Scene} from "../scene/Scene.ts";
+import {TransformNode} from "../scene/node/TransformNode.ts";
+import {CameraAim, CameraTransformUtilities} from "./CameraTransformUtilities.ts";
 
 /**
  * The descriptor for a perspective camera. Every field is optional.
@@ -24,13 +26,16 @@ export interface PerspectiveCameraDescriptor {
     /** The far plane. By default, 100. */
     far?: number;
 
-    /** The eye position. Copied. By default, (0, 0, 3). */
+    /** The world position (see {@link ICamera.setEye}). By default, (0, 0, -3). */
+    position?: vec3;
+
+    /** Alias of {@link position}; `position` wins when both are given. */
     eye?: vec3;
 
-    /** The point the camera looks at. Copied. By default, the origin. */
+    /** The point the camera looks at (see {@link ICamera.setTarget}). By default, the origin. */
     target?: vec3;
 
-    /** The up vector. Copied. By default, (0, 1, 0). */
+    /** The up vector used to aim (see {@link ICamera.setUp}). By default, (0, 1, 0). */
     up?: vec3;
 }
 
@@ -40,7 +45,8 @@ export interface PerspectiveCameraDescriptor {
 export class PerspectiveCamera implements ICamera {
 
     protected readonly _framework: IFramework;
-    private readonly _tempVec3 = vec3.create();
+    private readonly _lastWorld = mat4.fromValues(NaN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    private readonly _positionData = [0, 0, 0, 0];
 
     private _projectionMatrix = mat4.create();
     private _viewMatrix = mat4.create();
@@ -69,15 +75,11 @@ export class PerspectiveCamera implements ICamera {
         this.aspectRatio = descriptor?.aspectRatio ?? 1;
         this.nearPlane = descriptor?.near ?? 0.01;
         this.farPlane = descriptor?.far ?? 100;
-        if (descriptor?.eye) {
-            vec3.copy(this.eye, descriptor.eye);
-        }
-        if (descriptor?.target) {
-            vec3.copy(this.target, descriptor.target);
-        }
+        vec3.copy(this.transform.position, descriptor?.position ?? descriptor?.eye ?? [0, 0, -3]);
         if (descriptor?.up) {
-            vec3.copy(this.up, descriptor.up);
+            this.setUp(descriptor.up);
         }
+        this.setTarget(descriptor?.target ?? [0, 0, 0]);
         if (scene) {
             scene.add(this);
         }
@@ -148,24 +150,56 @@ export class PerspectiveCamera implements ICamera {
     }
 
     /**
-     * The eye position of the camera.
+     * The camera transform: the single source of the view. The camera looks down its local -Z axis;
+     * the view matrix is `inverse(T * R)` of `transform.modelMatrix` (scale is ignored).
+     * By default, at (0, 0, -3) looking at the origin.
      */
-    public eye = vec3.fromValues(0,0,3);
+    public transform = new TransformNode();
 
-    /**
-     * The target position of the camera.
-     */
-    public target = vec3.create();
-
-    /**
-     * The up vector of the camera.
-     */
-    public up = vec3.fromValues(0,1,0);
-
-    /** The direction of a camera. */
+    /** The unit direction the camera looks in, from the transform. */
     public get direction(): vec3 {
-        vec3.sub(this._direction, this.target, this.eye);
-        return this._direction;
+        return CameraTransformUtilities.forwardFromWorld(this._direction, this.transform.modelMatrix);
+    }
+
+    private readonly _aim = new CameraAim(() => this.transform);
+
+    /**
+     * Rotates the transform once so the camera looks at a world point, using the current up ({@link getUp}).
+     * Forgets the target stored by {@link setTarget}, so a later {@link setEye} does not re-aim.
+     * @param target The point to look at.
+     */
+    public lookAt(target: vec3): void {
+        this._aim.lookAt(target);
+    }
+
+    /** @inheritDoc */
+    public setEye(eye: vec3): void {
+        this._aim.setEye(eye);
+    }
+
+    /** @inheritDoc */
+    public getEye(out?: vec3): vec3 {
+        return this._aim.getEye(out);
+    }
+
+    /** @inheritDoc */
+    public setTarget(target: vec3): void {
+        this._aim.setTarget(target);
+    }
+
+    /** @inheritDoc */
+    public getTarget(out?: vec3): vec3 {
+        return this._aim.getTarget(out);
+    }
+
+    /** @inheritDoc */
+    public setUp(up: vec3): void {
+        this._aim.setUp(up);
+    }
+
+    /** @inheritDoc */
+    public getUp(out?: vec3): vec3 {
+        return this._aim.getUp(out);
     }
 
     /**
@@ -202,12 +236,13 @@ export class PerspectiveCamera implements ICamera {
         this._viewBuffer = this._framework.bufferFactory.createUniformBuffer(this.viewMatrix, bufferUsage);
     }
 
-    /**
-     * The eye in world space, as used by the view matrix: z is flipped for the right-handed look-at.
-     * This is what {@link positionBuffer} holds, std140 `vec3` (padded to 16 bytes).
-     */
+    /** The world position, std140 `vec3` (padded to 16 bytes). This is what {@link positionBuffer} holds. */
     private _worldEye(): number[] {
-        return [this.eye[0], this.eye[1], -this.eye[2], 0];
+        const m = this.transform.modelMatrix;
+        this._positionData[0] = m[12];
+        this._positionData[1] = m[13];
+        this._positionData[2] = m[14];
+        return this._positionData;
     }
 
     /**
@@ -218,11 +253,12 @@ export class PerspectiveCamera implements ICamera {
         // Right-handed
         mat4.perspectiveNO(this._projectionMatrix, this.fieldOfView, this.aspectRatio, this.nearPlane, this.farPlane);
 
-        // mat4 does not have right-handed look at, therefore swap z for right-handed matrix.
-        this._tempVec3[0] = this.eye[0];
-        this._tempVec3[1] = this.eye[1];
-        this._tempVec3[2] = -this.eye[2];
-        mat4.lookAt(this.viewMatrix, this._tempVec3, this.target, this.up);
+        // The view only changes when the transform's world matrix changed.
+        const world = this.transform.modelMatrix;
+        if (!mat4.exactEquals(this._lastWorld, world)) {
+            mat4.copy(this._lastWorld, world);
+            CameraTransformUtilities.viewFromWorld(this.viewMatrix, world);
+        }
         mat4.multiply(this.projectionViewMatrix, this.projectionMatrix, this.viewMatrix);
     }
 

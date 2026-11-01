@@ -1,4 +1,4 @@
-import {mat4, quat, vec3} from "gl-matrix";
+import {mat4} from "gl-matrix";
 import {Mesh} from "./Mesh.ts";
 import type {IRenderableMesh} from "./IRenderableMesh.ts";
 import type {IFramework} from "../IFramework.ts";
@@ -8,6 +8,7 @@ import type {IVertexBuffer} from "../rendering/buffers/IVertexBuffer.ts";
 import type {IIndexBuffer} from "../rendering/buffers/IIndexBuffer.ts";
 import type {GeometryFormat} from "../geometry/GeometryFormat.ts";
 import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
+import {TransformNode} from "../scene/node/TransformNode.ts";
 
 /**
  * A mesh that can be drawn (C# `RenderableMesh`). See {@link IRenderableMesh}.
@@ -22,16 +23,6 @@ export class RenderableMesh extends Mesh implements IRenderableMesh {
     private readonly _subMeshes: RenderableMesh[] = [];
     private readonly _parent?: RenderableMesh;
 
-    // Transform; only used on the root.
-    private _position: vec3 = vec3.create();
-    private _rotation: vec3 = vec3.create();
-    private _scale: vec3 = vec3.fromValues(1, 1, 1);
-    private readonly _modelMatrix = mat4.create();
-    private readonly _rotationQuat = quat.create();
-    // Cached copies to detect in-place edits; NaN forces the first computation.
-    private readonly _lastPosition = vec3.fromValues(NaN, NaN, NaN);
-    private readonly _lastRotation = vec3.create();
-    private readonly _lastScale = vec3.create();
     private _modelBuffer?: IUniformBuffer;
     /** The matrix last uploaded to the model buffer. */
     private readonly _uploadedMatrix = mat4.create();
@@ -44,6 +35,17 @@ export class RenderableMesh extends Mesh implements IRenderableMesh {
 
     /** @inheritDoc */
     public readonly indexCount: number;
+
+    private _transform = new TransformNode();
+
+    /** @inheritDoc A sub mesh returns (and sets) the root's transform. */
+    public get transform(): TransformNode {
+        return this._root._transform;
+    }
+
+    public set transform(value: TransformNode) {
+        this._root._transform = value;
+    }
 
     /**
      * The constructor.
@@ -103,38 +105,6 @@ export class RenderableMesh extends Mesh implements IRenderableMesh {
         return this.material?.geometryFormat;
     }
 
-    /** @inheritDoc */
-    public get position(): vec3 { return this._root._position; }
-    public set position(value: vec3) { this._root._position = value; }
-
-    /** @inheritDoc */
-    public get rotation(): vec3 { return this._root._rotation; }
-    public set rotation(value: vec3) { this._root._rotation = value; }
-
-    /** @inheritDoc */
-    public get scale(): vec3 { return this._root._scale; }
-    public set scale(value: vec3) { this._root._scale = value; }
-
-    /** @inheritDoc */
-    public get modelMatrix(): mat4 {
-        const root = this._root;
-        if (root !== this) {
-            return root.modelMatrix;
-        }
-        if (!vec3.exactEquals(this._lastPosition, this._position)
-            || !vec3.exactEquals(this._lastRotation, this._rotation)
-            || !vec3.exactEquals(this._lastScale, this._scale)) {
-            vec3.copy(this._lastPosition, this._position);
-            vec3.copy(this._lastRotation, this._rotation);
-            vec3.copy(this._lastScale, this._scale);
-            const q = quat.identity(this._rotationQuat);
-            quat.rotateY(q, q, this._rotation[1]);
-            quat.rotateX(q, q, this._rotation[0]);
-            quat.rotateZ(q, q, this._rotation[2]);
-            mat4.fromRotationTranslationScale(this._modelMatrix, q, this._position, this._scale);
-        }
-        return this._modelMatrix;
-    }
 
     /** @inheritDoc Created on first access and disposed with the root mesh. */
     public get modelBuffer(): IUniformBuffer {
@@ -143,7 +113,7 @@ export class RenderableMesh extends Mesh implements IRenderableMesh {
             return root.modelBuffer;
         }
         if (!this._modelBuffer) {
-            mat4.copy(this._uploadedMatrix, this.modelMatrix);
+            mat4.copy(this._uploadedMatrix, this.transform.modelMatrix);
             this._modelBuffer = this._framework.bufferFactory.createUniformBuffer(
                 this._uploadedMatrix, BufferUsage.UNIFORM | BufferUsage.COPY_DST, "RenderableMesh.modelBuffer");
         }
@@ -154,7 +124,7 @@ export class RenderableMesh extends Mesh implements IRenderableMesh {
     private _updateModelBuffer(): IUniformBuffer {
         const root = this._root;
         const buffer = root.modelBuffer;
-        const matrix = root.modelMatrix;
+        const matrix = root.transform.modelMatrix;
         if (!mat4.exactEquals(root._uploadedMatrix, matrix)) {
             mat4.copy(root._uploadedMatrix, matrix);
             buffer.update(root._uploadedMatrix);

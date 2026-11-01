@@ -41,7 +41,7 @@ export class IFrameworkConfiguration {
     /** The texture filtering to configure */
     textureFiltering?: TextureSamplerFilteringPreset;
 
-    /** The texture color space to use by default. By default, it is {@link ColorSpace.SRGB}. */
+    /** The texture color space to use by default. By default, it is {@link ColorSpace.LINEAR}. */
      textureColorSpace?: ColorSpace;
 
      /**

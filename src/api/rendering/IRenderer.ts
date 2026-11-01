@@ -46,7 +46,7 @@ export interface IRenderer {
     readonly graphicsDevice: IGraphicsDevice;
 
     /**
-     * The preferred texture format, chosen from {@link IRendererConfiguration.textureColorSpace}.
+     * The preferred texture format, derived from the current {@link IRenderer.colorSpace}.
      * Textures that do not specify a texture format are created with it:
      * - {@link TextureFormat.RGBA_8_UNORM_SRGB} when the color space is {@link ColorSpace.SRGB} (the default).
      * - {@link TextureFormat.RGBA_8_UNORM} when the color space is {@link ColorSpace.LINEAR}.
@@ -54,10 +54,12 @@ export interface IRenderer {
     readonly preferredTextureFormat: TextureFormat;
 
     /**
-     * The preferred texture color space, taken from {@link IRendererConfiguration.textureColorSpace}.
-     * Textures that do not specify a format are treated as being in this color space.
+     * The color space. Defaults to the framework configuration's `textureColorSpace`.
+     * Can be switched at runtime, e.g. `framework.renderer.colorSpace = ColorSpace.SRGB`.
+     * Changing it affects textures created afterwards and the main render target's output conversion;
+     * already-created textures are not converted.
      */
-    readonly preferredColorSpace: ColorSpace;
+    colorSpace: ColorSpace;
 
     /**
      * The preferred depth stencil format.

@@ -1,3 +1,4 @@
+import { resolvePrimitiveStateDescriptor } from "../src/core/rendering/primitive/PrimitiveStateDescriptorUtilities.ts";
 import { describe, expect, it } from "vitest";
 import {
     Color,
@@ -6,7 +7,6 @@ import {
     FrontFace,
     LoadAction,
     MipMapSamplerFilter,
-    PrimitiveStateDescriptor,
     PrimitiveTopology,
     RenderPassColorAttachment,
     SamplerAddressMode,
@@ -93,10 +93,18 @@ describe("value defaults", () => {
     });
 
     it("defaults primitive state to back-face culled counter-clockwise triangles", () => {
-        const descriptor = new PrimitiveStateDescriptor();
+        const descriptor = resolvePrimitiveStateDescriptor();
 
         expect(descriptor.topology).toBe(PrimitiveTopology.TRIANGLE_LIST);
         expect(descriptor.cullFace).toBe(CullMode.BACK);
+        expect(descriptor.frontFace).toBe(FrontFace.CCW);
+    });
+
+    it("keeps the given primitive state fields and fills in the rest", () => {
+        const descriptor = resolvePrimitiveStateDescriptor({ cullFace: CullMode.NONE });
+
+        expect(descriptor.topology).toBe(PrimitiveTopology.TRIANGLE_LIST);
+        expect(descriptor.cullFace).toBe(CullMode.NONE);
         expect(descriptor.frontFace).toBe(FrontFace.CCW);
     });
 

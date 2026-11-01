@@ -2,6 +2,8 @@
 # main: publish <package.json version> on "latest" when that version is not already
 # on npm, then create git tag v<version> and a GitHub release.
 # Neither job commits the version change back to the repository.
+# main: CHANGELOG headings dated {{YYYY-MM-DD}} get today's UTC date before publishing; the change is
+# committed back to main as github-actions[bot] with [skip ci] when branch protection allows the push.
 
 name: Publish
 
@@ -90,6 +92,27 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Fill in CHANGELOG release dates
+        run: |
+          set -euo pipefail
+          PATTERN='^(## \[[^]]+\] - )\{\{YYYY-MM-DD\}\}$'
+          if ! grep -Eq "$PATTERN" CHANGELOG.md; then
+            echo "No undated CHANGELOG headings. Nothing to do."
+            exit 0
+          fi
+          DATE=$(date -u +%F)
+          sed -E -i "s/${PATTERN}/\1${DATE}/" CHANGELOG.md
+          grep -E '^## \[' CHANGELOG.md | head -n 3
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Set CHANGELOG release date ${DATE} [skip ci]"
+          # Branch protection may reject this push; the published package still carries the date.
+          if git push origin "HEAD:${GITHUB_REF_NAME}"; then
+            echo "Pushed the dated CHANGELOG to ${GITHUB_REF_NAME}."
+          else
+            echo "::warning::Could not push the dated CHANGELOG to ${GITHUB_REF_NAME}. The npm package still includes the date."
+          fi
+
       - name: Publish release to latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -111,7 +134,7 @@ jobs:
           fi
           npm publish --provenance --tag latest
           gh release create "v${VERSION}" \
-            --target "${GITHUB_SHA}" \
+            --target "$(git rev-parse HEAD)" \
             --title "v${VERSION}" \
             --generate-notes
           echo "Published ${NAME}@${VERSION} on dist-tag latest and created v${VERSION}."

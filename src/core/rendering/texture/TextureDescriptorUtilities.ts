@@ -1,11 +1,11 @@
 import {type ITextureDescriptor, TextureFormat, TextureUsage} from "../../../api/index.ts";
 
 /**
- * A texture descriptor with all defaults applied. Only `data` and `blockSize` stay optional.
+ * A texture descriptor with all defaults applied. Only `data`, `blockSize` and `preferredColorSpace` stay optional.
  * @internal
  */
 export type ResolvedTextureDescriptor =
-    Required<Omit<ITextureDescriptor, "data" | "blockSize">> & Pick<ITextureDescriptor, "data" | "blockSize">;
+    Required<Omit<ITextureDescriptor, "data" | "blockSize" | "preferredColorSpace">> & Pick<ITextureDescriptor, "data" | "blockSize" | "preferredColorSpace">;
 
 /**
  * Fills in the defaults for every missing field of a texture descriptor.
@@ -23,5 +23,6 @@ export function resolveTextureDescriptor(desc?: ITextureDescriptor): ResolvedTex
         data: desc?.data,
         generateMipmaps: desc?.generateMipmaps ?? false,
         blockSize: desc?.blockSize,
+        preferredColorSpace: desc?.preferredColorSpace,
     };
 }

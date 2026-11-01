@@ -2,9 +2,10 @@ import {
     CullMode,
     type FrontFace,
     type IPrimitiveState,
-    type PrimitiveStateDescriptor,
+    type IPrimitiveStateDescriptor,
     type PrimitiveTopology
 } from "../../api/index.ts";
+import {resolvePrimitiveStateDescriptor} from "../../core/rendering/primitive/PrimitiveStateDescriptorUtilities.ts";
 import { WebGlConverter } from "../utilities/WebGlConverter.ts";
 
 /**
@@ -19,12 +20,13 @@ export class WebGlPrimitiveState implements IPrimitiveState {
     /**
      * The constructor.
      * @param _gl The WebGL2 Rendering Context.
-     * @param descriptor The descriptor of the primitive state.
+     * @param descriptor The descriptor of the primitive state; missing fields use the defaults.
      */
-    public constructor(_gl: WebGL2RenderingContext, descriptor: PrimitiveStateDescriptor) {
-        this.topology = descriptor.topology;
-        this.cullFace = descriptor.cullFace;
-        this.frontFace = descriptor.frontFace;
+    public constructor(_gl: WebGL2RenderingContext, descriptor?: IPrimitiveStateDescriptor) {
+        const resolved = resolvePrimitiveStateDescriptor(descriptor);
+        this.topology = resolved.topology;
+        this.cullFace = resolved.cullFace;
+        this.frontFace = resolved.frontFace;
 
         this._cullingEnabled = this.cullFace != CullMode.NONE;
 

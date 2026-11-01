@@ -1,6 +1,7 @@
 import type {TextureFormat} from "./TextureFormat.ts";
 import type {TextureUsage} from "./TextureUsage.ts";
 import type {vec2} from "gl-matrix";
+import type {ColorSpace} from "../enums.ts";
 
 /**
  * The texture descriptor. Every field is optional; factories fill in the defaults for missing fields.
@@ -20,10 +21,14 @@ export interface ITextureDescriptor {
     height?: number;
 
     /**
-     * The texture format.
+     * The texture format. When loading texture preferred format can be set.
+     * This overrides framework preferred color space when loading or ktx2 transcoding.
      * By default, it is UNDEFINED.
      */
     textureFormat?: TextureFormat;
+
+    /** The preferred color space. If not defined, it is specified by framework.  */
+    preferredColorSpace?: ColorSpace;
 
     /**
      * The texture usage.

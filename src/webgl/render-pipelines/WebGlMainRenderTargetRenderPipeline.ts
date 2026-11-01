@@ -13,6 +13,7 @@ import {
     type ITexture2D,
     TextureFormat
 } from "../../api/index.ts";
+import {ColorSpace} from "../../api/rendering/enums.ts";
 
 /**
  * The WebGL implementation of the main render target render pipeline.
@@ -24,6 +25,7 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
     private _mainRenderTarget: WebGlTexture2D = null!;
 
     private _colorConversionUniformLocation: WebGLUniformLocation = null!;
+    /** The shader's `u_colorConversion`: 1 encodes linear to sRGB on output, 0 passes through. */
     private _colorSpaceValue = 0;
 
     /**
@@ -38,6 +40,18 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
         if(framework.renderer.preferredTextureFormat == TextureFormat.RGBA_8_UNORM_SRGB) {
             this._colorSpaceValue = 1;
         }
+    }
+
+    /**
+     * The color space. With SRGB the main render target is sRGB (sampled back as linear) and the shader
+     * encodes to sRGB for the screen; with LINEAR the values are passed through. Takes effect on the next frame.
+     */
+    public get colorSpace(): ColorSpace {
+        return this._colorSpaceValue == 1 ? ColorSpace.SRGB : ColorSpace.LINEAR;
+    }
+
+    public set colorSpace(value: ColorSpace) {
+        this._colorSpaceValue = value == ColorSpace.SRGB ? 1 : 0;
     }
 
     /** @inheritDoc */

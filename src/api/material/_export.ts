@@ -4,6 +4,6 @@ export * from "./InspectTextureMipsMaterial.ts"
 export * from "./MaterialFactory.ts"
 export * from "./SpriteMaterial.ts"
 export * from "./UnlitMaterial.ts"
+export * from "./IUnlitMaterialDescriptor.ts";
 export * from "./ForwardBlinnPhongMaterial.ts"
-export * from "./ICameraMaterial.ts"
 export * from "./ILightsMaterial.ts"

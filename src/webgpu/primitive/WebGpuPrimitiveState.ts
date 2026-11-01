@@ -2,10 +2,11 @@ import {
     type CullMode,
     type FrontFace,
     type IPrimitiveState,
-    type PrimitiveStateDescriptor,
+    type IPrimitiveStateDescriptor,
     type PrimitiveTopology,
 } from "../../api/index.ts";
 import type {GpuCullMode, GpuFrontFace, GpuPrimitiveTopology} from "../WebGpuTypes.ts";
+import {resolvePrimitiveStateDescriptor} from "../../core/rendering/primitive/PrimitiveStateDescriptorUtilities.ts";
 import {WebGpuConverter} from "../utilities/WebGpuConverter.ts";
 
 /**
@@ -18,10 +19,11 @@ export class WebGpuPrimitiveState implements IPrimitiveState {
      * The constructor.
      * @param descriptor The primitive state descriptor.
      */
-    public constructor(descriptor: PrimitiveStateDescriptor) {
-        this.topology = descriptor.topology;
-        this.cullFace = descriptor.cullFace;
-        this.frontFace = descriptor.frontFace;
+    public constructor(descriptor?: IPrimitiveStateDescriptor) {
+        const resolved = resolvePrimitiveStateDescriptor(descriptor);
+        this.topology = resolved.topology;
+        this.cullFace = resolved.cullFace;
+        this.frontFace = resolved.frontFace;
         this.gpuTopology = WebGpuConverter.convertTopology(this.topology);
         this.gpuCullMode = WebGpuConverter.convertCullMode(this.cullFace);
         this.gpuFrontFace = WebGpuConverter.convertFrontFace(this.frontFace);

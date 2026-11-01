@@ -1,4 +1,4 @@
-import type {ICameraMaterial} from "./ICameraMaterial.ts";
+import type {IMaterial} from "./IMaterial.ts";
 
 import type {IRenderableMesh} from "../meshes/IRenderableMesh.ts";
 import type { ITexture2D } from "../rendering/texture/ITexture2D.ts";
@@ -14,22 +14,14 @@ import {Color} from "../data/Color.ts";
 import type { IUnlitRenderPipeline } from "../rendering/render-pipelines/IUnlitRenderPipeline.ts";
 import type { IPrimitiveState } from "../rendering/primitive/IPrimitiveState.ts";
 import type {ICamera} from "../camera/ICamera.ts";
-
-/** The additional material config options */
-export class UnlitMaterialDescriptor {
-
-    /** The primitive state. */
-    public primitiveState?: IPrimitiveState;
-
-    /** The camera used to render this material. */
-    public camera?: ICamera;
-}
+import type {IUnlitMaterialDescriptor} from "./IUnlitMaterialDescriptor.ts";
+import {resolveUnlitMaterialDescriptor} from "../../core/material/UnlitMaterialDescriptorUtilities.ts";
 
 
 /**
  * Unlit material.
  */
-export class UnlitMaterial implements ICameraMaterial {
+export class UnlitMaterial implements IMaterial {
 
     private readonly _framework: IFramework;
     private _color = Color.white();
@@ -51,17 +43,18 @@ export class UnlitMaterial implements ICameraMaterial {
     /**
      * The constructor.
      * @param framework The framework.
-     * @param config The optional material descriptor. A projection view buffer passed here is shared and is not disposed by this material.
+     * @param descriptor The optional material descriptor. A projection view buffer passed here is shared and is not disposed by this material.
      */
-    public constructor(framework: IFramework, config? :UnlitMaterialDescriptor) {
+    public constructor(framework: IFramework, descriptor?: IUnlitMaterialDescriptor) {
+        const config = resolveUnlitMaterialDescriptor(descriptor);
         this._framework = framework;
         const usage = BufferUsage.UNIFORM | BufferUsage.COPY_DST;
-        this._camera = config?.camera;
+        this._camera = config.camera;
         // Without a camera an own zero buffer is bound, so rendering before the scene assigns one does not crash.
-        this._ownsProjectionViewBuffer = !config?.camera?.projectionViewBuffer;
-        this._projectionViewBuffer = config?.camera?.projectionViewBuffer ?? framework.bufferFactory.createUniformBuffer(mat4.create(), usage);
+        this._ownsProjectionViewBuffer = !config.camera?.projectionViewBuffer;
+        this._projectionViewBuffer = config.camera?.projectionViewBuffer ?? framework.bufferFactory.createUniformBuffer(mat4.create(), usage);
         this._materialBuffer = framework.bufferFactory.createUniformBuffer(this._materialData, usage);
-        this._primitiveState = config?.primitiveState;
+        this._primitiveState = config.primitiveState;
         // The pipeline is created once a model buffer is assigned (see modelBuffer).
     }
 

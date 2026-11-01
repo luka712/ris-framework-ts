@@ -5,13 +5,14 @@ import type {IDisposable} from "../core/IDisposable.ts";
 import type {IFramework} from "../IFramework.ts";
 import type {IRenderableMesh} from "../meshes/IRenderableMesh.ts";
 import {SceneMesh} from "./SceneMesh.ts";
-import {isCameraMaterial} from "../material/ICameraMaterial.ts";
 import {isLightsMaterial} from "../material/ILightsMaterial.ts";
 import type {GameTime} from "../time/GameTime.ts";
 import type {ICamera} from "../camera/ICamera.ts";
+import type {ISceneObject} from "./ISceneObject.ts";
+import {TransformNode} from "./node/TransformNode.ts";
 
-/** Anything a scene can hold: a mesh, a light (ambient, directional, point) or a camera. */
-export type SceneItem = IRenderableMesh | SceneMesh | AmbientLight | DirectionalLight | PointLight | ICamera;
+/** Anything a scene can hold: a mesh, a scene object, a light (ambient, directional, point) or a camera. */
+export type SceneItem = IRenderableMesh | SceneMesh | ISceneObject | AmbientLight | DirectionalLight | PointLight | ICamera;
 
 /**
  * The scene. Lights and cameras given a scene in their constructor add themselves through {@link add};
@@ -22,6 +23,7 @@ export type SceneItem = IRenderableMesh | SceneMesh | AmbientLight | Directional
 export class Scene implements IDisposable {
 
     private readonly _sceneMeshes: SceneMesh[] = [];
+    private readonly _nodes: ISceneObject[] = [];
     private readonly _directionalLights: DirectionalLight[] = [];
     private readonly _pointLights: PointLight[] = [];
 
@@ -71,6 +73,11 @@ export class Scene implements IDisposable {
         return this._sceneMeshes;
     }
 
+    /** The scene objects (anything with a transform, including root meshes), in the order they were added. */
+    public get nodes(): readonly ISceneObject[] {
+        return this._nodes;
+    }
+
     /** The root meshes in this scene, in the order they were added. */
     public get meshes(): readonly IRenderableMesh[] {
         return this._sceneMeshes.map(s => s.mesh);
@@ -103,9 +110,13 @@ export class Scene implements IDisposable {
      * Adds a mesh, a light or a camera. Adding an item that is already in the scene does nothing.
      * - Renderable mesh or {@link SceneMesh}: drawn by {@link render}; its materials get the scene camera and lights.
      *   A mesh is wrapped in a `SceneMesh`, so {@link dispose} also disposes its materials.
-     * - Ambient light: added to {@link ambientLights} (use {@link activeAmbientLight} to make it the lit one).
+     *   The mesh is also added to {@link nodes}.
+     * - {@link ISceneObject} (anything with a `transform`): added to {@link nodes}; {@link update} updates its transform.
+     * - Lights are also added to {@link nodes} (they are scene objects).
+ * - Ambient light: added to {@link ambientLights} (use {@link activeAmbientLight} to make it the lit one).
      * - Directional / point light: added to {@link directionalLights} / {@link pointLights}.
-     * - Camera: becomes the scene {@link camera}.
+     * - Camera: becomes the scene {@link camera} and is added to {@link nodes} (cameras are scene objects).
+     *   Checked before the generic scene object case.
      * Constructors given a scene (lights, the perspective camera) call this themselves.
      * @param item The item to add.
      * @throws Error when all slots for a light kind are in use (3 directional, 5 point), or for an unsupported item.
@@ -113,10 +124,15 @@ export class Scene implements IDisposable {
     public add(item: SceneItem): void {
         if (item instanceof AmbientLight) {
             this._addAmbientLight(item);
+            this._addNode(item);
         } else if (item instanceof DirectionalLight || item instanceof PointLight) {
             this._addLight(item);
+            this._addNode(item);
         } else if (Scene._isCamera(item)) {
             this.camera = item;
+            if (Scene._isSceneObject(item)) {
+                this._addNode(item);
+            }
         } else if (item instanceof SceneMesh || Scene._isMesh(item)) {
             const mesh = item instanceof SceneMesh ? item.mesh : item;
             if (!this._sceneMeshes.some(s => s.mesh === mesh)) {
@@ -124,8 +140,11 @@ export class Scene implements IDisposable {
                 this._sceneMeshes.push(sceneMesh);
                 this._bind(sceneMesh);
             }
+            this._addNode(mesh);
+        } else if (Scene._isSceneObject(item)) {
+            this._addNode(item);
         } else {
-            throw new Error("Scene.add: expected a mesh, an AmbientLight, DirectionalLight, PointLight or a camera.");
+            throw new Error("Scene.add: expected a mesh, a scene object, an AmbientLight, DirectionalLight, PointLight or a camera.");
         }
     }
 
@@ -133,7 +152,7 @@ export class Scene implements IDisposable {
      * Removes a mesh (or scene mesh), a light or a camera. The mesh and its materials are not disposed.
      * Removing the active camera clears {@link camera}.
      * @param item The item to remove.
-     * @returns True when the item was in the scene (for a camera: was the active camera).
+     * @returns True when the item was in the scene.
      * @throws Error when removing the active ambient light (set another {@link activeAmbientLight} first), or for an unsupported item.
      */
     public remove(item: SceneItem): boolean {
@@ -141,16 +160,19 @@ export class Scene implements IDisposable {
             if (item === this._activeAmbientLight) {
                 throw new Error("Scene.remove: cannot remove the active ambient light; set scene.activeAmbientLight to another light first.");
             }
+            Scene._removeFrom(this._nodes, item);
             return Scene._removeFrom(this.ambientLights, item);
         }
         if (item instanceof DirectionalLight || item instanceof PointLight) {
+            Scene._removeFrom(this._nodes, item);
             return item instanceof DirectionalLight
                 ? Scene._removeFrom(this._directionalLights, item)
                 : Scene._removeFrom(this._pointLights, item);
         }
         if (Scene._isCamera(item)) {
+            const wasNode = Scene._removeFrom(this._nodes, item);
             if (item !== this._activeCamera) {
-                return false;
+                return wasNode;
             }
             this._activeCamera = undefined;
             return true;
@@ -158,13 +180,17 @@ export class Scene implements IDisposable {
         if (item instanceof SceneMesh || Scene._isMesh(item)) {
             const mesh = item instanceof SceneMesh ? item.mesh : item;
             const index = this._sceneMeshes.findIndex(s => s.mesh === mesh);
+            Scene._removeFrom(this._nodes, mesh);
             if (index < 0) {
                 return false;
             }
             this._sceneMeshes.splice(index, 1);
             return true;
         }
-        throw new Error("Scene.remove: expected a mesh, an AmbientLight, DirectionalLight, PointLight or a camera.");
+        if (Scene._isSceneObject(item)) {
+            return Scene._removeFrom(this._nodes, item);
+        }
+        throw new Error("Scene.remove: expected a mesh, a scene object, an AmbientLight, DirectionalLight, PointLight or a camera.");
     }
 
     /**
@@ -220,6 +246,17 @@ export class Scene implements IDisposable {
             && "projectionViewBuffer" in camera && "viewMatrix" in camera && typeof camera.updateBuffers === "function";
     }
 
+    /** Scene objects have a TransformNode as transform. */
+    private static _isSceneObject(item: unknown): item is ISceneObject {
+        return typeof item === "object" && item !== null && (item as Partial<ISceneObject>).transform instanceof TransformNode;
+    }
+
+    private _addNode(node: ISceneObject): void {
+        if (!this._nodes.includes(node)) {
+            this._nodes.push(node);
+        }
+    }
+
     /** Renderable meshes have render() and sub meshes. */
     private static _isMesh(item: unknown): item is IRenderableMesh {
         const mesh = item as Partial<IRenderableMesh> | null;
@@ -227,12 +264,15 @@ export class Scene implements IDisposable {
     }
 
     /**
-     * Updates the scene: assigns {@link camera}, the active ambient light and the light lists to the mesh materials.
+     * Updates the scene: updates the transforms of {@link nodes}, assigns {@link camera}, the active ambient light and the light lists to the mesh materials.
      * Each lights material uploads its lights buffer when drawn, only if the lights changed.
      * @param _time The game time.
      * @public
      */
     update(_time: GameTime): void {
+        for (const node of this._nodes) {
+            node.transform.update(_time);
+        }
         for (const sceneMesh of this._sceneMeshes) {
             this._bind(sceneMesh);
         }
@@ -266,7 +306,7 @@ export class Scene implements IDisposable {
         }
         for (const material of sceneMesh.materials) {
             // The setter rebinds buffers, so skip when unchanged.
-            if (isCameraMaterial(material) && material.camera !== camera) {
+            if (material.camera !== camera) {
                 material.camera = camera;
             }
         }
@@ -293,5 +333,6 @@ export class Scene implements IDisposable {
             sceneMesh.dispose();
         }
         this._sceneMeshes.length = 0;
+        this._nodes.length = 0;
     }
 }

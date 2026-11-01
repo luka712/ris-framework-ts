@@ -2,6 +2,11 @@ import {vec3} from "gl-matrix";
 import {Color} from "../data/Color.ts";
 import {createLightId} from "./LightId.ts";
 import type {Scene} from "../scene/Scene.ts";
+import type {ILight} from "./ILight.ts";
+import {TransformNode} from "../scene/node/TransformNode.ts";
+import {CameraTransformUtilities} from "../camera/CameraTransformUtilities.ts";
+
+const _target = vec3.create();
 
 /** The descriptor for a directional light. All fields are optional. */
 export interface DirectionalLightDescriptor {
@@ -17,15 +22,16 @@ export interface DirectionalLightDescriptor {
     /** Multiplies the colour. Defaults to 1. */
     intensity?: number;
 
-    /** The direction in which the light travels. Defaults to straight down, (0, -1, 0). */
+    /** The initial world direction in which the light travels (see {@link DirectionalLight.setDirection}). Defaults to straight down, (0, -1, 0). */
     direction?: vec3;
 }
 
 /**
  * The directional light. Plain data: it has no GPU resources.
+ * The light travels along its transform's forward axis (local -Z), in world space; position and scale are ignored.
  * @public
  */
-export class DirectionalLight {
+export class DirectionalLight implements ILight {
 
     /**
      * The constructor.
@@ -38,7 +44,7 @@ export class DirectionalLight {
         this.name = descriptor?.name;
         this.color = descriptor?.color?.copy() ?? Color.white();
         this.intensity = descriptor?.intensity ?? 1;
-        this.direction = descriptor?.direction ? vec3.clone(descriptor.direction) : vec3.fromValues(0, -1, 0);
+        this.setDirection(descriptor?.direction ?? [0, -1, 0]);
 
         scene?.add(this);
     }
@@ -55,6 +61,25 @@ export class DirectionalLight {
     /** Multiplies {@link color} when written to the lights buffer. */
     public intensity: number;
 
-    /** The direction in which the light travels. */
-    public direction: vec3;
+    /** The transform. Its world rotation sets the direction (forward is -Z). */
+    public transform: TransformNode = new TransformNode();
+
+    /**
+     * Rotates the transform so the light travels along a world-space direction (converted into the parent's space
+     * when parented). A zero vector leaves the rotation unchanged.
+     * @param direction The world direction; it does not need to be normalized.
+     */
+    public setDirection(direction: vec3): void {
+        const m = this.transform.modelMatrix;
+        vec3.set(_target, m[12] + direction[0], m[13] + direction[1], m[14] + direction[2]);
+        CameraTransformUtilities.aimTransform(this.transform, _target, [0, 1, 0]);
+    }
+
+    /**
+     * Gets the world-space direction in which the light travels (unit length), derived from the transform.
+     * @param out The optional output vector.
+     */
+    public getDirection(out: vec3 = vec3.create()): vec3 {
+        return CameraTransformUtilities.forwardFromWorld(out, this.transform.modelMatrix);
+    }
 }
