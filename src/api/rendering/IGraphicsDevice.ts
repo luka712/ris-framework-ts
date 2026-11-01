@@ -9,7 +9,7 @@ import type { IRenderPass } from "./renderpass/IRenderPass.ts";
 import {SwapChainDescriptor} from "./swapchain/SwapChainDescriptor.ts";
 import type { ISwapChain } from "./swapchain/ISwapChain.ts";
 import {SamplerDescriptor} from "./sampler/SamplerDescriptor.ts";
-import {PrimitiveStateDescriptor} from "./primitive/PrimitiveStateDescriptor.ts";
+import type {IPrimitiveStateDescriptor} from "./primitive/IPrimitiveStateDescriptor.ts";
 
 /**
  * The interface for a graphics device.
@@ -71,7 +71,7 @@ export interface IGraphicsDevice extends IDisposable {
      * @param descriptor - The primitive state descriptor.
      * @returns The created primitive state.
      */
-    createPrimitiveState(descriptor: PrimitiveStateDescriptor): IPrimitiveState;
+    createPrimitiveState(descriptor?: IPrimitiveStateDescriptor): IPrimitiveState;
 
     /**
      * Creates a render pass for the graphics device.

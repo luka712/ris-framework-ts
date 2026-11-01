@@ -15,7 +15,7 @@ import {
     type ISampler,
     type ISwapChain,
     type IWindowManager,
-    PrimitiveStateDescriptor,
+    type IPrimitiveStateDescriptor,
     RenderPassDescriptor,
     SwapChainDescriptor
 } from "../api/index.ts";
@@ -125,8 +125,7 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
     }
 
     /** @inheritdoc */
-    public createPrimitiveState(descriptor?: PrimitiveStateDescriptor): IPrimitiveState {
-        descriptor = descriptor ?? new PrimitiveStateDescriptor();
+    public createPrimitiveState(descriptor?: IPrimitiveStateDescriptor): IPrimitiveState {
         return new WebGlPrimitiveState(this._gl, descriptor);
     }
 }

@@ -2,7 +2,8 @@ import {InspectTextureMipsMaterial} from "./InspectTextureMipsMaterial.ts";
 import type { IFramework } from "../IFramework.ts";
 import type { IMaterialFactory } from "./IMaterialFactory.ts";
 import {SpriteMaterial, type SpriteMaterialDescriptor} from "./SpriteMaterial.ts";
-import {UnlitMaterial, UnlitMaterialDescriptor} from "./UnlitMaterial.ts";
+import {UnlitMaterial} from "./UnlitMaterial.ts";
+import type {IUnlitMaterialDescriptor} from "./IUnlitMaterialDescriptor.ts";
 import {ForwardBlinnPhongMaterial, type ForwardBlinnPhongMaterialDescriptor} from "./ForwardBlinnPhongMaterial.ts";
 
 /**
@@ -23,8 +24,8 @@ export class MaterialFactory implements IMaterialFactory {
     }
 
     /** @inheritDoc */
-    public createUnlitMaterial(descriptor? : UnlitMaterialDescriptor): UnlitMaterial {
-        return new UnlitMaterial(this._framework, descriptor );
+    public createUnlitMaterial(descriptor?: IUnlitMaterialDescriptor): UnlitMaterial {
+        return new UnlitMaterial(this._framework, descriptor);
     }
 
     /** @inheritDoc */

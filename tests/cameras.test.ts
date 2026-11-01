@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { vec2, vec3 } from "gl-matrix";
+import { mat4, vec2, vec3 } from "gl-matrix";
 import {
     GameTime,
     MouseButton,
@@ -9,6 +9,7 @@ import {
     PerspectiveCamera,
     TouchCollection,
     TouchLocationState,
+    TransformNode,
     type IFramework,
     type IInputManager,
 } from "../src/api/index.ts";
@@ -93,13 +94,12 @@ function createOrbit(
 }
 
 describe("PerspectiveCamera", () => {
-    it("builds a right-handed view by flipping the eye z before look-at", () => {
+    it("defaults to world (0, 0, -3) looking at the origin, with the same view as before the transform", () => {
         const camera = new PerspectiveCamera(framework, { fov: 90, aspectRatio: 2, near: 0.1, far: 100 });
 
-        expectComponents(camera.eye, [0, 0, 3]);
-        expectComponents(camera.target, [0, 0, 0]);
-        expectComponents(camera.up, [0, 1, 0]);
-        expectComponents(camera.direction, [0, 0, -3]);
+        expectComponents(camera.transform.position, [0, 0, -3]);
+        expectComponents(camera.getEye(), [0, 0, -3]);
+        expectComponents(camera.direction, [0, 0, 1]);
         expect(camera.fieldOfView).toBeCloseTo(Math.PI / 2, 12);
         expect(camera.aspectRatio).toBe(2);
         expect(camera.nearPlane).toBe(0.1);
@@ -144,7 +144,7 @@ describe("OrthographicCamera", () => {
         expect(camera.positionBuffer).toBe(position);
         expect(position.data).toEqual([0, 0, 1, 0]);
 
-        camera.eye = [1, 2, 3];
+        vec3.set(camera.transform.position, 1, 2, 3);
         camera.updateBuffers();
         expect(Array.from(position.update.mock.calls[0][0] as number[])).toEqual([1, 2, 3, 0]);
 
@@ -161,7 +161,7 @@ describe("OrthographicCamera", () => {
         expect(camera.bottom).toBe(-1);
         expect(camera.nearPlane).toBe(0);
         expect(camera.farPlane).toBe(1);
-        expectComponents(camera.eye, [0, 0, 1]);
+        expectComponents(camera.transform.position, [0, 0, 1]);
         expectComponents(camera.projectionMatrix, [
             1, 0, 0, 0,
             0, 1, 0, 0,
@@ -205,25 +205,29 @@ describe("OrthographicCamera", () => {
         camera.bottom = camera.bottom;
         camera.nearPlane = camera.nearPlane;
         camera.farPlane = camera.farPlane;
-        camera.eye = camera.eye;
         expect(camera.dirty).toBe(false);
 
         camera.left = -2;
         expect(camera.dirty).toBe(true);
 
+        camera.recompute();
         camera.clearDirty();
-        camera.eye = vec3.fromValues(0, 0, -4);
-        expect(camera.dirty).toBe(true);
+        vec3.set(camera.transform.position, 0, 0, 4);
         camera.recompute();
         expect(camera.viewMatrix[14]).toBeCloseTo(-4, 5);
     });
 
-    it("aims the view at the internal origin rather than the public target field", () => {
+    it("derives the view from the transform: inverse(T * R), scale ignored", () => {
         const camera = createCamera();
-        camera.target[2] = 5;
+        vec3.set(camera.transform.position, 1, 2, 3);
+        vec3.set(camera.transform.rotation, 0.3, -0.7, 0.2);
+        vec3.set(camera.transform.scale, 2, 5, 0.5);
         camera.recompute();
-
-        expect(camera.viewMatrix[14]).toBeCloseTo(-1, 5);
+        const unscaled = new TransformNode();
+        vec3.copy(unscaled.position, camera.transform.position);
+        vec3.copy(unscaled.rotation, camera.transform.rotation);
+        const expected = mat4.invert(mat4.create(), unscaled.modelMatrix)!;
+        expectComponents(camera.viewMatrix, Array.from(expected));
     });
 });
 
@@ -240,8 +244,8 @@ describe("OrbitCamera", () => {
 
         orbit.update(seconds(1));
 
-        expectComponents(orbit.eye, [0, 0, -3]);
-        expectComponents(orbit.target, [0, 0, 0]);
+        expectComponents(orbit.transform.position, [0, 0, 3]);
+        expectComponents(orbit.getTarget(), [0, 0, 0]);
     });
 
     it("yaws around the target from horizontal mouse movement", () => {
@@ -249,8 +253,8 @@ describe("OrbitCamera", () => {
 
         orbit.update(seconds(1));
 
-        expectComponents(orbit.eye, [-1.4382766485214233, 0, -2.6327476501464844]);
-        expect(vec3.distance(orbit.eye, orbit.target)).toBeCloseTo(3, 5);
+        expectComponents(orbit.transform.position, [-1.4382766485214233, 0, 2.6327476501464844]);
+        expect(vec3.distance(orbit.transform.position, orbit.getTarget())).toBeCloseTo(3, 5);
     });
 
     it("pitches around the target from vertical mouse movement", () => {
@@ -258,28 +262,27 @@ describe("OrbitCamera", () => {
 
         orbit.update(seconds(1));
 
-        expectComponents(orbit.eye, [0, 1.4382766485214233, -2.6327476501464844]);
+        expectComponents(orbit.transform.position, [0, 1.4382766485214233, 2.6327476501464844]);
     });
 
     it("pulls a straight-up eye inside the 89 degree pitch limit", () => {
         const { orbit } = createOrbit(mouseState({ button: MouseButton.LEFT }));
-        orbit.eye = vec3.fromValues(0, 3, 0);
-        orbit.target = vec3.fromValues(0, 0, 0);
+        orbit.setEye(vec3.fromValues(0, 3, 0));
 
         orbit.update(seconds(1));
 
-        expectComponents(orbit.eye, [0, 2.9995429515838623, -0.05236632004380226]);
+        expectComponents(orbit.transform.position, [0, 2.9995429515838623, 0.05236632004380226]);
     });
 
     it("zooms along the view axis with the scroll wheel", () => {
         const away = createOrbit(mouseState({ scrollY: 1 }));
         away.orbit.update(seconds(1));
-        expect(away.orbit.eye[2]).toBeCloseTo(-3.9730873107910156, 5);
-        expect(away.orbit.viewMatrix[14]).toBeCloseTo(away.orbit.eye[2], 5);
+        expect(away.orbit.transform.position[2]).toBeCloseTo(3.9730873107910156, 5);
+        expect(away.orbit.viewMatrix[14]).toBeCloseTo(-away.orbit.transform.position[2], 5);
 
         const toward = createOrbit(mouseState({ scrollY: -1 }));
         toward.orbit.update(seconds(1));
-        expect(toward.orbit.eye[2]).toBeCloseTo(-2.0269126892089844, 5);
+        expect(toward.orbit.transform.position[2]).toBeCloseTo(2.0269126892089844, 5);
     });
 
     it("clamps the zoom step to maxScrollSpeed", () => {
@@ -289,7 +292,7 @@ describe("OrbitCamera", () => {
 
         orbit.update(seconds(1));
 
-        expect(orbit.eye[2]).toBeCloseTo(-53, 5);
+        expect(orbit.transform.position[2]).toBeCloseTo(53, 5);
     });
 
     it("ignores the scroll wheel while the orbit button is down", () => {
@@ -300,7 +303,7 @@ describe("OrbitCamera", () => {
 
         orbit.update(seconds(1));
 
-        expectComponents(orbit.eye, [0, 0, -3]);
+        expectComponents(orbit.transform.position, [0, 0, 3]);
     });
 
     it("yaws from one held touch and ignores a released contact", () => {
@@ -321,8 +324,8 @@ describe("OrbitCamera", () => {
 
         orbit.update(seconds(1));
 
-        expectComponents(orbit.eye, [-1.4382766485214233, 0, -2.6327476501464844]);
-        expect(vec3.distance(orbit.eye, orbit.target)).toBeCloseTo(3, 5);
+        expectComponents(orbit.transform.position, [-1.4382766485214233, 0, 2.6327476501464844]);
+        expect(vec3.distance(orbit.transform.position, orbit.getTarget())).toBeCloseTo(3, 5);
     });
 
     it("ignores a cancelled touch the same way it ignores a release", () => {
@@ -342,18 +345,119 @@ describe("OrbitCamera", () => {
 
         orbit.update(seconds(1));
 
-        expectComponents(orbit.eye, [0, 0, -3]);
-        expectComponents(orbit.target, [0, 0, 0]);
+        expectComponents(orbit.transform.position, [0, 0, 3]);
+        expectComponents(orbit.getTarget(), [0, 0, 0]);
     });
 
     it("rejects a zoom when the length check is outside the far plane", () => {
         const { core, orbit } = createOrbit(mouseState({ scrollY: 1 }));
-        orbit.eye = vec3.fromValues(0, 0, -1);
+        orbit.setEye(vec3.fromValues(0, 0, 1));
         core.nearPlane = 0.01;
-        core.farPlane = 2;
+        // The zoom step would move the eye past the far plane.
+        core.farPlane = 1.2;
 
         orbit.update(seconds(1));
 
-        expect(orbit.eye[2]).toBeCloseTo(-1, 5);
+        expect(orbit.transform.position[2]).toBeCloseTo(1, 5);
+    });
+});
+
+describe("Camera transform", () => {
+    it("matches the old look-at defaults numerically", () => {
+        // Old PerspectiveCamera: lookAt(eye (0,0,3) with z flipped, origin, +Y).
+        const persp = new HeadlessPerspectiveCamera(framework, { fov: 60, aspectRatio: 1, near: 0.1, far: 100 });
+        expectComponents(persp.viewMatrix, Array.from(mat4.lookAt(mat4.create(), [0, 0, -3], [0, 0, 0], [0, 1, 0])));
+        // Old OrthographicCamera: lookAt((0,0,1), origin, +Y).
+        const ortho = new InspectableOrthographicCamera(framework, -1, 1, 1, -1, 0, 1);
+        expectComponents(ortho.viewMatrix, Array.from(mat4.lookAt(mat4.create(), [0, 0, 1], [0, 0, 0], [0, 1, 0])));
+        // Old OrbitCamera: eye (0,0,-3) z flipped -> world (0,0,3).
+        const { orbit } = createOrbit(mouseState({}));
+        orbit.update(seconds(0));
+        expectComponents(orbit.viewMatrix, Array.from(mat4.lookAt(mat4.create(), [0, 0, 3], [0, 0, 0], [0, 1, 0])));
+    });
+
+    it("lookAt rotates the transform so the view equals a look-at from its position", () => {
+        const camera = new HeadlessPerspectiveCamera(framework, { fov: 60, aspectRatio: 1, near: 0.1, far: 100, position: [4, 3, -2] });
+        const target = vec3.fromValues(-1, 0.5, 2);
+        camera.lookAt(target);
+        camera.update(seconds(0));
+        expectComponents(camera.viewMatrix, Array.from(mat4.lookAt(mat4.create(), [4, 3, -2], target, [0, 1, 0])));
+        const dir = vec3.normalize(vec3.create(), vec3.sub(vec3.create(), target, [4, 3, -2]));
+        expectComponents(camera.direction, Array.from(dir));
+    });
+
+    it("follows the transform (and a parent transform) on update, and feeds the world position", () => {
+        const camera = new HeadlessPerspectiveCamera(framework, { fov: 60, aspectRatio: 1, near: 0.1, far: 100 });
+        const parent = new TransformNode();
+        vec3.set(parent.position, 10, 0, 0);
+        parent.addChild(camera.transform);
+        camera.update(seconds(0));
+        expectComponents(camera.getEye(), [10, 0, -3]);
+        expectComponents(camera.viewMatrix, Array.from(mat4.lookAt(mat4.create(), [10, 0, -3], [10, 0, 0], [0, 1, 0])));
+    });
+
+    const LA = (eye: number[], target: number[], up: number[]) =>
+        Array.from(mat4.lookAt(mat4.create(), eye as vec3, target as vec3, up as vec3));
+
+    it("setEye/setTarget/setUp match mat4.lookAt, and the getters read them back", () => {
+        const camera = new HeadlessPerspectiveCamera(framework, { fov: 60, aspectRatio: 1, near: 0.1, far: 100 });
+        camera.setTarget([1, 2, 3]);
+        camera.setEye([-4, 5, 6]);
+        camera.update(seconds(0));
+        expectComponents(camera.viewMatrix, LA([-4, 5, 6], [1, 2, 3], [0, 1, 0]));
+        expectComponents(camera.getEye(), [-4, 5, 6]);
+        expectComponents(camera.getTarget(), [1, 2, 3]);
+        expectComponents(camera.getUp(), [0, 1, 0]);
+    });
+
+    it("rolls through a custom up", () => {
+        const camera = new HeadlessPerspectiveCamera(framework, { fov: 60, aspectRatio: 1, near: 0.1, far: 100, eye: [2, 1, 4], up: [1, 1, 0] });
+        camera.update(seconds(0));
+        expectComponents(camera.viewMatrix, LA([2, 1, 4], [0, 0, 0], [1, 1, 0]));
+        camera.setUp([0, 0, 1]);
+        camera.update(seconds(0));
+        expectComponents(camera.viewMatrix, LA([2, 1, 4], [0, 0, 0], [0, 0, 1]));
+    });
+
+    it("handles an up parallel to the view direction", () => {
+        const camera = new HeadlessPerspectiveCamera(framework, { fov: 60, aspectRatio: 1, near: 0.1, far: 100, eye: [0, 5, 0] });
+        camera.update(seconds(0));
+        expect(Array.from(camera.viewMatrix).every(Number.isFinite)).toBe(true);
+        expectComponents(camera.direction, [0, -1, 0]);
+    });
+
+    it("without a target, setEye keeps the rotation and getTarget is eye + direction", () => {
+        const camera = new InspectableOrthographicCamera(framework, -1, 1, 1, -1, 0, 10);
+        camera.setEye([1, 2, 3]);
+        expectComponents(camera.transform.rotation, [0, 0, 0]);
+        expectComponents(camera.getTarget(), [1, 2, 2]);
+        camera.setTarget([1, 2, 10]);
+        camera.lookAt([0, 0, 0]);
+        camera.setEye([5, 5, 5]);
+        camera.recompute();
+        expectComponents(camera.getTarget(), Array.from(vec3.add(vec3.create(), [5, 5, 5], camera.direction)));
+    });
+
+    it("setEye converts a world position into the parent's space and setTarget aims in world space", () => {
+        const camera = new HeadlessPerspectiveCamera(framework, { fov: 60, aspectRatio: 1, near: 0.1, far: 100 });
+        const parent = new TransformNode();
+        vec3.set(parent.position, 10, 0, 0);
+        vec3.set(parent.rotation, 0, 0.7, 0);
+        parent.addChild(camera.transform);
+        camera.setEye([3, 4, 5]);
+        camera.setTarget([0, 1, 0]);
+        camera.update(seconds(0));
+        expectComponents(camera.getEye(), [3, 4, 5]);
+        expectComponents(camera.viewMatrix, LA([3, 4, 5], [0, 1, 0], [0, 1, 0]));
+    });
+
+    it("orbit setTarget sets the orbit point and setEye re-derives the orbit", () => {
+        const { orbit } = createOrbit(mouseState({ button: MouseButton.LEFT, dx: 10 }));
+        orbit.setTarget([1, 0, 0]);
+        orbit.setEye([1, 0, 4]);
+        orbit.update(seconds(1));
+        expect(vec3.distance(orbit.getEye(), [1, 0, 0])).toBeCloseTo(4, 5);
+        expectComponents(orbit.getTarget(), [1, 0, 0]);
+        expectComponents(orbit.viewMatrix, LA(Array.from(orbit.getEye()), [1, 0, 0], [0, 1, 0]));
     });
 });

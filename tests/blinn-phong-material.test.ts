@@ -156,16 +156,16 @@ describe("ForwardBlinnPhongMaterial", () => {
 });
 
 describe("PerspectiveCamera.positionBuffer", () => {
-    it("holds the world-space eye (z flipped like the view matrix), std140 padded", () => {
+    it("holds the transform's world position, std140 padded", () => {
         const { framework, buffers } = fakeFramework();
         const camera = new PerspectiveCamera(framework, { fov: 60, aspectRatio: 1, near: 0.1, far: 100 });
-        camera.eye = [1, 2, 3];
+        camera.transform.position = [1, 2, 3];
         camera.initialize();
 
-        expect(buffers[0].data).toEqual([1, 2, -3, 0]);
+        expect(buffers[0].data).toEqual([1, 2, 3, 0]);
 
-        camera.eye = [0, 0, 5];
+        camera.transform.position = [0, 0, 5];
         camera.updateBuffers();
-        expect(buffers[0].update).toHaveBeenCalledWith([0, 0, -5, 0]);
+        expect(buffers[0].update).toHaveBeenCalledWith([0, 0, 5, 0]);
     });
 });

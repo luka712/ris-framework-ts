@@ -9,7 +9,7 @@ import {
     type ISampler,
     type ISwapChain,
     type IWindowManager,
-    PrimitiveStateDescriptor,
+    type IPrimitiveStateDescriptor,
     RenderPassDescriptor,
     SwapChainDescriptor,
 } from "../api/index.ts";
@@ -158,8 +158,8 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
     }
 
     /** @inheritDoc */
-    public createPrimitiveState(descriptor?: PrimitiveStateDescriptor): IPrimitiveState {
-        return new WebGpuPrimitiveState(descriptor ?? new PrimitiveStateDescriptor());
+    public createPrimitiveState(descriptor?: IPrimitiveStateDescriptor): IPrimitiveState {
+        return new WebGpuPrimitiveState(descriptor);
     }
 
     /** @inheritDoc */

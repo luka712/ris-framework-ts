@@ -8,7 +8,7 @@ import {
     type IBlendState,
     type IPrimitiveState,
     type IGraphicsDevice, SwapChainDescriptor, type RenderPassDescriptor, SamplerFilter, MipMapSamplerFilter,
-    type ISwapChain, type IRenderPass, type PrimitiveStateDescriptor
+    type ISwapChain, type IRenderPass, type IPrimitiveStateDescriptor
 } from "../../api/index.ts";
 import {PowerPreferenceType} from "../../api/rendering/PowerPreference.ts";
 
@@ -103,7 +103,7 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     public abstract createBlendState(descriptor: BlendStateDescriptor): IBlendState;
 
     /** @inheritdoc */
-    public abstract createPrimitiveState(descriptor?: PrimitiveStateDescriptor ): IPrimitiveState;
+    public abstract createPrimitiveState(descriptor?: IPrimitiveStateDescriptor): IPrimitiveState;
 
     /** @inheritDoc */
     public abstract setupDebugCallback(): void;

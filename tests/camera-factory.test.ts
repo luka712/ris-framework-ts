@@ -15,32 +15,31 @@ describe("CameraFactory.createPerspectiveCamera", () => {
         const camera = new CameraFactory(fakeFramework().framework).createPerspectiveCamera();
         expect(camera.fieldOfView).toBeCloseTo(Math.PI / 3);
         expect([camera.aspectRatio, camera.nearPlane, camera.farPlane]).toEqual([1, 0.01, 100]);
-        expect([...camera.eye]).toEqual([0, 0, 3]);
-        expect([...camera.target]).toEqual([0, 0, 0]);
-        expect([...camera.up]).toEqual([0, 1, 0]);
+        expect([...camera.transform.position]).toEqual([0, 0, -3]);
+        expect(Array.from(camera.direction).map(v => Math.round(v * 1e6) / 1e6 + 0)).toEqual([0, 0, 1]);
     });
 
     it("applies every descriptor field, converts fov from degrees and copies the vectors", () => {
         const { framework, createUniformBuffer } = fakeFramework();
-        const eye = vec3.fromValues(1, 2, 5);
+        const position = vec3.fromValues(1, 2, 5);
         const camera = new CameraFactory(framework).createPerspectiveCamera({
-            fov: 90, aspectRatio: 2, near: 0.5, far: 50, eye, target: [0, 1, 0], up: [0, 0, 1],
+            fov: 90, aspectRatio: 2, near: 0.5, far: 50, position, target: [0, 1, 0],
         });
 
         expect(camera.fieldOfView).toBeCloseTo(Math.PI / 2);
         expect([camera.aspectRatio, camera.nearPlane, camera.farPlane]).toEqual([2, 0.5, 50]);
-        expect([...camera.eye]).toEqual([1, 2, 5]);
-        expect(camera.eye).not.toBe(eye);
-        expect([...camera.target]).toEqual([0, 1, 0]);
-        expect([...camera.up]).toEqual([0, 0, 1]);
-        // The position buffer is created after the eye is applied (world eye has z flipped).
-        expect(createUniformBuffer.mock.calls[0][0]).toEqual(expect.objectContaining({ 0: 1, 1: 2, 2: -5 }));
+        expect([...camera.transform.position]).toEqual([1, 2, 5]);
+        expect(camera.transform.position).not.toBe(position);
+        const dir = vec3.normalize(vec3.create(), [-1, -1, -5]);
+        Array.from(camera.direction).forEach((v, i) => expect(v).toBeCloseTo(dir[i], 5));
+        // The position buffer is created from the world position (no z flip).
+        expect(createUniformBuffer.mock.calls[0][0]).toEqual(expect.objectContaining({ 0: 1, 1: 2, 2: 5 }));
     });
 
     it("keeps defaults for omitted fields", () => {
         const camera = new CameraFactory(fakeFramework().framework).createPerspectiveCamera({ far: 1000 });
         expect([camera.aspectRatio, camera.nearPlane, camera.farPlane]).toEqual([1, 0.01, 1000]);
-        expect([...camera.eye]).toEqual([0, 0, 3]);
+        expect([...camera.transform.position]).toEqual([0, 0, -3]);
     });
 
     it("assigns itself as the scene camera when a scene is given", () => {
@@ -53,9 +52,9 @@ describe("CameraFactory.createPerspectiveCamera", () => {
 
 describe("PerspectiveCamera constructor", () => {
     it("applies the descriptor without a scene", () => {
-        const camera = new PerspectiveCamera(fakeFramework().framework, { fov: 90, aspectRatio: 2, near: 1, far: 10, eye: [1, 2, 3] });
+        const camera = new PerspectiveCamera(fakeFramework().framework, { fov: 90, aspectRatio: 2, near: 1, far: 10, position: [1, 2, 3] });
         expect(camera.fieldOfView).toBeCloseTo(Math.PI / 2);
         expect([camera.aspectRatio, camera.nearPlane, camera.farPlane]).toEqual([2, 1, 10]);
-        expect([...camera.eye]).toEqual([1, 2, 3]);
+        expect([...camera.transform.position]).toEqual([1, 2, 3]);
     });
 });

@@ -1,3 +1,4 @@
+import {ColorSpace} from "../../api/rendering/enums.ts";
 import {vec2} from "gl-matrix";
 import {
     BufferUsage,
@@ -80,6 +81,11 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
             [this._bindGroupLayout],
             this._graphicsDevice.swapChain?.textureFormat ?? this._framework.renderer.preferredTextureFormat);
     }
+
+    /**
+     * The color space. Stored only; it has no effect on WebGPU yet.
+     */
+    public colorSpace: ColorSpace = ColorSpace.LINEAR;
 
     private _getBindGroup(): GpuBindGroup {
         if (!this._bindGroup) {

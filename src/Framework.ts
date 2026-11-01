@@ -100,7 +100,7 @@ export class Framework implements IFramework {
             textureFiltering: this._configuration.textureFiltering ?? TextureSamplerFilteringPreset.BILINEAR,
             alpha: this._configuration.alpha ?? false,
             powerPreference: this._configuration.powerPreference ?? PowerPreferenceType.DEFAULT,
-            textureColorSpace: this._configuration.textureColorSpace ?? ColorSpace.SRGB
+            textureColorSpace: this._configuration.textureColorSpace ?? ColorSpace.LINEAR
         };
 
 

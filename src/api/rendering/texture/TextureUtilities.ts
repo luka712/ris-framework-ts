@@ -195,6 +195,7 @@ export class TextureUtilities {
         [TextureFormat.BC7_RGBA_UNORM]: KtxTranscodeFormat.BC7_RGBA,
         [TextureFormat.ETC2_RGBA8_UNORM]: KtxTranscodeFormat.ETC2_RGBA,
         [TextureFormat.PVRTC_4BPPV1_RGBA] : KtxTranscodeFormat.PVRTC1_4_RGBA,
+        [TextureFormat.PVRTC_4BPPV1_RGB] : KtxTranscodeFormat.PVRTC1_4_RGB,
         // Basis transcodes to the same blocks for sRGB; only the GPU format differs.
         [TextureFormat.RGBA_8_UNORM_SRGB]: KtxTranscodeFormat.RGBA32,
         [TextureFormat.ASTC_4X4_RGBA_SRGB]: KtxTranscodeFormat.ASTC_4X4_RGBA,
@@ -342,5 +343,20 @@ export class TextureUtilities {
      */
     public static isSrgbFormat(textureFormat: TextureFormat) : boolean {
         return this._srgbFormats.includes(textureFormat);
+    }
+
+    /**
+     * Returns the requested format if it is the file's format or its sRGB/linear variant.
+     * @param fileFormat The format the data is stored in.
+     * @param requested The explicitly requested format.
+     * @throws If the requested format cannot reinterpret the data.
+     */
+    public static resolveExplicitFormat(fileFormat: TextureFormat, requested: TextureFormat): TextureFormat {
+        if (requested == fileFormat
+            || requested == TextureUtilities.convertToSrgbVariant(fileFormat)
+            || requested == TextureUtilities.convertToLinearVariant(fileFormat)) {
+            return requested;
+        }
+        throw new Error(`Texture format ${requested} is not compatible with the file's format ${fileFormat}; only its sRGB or linear variant can be used.`);
     }
 }

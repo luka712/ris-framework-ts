@@ -4,3 +4,4 @@ export * from "./IRenderer.ts";
 export * from "./RenderingBackend.ts";
 export * from "./IGPUInfo.ts";
 export * from "./PowerPreference.ts";
+export * from "./enums.ts";

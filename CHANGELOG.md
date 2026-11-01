@@ -2,8 +2,45 @@
 
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+An unreleased version is dated `{{YYYY-MM-DD}}`; the publish pipeline fills in the date when it is merged to `main`.
 
-## [0.2.0] - Unreleased
+## [0.3.0] - {{YYYY-MM-DD}}
+
+Compared with 0.2.0.
+
+### Breaking changes
+
+- Renderable meshes take their transform from `mesh.transform` (a `TransformNode`); `mesh.position`, `rotation`, `scale` and `modelMatrix` are removed.
+- Cameras have a `transform`; the `eye`, `target` and `up` properties are replaced by `setEye`/`setTarget`/`setUp` and their getters.
+- `PointLight.position` is replaced by `setPosition`/`getPosition`, and `DirectionalLight.direction` by `setDirection`/`getDirection`.
+- `ICameraMaterial` is removed; use `IMaterial.camera`.
+- `IRenderer.preferredColorSpace` is renamed to `IRenderer.colorSpace`, and the `textureColorSpace` default is now `LINEAR`.
+- `PrimitiveStateDescriptor` class is replaced by the `IPrimitiveStateDescriptor` interface; all fields are optional and default to back-face culled, counter-clockwise triangles.
+- `UnlitMaterialDescriptor` class is replaced by the `IUnlitMaterialDescriptor` interface (all fields optional).
+
+### Added
+
+- `TransformNode` (with a `Node` parent/child hierarchy), `ISceneObject` and `scene.nodes`; meshes, cameras and lights are scene objects, and parented ones work in world space.
+- The `ILight` interface shared by all lights.
+- `IMaterial.camera`: materials bind the camera buffers they use.
+- `IRenderer.colorSpace` can be switched at runtime.
+- `ITextureDescriptor.preferredColorSpace` to choose the color space per texture.
+
+### Changed
+
+- `textureFactory.create` without a format follows the renderer's color space.
+- Basis KTX2 textures can be transcoded to PVRTC1 RGB.
+- Requires `ris-ktx2` ^0.2.0 (stable).
+
+### Fixed
+
+- `ColorSpace` was not exported from the package entry.
+- An explicit `textureFormat` was ignored when loading KTX2 textures.
+- `content.loadTexture2DAsync` ignored the descriptor's label and usage.
+- ASTC textures were uploaded with the wrong size.
+- `OrbitCamera` zoom now checks the real eye-to-target distance against the near and far planes.
+
+## [0.2.0] - 2026-11-01
 
 Compared with `main` (0.1.0).
 
@@ -44,7 +81,7 @@ Compared with `main` (0.1.0).
 - A leftover `debugger` statement in WebGL device initialization.
 - Swapped BC/S3TC compression flags could select BC7 on GPUs without BPTC support.
 
-## [0.1.0]
+## [0.1.0] - 2026-10-08
 
 - Initial release setup. `development` publishes a prerelease on the npm `next` tag. `main` publishes this version on `latest`.
 - The package entry is compiled JavaScript and declarations in `dist`. Consumers import `Framework`, `FrameworkConfiguration`, `TextureSamplerFilteringPreset`, and the types formerly published as `ris-framework-api` from `ris-framework` without compiling this repository. Built-in shaders and the browser KTX2 loader are included in that JavaScript.

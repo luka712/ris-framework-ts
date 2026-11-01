@@ -4,21 +4,21 @@ import {vec3, mat4} from "gl-matrix";
 import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
 import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
 import {GameTime} from "../time/GameTime.ts";
+import {TransformNode} from "../scene/node/TransformNode.ts";
+import {CameraAim, CameraTransformUtilities} from "./CameraTransformUtilities.ts";
 
 /**
  * The Orthographic Camera.
  */
 export class OrthographicCamera implements IOrthographicCamera {
 
-    static UP_VECTOR = vec3.fromValues(0, 1, 0);
-
     private readonly _framework: IFramework;
 
     /** @ts-ignore */
     private readonly _zSpaceLength: number;
 
-    private _eye: vec3;
-    private _target: vec3;
+    private readonly _lastWorld = mat4.fromValues(NaN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    private readonly _direction = vec3.create();
 
     private _left: number;
     private _right: number;
@@ -33,9 +33,58 @@ export class OrthographicCamera implements IOrthographicCamera {
     protected _viewMatrix = mat4.create();
     protected _projectionViewMatrix = mat4.create();
 
-    public readonly position = vec3.create();
-    public readonly target = vec3.create();
-    public readonly direction = vec3.create();
+    /**
+     * The camera transform: the single source of the view. The camera looks down its local -Z axis;
+     * the view matrix is `inverse(T * R)` of `transform.modelMatrix` (scale is ignored).
+     * By default, at (0, 0, 1) looking down -Z at the origin.
+     */
+    public transform = new TransformNode();
+
+    /** The unit direction the camera looks in, from the transform. */
+    public get direction(): vec3 {
+        return CameraTransformUtilities.forwardFromWorld(this._direction, this.transform.modelMatrix);
+    }
+
+    private readonly _aim = new CameraAim(() => this.transform);
+
+    /**
+     * Rotates the transform once so the camera looks at a world point, using the current up ({@link getUp}).
+     * Forgets the target stored by {@link setTarget}, so a later {@link setEye} does not re-aim.
+     * @param target The point to look at.
+     */
+    public lookAt(target: vec3): void {
+        this._aim.lookAt(target);
+    }
+
+    /** @inheritDoc */
+    public setEye(eye: vec3): void {
+        this._aim.setEye(eye);
+    }
+
+    /** @inheritDoc */
+    public getEye(out?: vec3): vec3 {
+        return this._aim.getEye(out);
+    }
+
+    /** @inheritDoc */
+    public setTarget(target: vec3): void {
+        this._aim.setTarget(target);
+    }
+
+    /** @inheritDoc */
+    public getTarget(out?: vec3): vec3 {
+        return this._aim.getTarget(out);
+    }
+
+    /** @inheritDoc */
+    public setUp(up: vec3): void {
+        this._aim.setUp(up);
+    }
+
+    /** @inheritDoc */
+    public getUp(out?: vec3): vec3 {
+        return this._aim.getUp(out);
+    }
 
     private _projectionBuffer: IUniformBuffer = null!;
     private _viewBuffer: IUniformBuffer = null!;
@@ -72,8 +121,7 @@ export class OrthographicCamera implements IOrthographicCamera {
         this._near = near;
         this._far = far;
 
-        this._eye = vec3.fromValues(0, 0, 1);
-        this._target = vec3.fromValues(0, 0, 0);
+        vec3.set(this.transform.position, 0, 0, 1);
 
         this._zSpaceLength = 2; // For WebGL2 it is 2, WebGPU it is 1.
 
@@ -165,19 +213,6 @@ export class OrthographicCamera implements IOrthographicCamera {
     }
 
     /** @inheritDoc */
-    public get eye(): vec3 {
-        return this._eye;
-    }
-
-    /** @inheritDoc */
-    public set eye(value: vec3) {
-        if (this._eye === value)
-            return;
-        this._eye = value;
-        this._isDirty = true;
-    }
-
-    /** @inheritDoc */
     public get projectionMatrix(): mat4 {
         return this._projectionMatrix;
     }
@@ -212,19 +247,27 @@ export class OrthographicCamera implements IOrthographicCamera {
         return this._positionBuffer;
     }
 
-    /** Writes the world-space eye into the std140 position data (no z flip: the look-at uses the eye as is). */
+    /** Writes the transform's world position into the std140 position data. */
     private _updatePositionData(): number[] {
-        this._positionData[0] = this._eye[0];
-        this._positionData[1] = this._eye[1];
-        this._positionData[2] = this._eye[2];
+        const m = this.transform.modelMatrix;
+        this._positionData[0] = m[12];
+        this._positionData[1] = m[13];
+        this._positionData[2] = m[14];
         return this._positionData;
+    }
+
+    /** True when the transform's world matrix changed since the view was last built. */
+    private _transformChanged(): boolean {
+        return !mat4.exactEquals(this._lastWorld, this.transform.modelMatrix);
     }
 
     /**
      * Updates the camera matrices.
      */
     protected _updateMatrices() {
-        mat4.lookAt(this._viewMatrix, this._eye, this._target, OrthographicCamera.UP_VECTOR);
+        const world = this.transform.modelMatrix;
+        mat4.copy(this._lastWorld, world);
+        CameraTransformUtilities.viewFromWorld(this._viewMatrix, world);
         mat4.orthoNO(this._projectionMatrix, this._left, this._right, this._bottom, this._top, this._near, this._far);
         mat4.multiply(this._projectionViewMatrix, this._projectionMatrix, this._viewMatrix);
     }
@@ -261,7 +304,7 @@ export class OrthographicCamera implements IOrthographicCamera {
     /** @inheritDoc */
     public update(_: GameTime): void {
 
-        if (!this._isDirty)
+        if (!this._isDirty && !this._transformChanged())
             return;
 
         this.updateBuffers();

@@ -34,7 +34,9 @@ export interface ITextureFactory {
      * @param channels - The number of channels.
      * @param label - The label.
      * @param usage - Texture usage. By default, it is COPY_DST | TEXTURE_BINDING.
-     * @param textureFormat - The texture format. By default, it is undefined. If so, the preferred texture format is used.
+     * @param textureFormat - The texture format. By default (or when UNDEFINED), the renderer's current
+     * {@link IRenderer.preferredTextureFormat} is used, so it follows {@link IRenderer.colorSpace}.
+     * Pass {@link TextureFormat.RGBA_8_UNORM} explicitly for raw data that must stay linear.
      * @param generateMipMaps - Indicates if texture should generate mipmap levels.
      * @returns The texture.
      */

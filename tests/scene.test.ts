@@ -12,6 +12,8 @@ import type { IFramework } from "../src/api/IFramework.ts";
 import type { IMaterial } from "../src/api/material/IMaterial.ts";
 import type { GameTime } from "../src/api/time/GameTime.ts";
 import type { ICamera } from "../src/api/camera/ICamera.ts";
+import { PerspectiveCamera } from "../src/api/camera/PerspectiveCamera.ts";
+import { SpriteMaterial } from "../src/api/material/SpriteMaterial.ts";
 
 function fakeFramework() {
     const framework = {
@@ -159,7 +161,8 @@ describe("Scene", () => {
         scene.camera = camera;
         scene.update({} as GameTime);
         expect([own.camera, a.camera, b.camera]).toEqual([camera, camera, camera]);
-        expect("camera" in noCamera).toBe(false);
+        // Every material gets the camera now (no type guard); a plain material just stores it.
+        expect((noCamera as { camera?: ICamera }).camera).toBe(camera);
         expect(sets).toBe(3);
 
         scene.update({} as GameTime);
@@ -251,6 +254,56 @@ describe("Scene", () => {
             expect(scene.remove(camera)).toBe(true);
             expect(scene.camera).toBeUndefined();
             expect(scene.remove(camera)).toBe(false);
+        });
+
+        it("adds a camera to nodes (it is a scene object), updates its transform and removes it", () => {
+            const { framework } = fakeFramework();
+            const scene = new Scene(framework);
+            const camera = new PerspectiveCamera({} as IFramework, { fov: 60, aspectRatio: 1, near: 0.1, far: 100 }, scene);
+            expect(scene.camera).toBe(camera);
+            expect(scene.nodes).toContain(camera);
+            scene.add(camera);
+            expect(scene.nodes.filter(n => n === camera)).toHaveLength(1);
+            camera.transform.position[0] = 5;
+            scene.update({} as GameTime);
+            expect(camera.transform.modelMatrix[12]).toBe(5);
+            expect(scene.remove(camera)).toBe(true);
+            expect(scene.nodes).not.toContain(camera);
+            expect(scene.camera).toBeUndefined();
+        });
+
+        it("adds lights to nodes (they are scene objects) and removes them", () => {
+            const { framework } = fakeFramework();
+            const scene = new Scene(framework);
+            expect(scene.nodes).toContain(scene.activeAmbientLight);
+            const point = new PointLight({ position: [1, 2, 3] }, scene);
+            const sun = new DirectionalLight(undefined, scene);
+            scene.addLight(point);
+            expect(scene.nodes.filter(n => n === point)).toHaveLength(1);
+            expect(scene.nodes).toContain(sun);
+            expect(scene.remove(point)).toBe(true);
+            expect(scene.nodes).not.toContain(point);
+            expect(scene.pointLights).not.toContain(point);
+        });
+
+        it("assigns the camera to every material, including ones without camera buffers", () => {
+            const { framework } = fakeFramework();
+            const scene = new Scene(framework);
+            const pipeline = { geometryFormat: GeometryFormat.POS3_COLOR4_TEXTURECOORDS2, textureSampler: undefined, spriteTexture: undefined };
+            const createSpriteRenderPipeline = vi.fn(() => pipeline);
+            const sprite = new SpriteMaterial({ renderPipelineFactory: { createSpriteRenderPipeline } } as unknown as IFramework,
+                { projectionViewBuffer: {}, texture: {}, sampler: {} } as never);
+            const plain = material();
+            scene.add(new RenderableMesh(framework, sprite));
+            scene.add(new RenderableMesh(framework, plain));
+            const camera = { projectionViewBuffer: {}, positionBuffer: {}, viewMatrix: {}, updateBuffers: vi.fn() } as unknown as ICamera;
+            scene.camera = camera;
+            scene.update({} as GameTime);
+            // The sprite only stores the camera: no pipeline changes, no buffer access.
+            expect(sprite.camera).toBe(camera);
+            expect(createSpriteRenderPipeline).toHaveBeenCalledOnce();
+            expect(pipeline.textureSampler).toEqual({});
+            expect(plain.camera).toBe(camera);
         });
 
         it("defers assigning a camera without buffers (not initialized yet) to update()", () => {
