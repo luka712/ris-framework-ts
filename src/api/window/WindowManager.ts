@@ -1,4 +1,4 @@
-import type { vec2 } from "gl-matrix";
+/**/import type { vec2 } from "gl-matrix";
 import {WindowBounds, type IWindowManager} from "../index.ts";
 
 /**
@@ -8,6 +8,9 @@ export class WindowManager implements IWindowManager {
   private readonly _canvas: HTMLCanvasElement;
   private readonly _updateCallbacks: Array<() => void> = [];
   private readonly _renderCallbacks: Array<() => void> = [];
+  private readonly _ownsCanvas: boolean;
+  private _animationFrame: number | null = null;
+  private _disposed = false;
 
   /**
    * The constructor for the WindowManager class.
@@ -15,6 +18,7 @@ export class WindowManager implements IWindowManager {
    */
   public constructor(canvas: HTMLCanvasElement | null = null) {
     this._canvas = canvas ?? document.createElement("canvas");
+    this._ownsCanvas = !canvas;
     if (!canvas) {
       document.body.appendChild(this._canvas);
     }
@@ -53,12 +57,28 @@ export class WindowManager implements IWindowManager {
     initializeForWebGl(): void {
         throw new Error("Method not implemented.");
     }
+    /** Stops the event loop, drops all callbacks and removes the canvas when this manager created it. */
     dispose(): void {
-        throw new Error("Method not implemented.");
+        if (this._disposed) {
+            return;
+        }
+        this._disposed = true;
+        if (this._animationFrame !== null) {
+            cancelAnimationFrame(this._animationFrame);
+            this._animationFrame = null;
+        }
+        this._updateCallbacks.length = 0;
+        this._renderCallbacks.length = 0;
+        if (this._ownsCanvas) {
+            this._canvas.remove();
+        }
     }
 
   /** @inheritdoc */
   runEventLoop(): void {
+    if (this._disposed) {
+      return;
+    }
     for (const callback of this._updateCallbacks) {
       callback();
     }
@@ -66,7 +86,7 @@ export class WindowManager implements IWindowManager {
       callback();
     }
 
-    requestAnimationFrame(() => this.runEventLoop());
+    this._animationFrame = requestAnimationFrame(() => this.runEventLoop());
   }
 
   /** @inheritdoc */

@@ -6,6 +6,9 @@ import inspectTextureMipsVS from "../../../shaders/glsl/inspect_texture_mips_vs.
 import inspectTextureMipsFS from "../../../shaders/glsl/inspect_texture_mips_fs.glsl?raw";
 import unlitMaterialVS from "../../../shaders/glsl/unlit_material_vs.glsl?raw";
 import unlitMaterialFS from "../../../shaders/glsl/unlit_material_fs.glsl?raw";
+import forwardBlinnPhongVS from "../../../shaders/glsl/forward_blinn_phong_material_vs.glsl?raw";
+import forwardBlinnPhongFS from "../../../shaders/glsl/forward_blinn_phong_material_fs.glsl?raw";
+
 
 /**
  * The api should look something like this for internal ones.
@@ -42,6 +45,12 @@ export const ShaderModuleContent : {[id: string]: any} = {
     "unlit_material": {
         "vertex": unlitMaterialVS,
         "fragment": unlitMaterialFS,
+        "reflection": {}
+    },
+
+    "forward_blinn_phong_material": {
+        "vertex": forwardBlinnPhongVS,
+        "fragment": forwardBlinnPhongFS,
         "reflection": {}
     }
 }

@@ -2,22 +2,23 @@
  * The mesh is a building class for a world shape.
  */
 import {State} from "../data/State.ts";
-import type { IVertexBuffer } from "../rendering/buffers/IVertexBuffer.ts";
-import type { IIndexBuffer } from "../rendering/buffers/IIndexBuffer.ts";
-import type { IFramework } from "../IFramework.ts";
-import type { IMesh } from "./IMesh.ts";
+import type {IVertexBuffer} from "../rendering/buffers/IVertexBuffer.ts";
+import type {IIndexBuffer} from "../rendering/buffers/IIndexBuffer.ts";
+import type {IFramework} from "../IFramework.ts";
+import type {IMesh} from "./IMesh.ts";
 import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
-import type { IGeometry } from "../geometry/IGeometry.ts";
-import {GeometryFormat} from "../geometry/GeometryFormat.ts";
+import type {IGeometry} from "../geometry/IGeometry.ts";
 import {MeshParameters} from "./MeshParameters.ts";
 import {GeometryUtilities} from "../utilities/GeometryUtilities.ts";
+import type {GeometryFormat} from "../geometry/GeometryFormat.ts";
 
 /**
- * The mesh.
+ * The base mesh: geometry and the vertex and index buffers created from it (C# `BaseMesh`).
+ * No material and no transform; {@link RenderableMesh} adds those.
+ * @public
  */
 export class Mesh implements IMesh {
 
-    protected readonly _framework: IFramework;
     protected _bufferUsage = BufferUsage.VERTEX;
     protected _state = State.CREATED;
     protected _vertexData?: number[];
@@ -28,13 +29,23 @@ export class Mesh implements IMesh {
     protected _normals?: number[];
     protected _vertexBuffer?: IVertexBuffer;
     protected _indexBuffer?: IIndexBuffer;
+    protected _geometry?: IGeometry;
 
     /**
      * The constructor.
-     * @param framework The framework.
+     * @param _framework The framework.
      */
-    public constructor(framework: IFramework) {
-        this._framework = framework;
+    public constructor(protected readonly _framework: IFramework) {
+    }
+
+    /** The geometry the buffers were created from with {@link setGeometry}, if any. */
+    public get geometry(): IGeometry | undefined {
+        return this._geometry;
+    }
+
+    /** The geometry format used when {@link setGeometry} is called without one. Undefined for a plain mesh. */
+    protected get _defaultGeometryFormat(): GeometryFormat | undefined {
+        return undefined;
     }
 
     /**
@@ -90,7 +101,7 @@ export class Mesh implements IMesh {
      * The index buffer.
      */
     public get indexBuffer(): IIndexBuffer | undefined {
-        return this._indexBuffer ;
+        return this._indexBuffer;
     }
 
     /**
@@ -100,25 +111,24 @@ export class Mesh implements IMesh {
         this.applyChanges();
     }
 
-    private _fillColors(index: {vertexDataIndex: number, colorIndex: number}, colors: number[]): void {
+    private _fillColors(index: { vertexDataIndex: number, colorIndex: number }, colors: number[]): void {
 
-        if(!this._vertexData) {
+        if (!this._vertexData) {
             throw new Error("Vertex data is not initialized");
         }
 
         let v = index.vertexDataIndex;
         let c = index.colorIndex;
 
-        if(colors.length > index.colorIndex) {
+        if (colors.length > index.colorIndex) {
             this._vertexData[v++] = colors[c++];
             this._vertexData[v++] = colors[c++];
             this._vertexData[v++] = colors[c++];
             this._vertexData[v++] = colors[c++];
             index.vertexDataIndex = v;
-        }
-        else {
+        } else {
             // Just prefill with white color
-            this._vertexData[v++] =1;
+            this._vertexData[v++] = 1;
             this._vertexData[v++] = 1;
             this._vertexData[v++] = 1;
             this._vertexData[v++] = 1;
@@ -131,10 +141,8 @@ export class Mesh implements IMesh {
     /**
      * Apply changes to the mesh.
      */
-    public applyChanges()
-    {
-        if (!this._positions ||this._positions.length == 0)
-        {
+    public applyChanges() {
+        if (!this._positions || this._positions.length == 0) {
             //_framework.Logger.LogWarning("Cannot create buffers for a Mesh as Mesh has no positions.");
             throw new Error(`Cannot create buffers for a Mesh as Mesh has no positions`);
         }
@@ -152,31 +160,27 @@ export class Mesh implements IMesh {
         let normalIndex = 0;
         let uvsIndex = 0;
 
-        for (let i = 0; i < vertexCount; i++)
-        {
+        for (let i = 0; i < vertexCount; i++) {
             // Positions.
             this._vertexData[vertexIndex++] = this._positions[positionsIndex++];
             this._vertexData[vertexIndex++] = this._positions[positionsIndex++];
             this._vertexData[vertexIndex++] = this._positions[positionsIndex++];
 
             // Colors.
-            if (this._colors)
-            {
+            if (this._colors) {
                 const index = {vertexDataIndex: vertexIndex, colorIndex: colorIndex};
                 this._fillColors(index, this._colors);
                 vertexIndex = index.vertexDataIndex;
                 colorIndex = index.colorIndex;
             }
 
-            if (this._textureCoords)
-            {
+            if (this._textureCoords) {
                 // Uvs.
                 this._vertexData[vertexIndex++] = this._textureCoords[uvsIndex++];
                 this._vertexData[vertexIndex++] = this._textureCoords[uvsIndex++];
             }
 
-            if (this._normals)
-            {
+            if (this._normals) {
                 this._vertexData[vertexIndex++] = this._normals[normalIndex++];
                 this._vertexData[vertexIndex++] = this._normals[normalIndex++];
                 this._vertexData[vertexIndex++] = this._normals[normalIndex++];
@@ -186,13 +190,12 @@ export class Mesh implements IMesh {
         // Vertices
         this._vertexBuffer?.dispose();
         this._vertexBuffer = this._framework.bufferFactory.createVertexBuffer(
-                this._vertexData, stride, this._bufferUsage);
+            this._vertexData, stride, this._bufferUsage);
 
         // Indices
         this._indexBuffer?.dispose();
-        if (this._indices && this._indices.length > 0)
-        {
-            this._indexBuffer= this._framework.bufferFactory.createIndexBuffer(
+        if (this._indices && this._indices.length > 0) {
+            this._indexBuffer = this._framework.bufferFactory.createIndexBuffer(
                 this._indices);
         }
     }
@@ -201,19 +204,23 @@ export class Mesh implements IMesh {
      * Sets the mesh from a geometry.
      *
      * This will create vertex buffer and index buffer from geometry.
-     * Positions, Colors, TextureCoordinates  and Normals will be ignored.
      * @param geometry - The geometry.
-     * @param format - The format for geometry.
+     * @param geometryFormat - The vertex layout. A `RenderableMesh` defaults to its material's geometry format.
      */
-    public setGeometry(geometry: IGeometry, format: GeometryFormat): void {
-        if (geometry.vertexCount == 0)
-        {
+    public setGeometry(geometry: IGeometry, geometryFormat?: GeometryFormat): void {
+
+        const format = geometryFormat ?? this._defaultGeometryFormat;
+        if (format === undefined) {
+            throw new Error("Cannot create buffers for a Mesh without a geometry format (pass one, or give a RenderableMesh a material).");
+        }
+        if (geometry.vertexCount == 0) {
             const message =
-            "Cannot create buffers for a Mesh as Mesh has no positions. Check that geometry.vertexCount is set.";
+                "Cannot create buffers for a Mesh as Mesh has no positions. Check that geometry.vertexCount is set.";
             //_framework.Logger.LogError(message);
             throw new Error(message);
         }
 
+        this._geometry = geometry;
         const interleavedData = geometry.toInterleaved(format);
         const stride = GeometryUtilities.stride(format);
 
@@ -226,8 +233,7 @@ export class Mesh implements IMesh {
 
         // Indices
         this._indexBuffer?.dispose();
-        if (geometry.indices)
-        {
+        if (geometry.indices) {
             this._indexBuffer = this._framework.bufferFactory.createIndexBuffer(geometry.indices);
         }
     }
@@ -245,12 +251,13 @@ export class Mesh implements IMesh {
     }
 
     /**
-     * Dispose of the mesh.
+     * Disposes the vertex and index buffers.
      */
     public dispose(): void {
         this._vertexBuffer?.dispose();
         this._vertexBuffer = undefined;
         this._indexBuffer?.dispose();
         this._indexBuffer = undefined;
+        this._state = State.DISPOSED;
     }
 }

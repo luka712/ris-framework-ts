@@ -63,6 +63,8 @@ export class InputManager implements IInputManager {
     private readonly _touchCapabilities: TouchPanelCapabilities;
     private readonly _contacts: TouchContact[];
     private _touchListening = false;
+    /** Aborting it removes every canvas listener added in initialize(). */
+    private _listeners = new AbortController();
     /** Set in update, consumed in afterUpdate. Ageing before a publish would hide the press. */
     private _touchPublished = false;
 
@@ -120,6 +122,13 @@ export class InputManager implements IInputManager {
         return this._touchCapabilities;
     }
 
+    /** Removes the canvas listeners. Called from `Framework.dispose()`. */
+    public dispose(): void {
+        this._listeners.abort();
+        this._listeners = new AbortController();
+        this._touchListening = false;
+    }
+
     /** @inheritDoc */
     public initialize(): void {
 
@@ -133,20 +142,20 @@ export class InputManager implements IInputManager {
         canvas.addEventListener("mousemove", (e: MouseEvent) => {
             this._mousePosition[0] = e.clientX;
             this._mousePosition[1] = e.clientY;
-        });
+        }, {signal: this._listeners.signal});
 
         canvas.addEventListener("mousedown", (e: MouseEvent) => {
             const idx = e.button;
             const btn = this._mouseButtonMap[idx] ?? MouseButton.NONE;
             this._mouseButtonDown[btn] = true;
-        })
+        }, {signal: this._listeners.signal})
 
         canvas.addEventListener("mouseup", (e: MouseEvent) => {
             const idx = e.button;
             const btn = this._mouseButtonMap[idx] ?? MouseButton.NONE;
             this._mouseButtonDown[btn] = false;
             this._mouseButtonReleased[btn] = true;
-        });
+        }, {signal: this._listeners.signal});
 
         canvas.addEventListener("wheel", (e: WheelEvent) => {
 
@@ -167,7 +176,7 @@ export class InputManager implements IInputManager {
             vec2.set(this._scrollWheelPosition, x, y);
 
             e.preventDefault();
-        })
+        }, {signal: this._listeners.signal})
     }
 
     private _handleTouchEvents(canvas: HTMLCanvasElement): void {
@@ -179,7 +188,7 @@ export class InputManager implements IInputManager {
         // Pan and pinch-zoom start on this canvas only. The rest of the page is left alone.
         canvas.style.touchAction = "none";
 
-        const options = InputManager._touchListenerOptions;
+        const options: AddEventListenerOptions = {...InputManager._touchListenerOptions, signal: this._listeners.signal};
         canvas.addEventListener("touchstart", this._onTouchStart, options);
         canvas.addEventListener("touchmove", this._onTouchMove, options);
         canvas.addEventListener("touchend", this._onTouchEnd, options);

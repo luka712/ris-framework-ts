@@ -3,8 +3,6 @@ import {stubRisKtx2NodeModule} from "./vite.config.ts";
 
 const externalPackages = [
     "gl-matrix",
-    "reflect-metadata",
-    "tsyringe",
 ];
 
 /**

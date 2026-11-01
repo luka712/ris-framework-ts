@@ -22,12 +22,12 @@ export class WebGlShaderModule implements IShaderModule {
      * The constructor of the WebGL shader module.
      * @param framework The framework.
      * @param shaderFilePath
+     * @param @param keyValueDictionary - If present, tries to find key in shader such that it replaced ##DIRECTIONAL_LIGHT_COUNT## by given value for key DIRECTIONAL_LIGHST_COUNT.
      */
-    public constructor(framework: IFramework, shaderFilePath: string) {
+    public constructor(framework: IFramework, shaderFilePath: string, keyValueDictionary?: {[id:string]: number} ) {
         this._graphicsDevice = framework.renderer.graphicsDevice as WebGlGraphicsDevice;
         this._gl = this._graphicsDevice.gl;
-        this._program = this._loadShaders(shaderFilePath);
-
+        this._program = this._loadShaders(shaderFilePath, keyValueDictionary);
     }
 
     /** @inheritDoc */
@@ -63,7 +63,7 @@ export class WebGlShaderModule implements IShaderModule {
         return this._program;
     }
 
-    private _loadShaders(shaderFilePath: string): WebGLProgram {
+    private _loadShaders(shaderFilePath: string, keyValueDictionary?: {[id:string]: number} ): WebGLProgram {
 
         const internalShader = this._tryResolveFrameworkShader(shaderFilePath);
 
@@ -72,6 +72,7 @@ export class WebGlShaderModule implements IShaderModule {
         if (internalShader) {
             vertexShaderSource = internalShader.vertex;
             fragmentShaderSource = internalShader.fragment;
+
         } else {
 
             throw new Error("Not implemented");
@@ -84,6 +85,12 @@ export class WebGlShaderModule implements IShaderModule {
             // fragmentShaderSource = await this._shaderLoader.load(shaderFilePath, RenderingBackend.WEB_GL, [ShaderStage.FRAGMENT]);
         }
 
+        if(keyValueDictionary) {
+            for(const key in keyValueDictionary) {
+                vertexShaderSource = vertexShaderSource.replace(`##${key}##`, String(keyValueDictionary[key]));
+                fragmentShaderSource = fragmentShaderSource.replace(`##${key}##`, String(keyValueDictionary[key]));
+            }
+        }
 
         const vertexShader = WebGlUtilities.shader.createVertexShader(this._gl, vertexShaderSource);
         const fragmentShader = WebGlUtilities.shader.createFragmentShader(this._gl, fragmentShaderSource);

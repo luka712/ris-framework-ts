@@ -2,10 +2,33 @@ import { GeometryFormat } from "./GeometryFormat.ts";
 import {VertexFormat} from "./VertexFormat.ts";
 import type {IGeometry} from "../index.ts";
 
+
 /**
  * The default IGeometry implementation. GeometryBuilder fills it with vertex data.
  */
 export class BaseGeometry implements IGeometry {
+
+    /**
+     * Initializes a new instance of the BaseGeometry class.
+     * @param positions The optional positions of the geometry.
+     * @param indices The optional indices of the geometry.
+     * @param normals The optional normals of the geometry.
+     * @param textureCoords The optional texture coordinates of the geometry.
+     * @param colors The optional colors of the geometry.
+     */
+    constructor(positions?: number[], indices?: number[], normals?: number[], textureCoords?: number[], colors?: number[]) {
+        this.positions = positions;
+        this.indices = indices;
+        this.normals = normals;
+        this.textureCoords = textureCoords;
+        this.colors = colors;
+
+        if(this.indices && this.indices.length > 0) {
+            this.vertexCount = this.indices.length / 3;
+        } else if(this.positions && this.positions.length > 0) {
+            this.vertexCount = this.positions.length / 3;
+        } 
+    }
 
     /** @inheritdoc */
     public vertexCount: number = 0;

@@ -82,7 +82,6 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
 
         this._canvas = this._windowManager.canvas;
 
-        debugger;
         const contextOptions: WebGLContextAttributes = {
             antialias: false,
             alpha: this._descriptor.alpha,

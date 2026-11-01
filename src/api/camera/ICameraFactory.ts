@@ -1,7 +1,8 @@
 import type { IOrthographicCamera } from "./IOrthographicCamera.ts";
 import {vec2} from "gl-matrix";
 import {OrbitCamera} from "./OrbitCamera.ts";
-import {PerspectiveCamera} from "./PerspectiveCamera.ts";
+import {PerspectiveCamera, type PerspectiveCameraDescriptor} from "./PerspectiveCamera.ts";
+import type {Scene} from "../scene/Scene.ts";
 
 /**
  * The camera factory.
@@ -10,17 +11,11 @@ export interface ICameraFactory {
 
     /**
      * Creates a new perspective camera.
-     * @param fov The field of view. By default, 60 degrees.
-     * @param aspectRatio The aspect ratio. By default, 1.
-     * @param near The near plane. By default, 0.01.
-     * @param far The far plane. By default, 100.
+     * @param descriptor The optional descriptor; omitted fields use the defaults documented on {@link PerspectiveCameraDescriptor}.
+     * @param scene The optional scene; the camera becomes its `scene.camera`.
      * @return The perspective camera.
      */
-    createPerspectiveCamera(
-        fov?: number,
-        aspectRatio?: number,
-        near?: number,
-        far?: number): PerspectiveCamera;
+    createPerspectiveCamera(descriptor?: PerspectiveCameraDescriptor, scene?: Scene): PerspectiveCamera;
 
     /**
      * Creates a new orthographic camera which is suitable for 2D games, or for UI rendering.

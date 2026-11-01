@@ -1,4 +1,7 @@
-import type {IBlendState, IFramework, IIndexBuffer, IPrimitiveState, IRenderPipeline, IVertexBuffer} from "../../api/index.ts";
+import {
+    GeometryFormat,
+    type IBlendState, type IFramework, type IIndexBuffer, type IPrimitiveState, type IRenderPipeline, type IVertexBuffer
+} from "../../api/index.ts";
 import type {VertexBufferLayout} from '../../core/rendering/vertex-buffer-layout';
 import type {WebGlBlendState} from '../blending/webgl-blend-state';
 import type {WebGlPrimitiveState} from '../primitive/WebGlPrimitiveState.ts';
@@ -34,6 +37,9 @@ export abstract class AWebGlRenderPipeline implements IRenderPipeline {
         this._defaultTextureSampler = graphicsDevice.defaultTextureSampler as WebGlSampler;
         this.primitiveState = (primitiveState ?? graphicsDevice.defaultPrimitiveState) as WebGlPrimitiveState;
     }
+
+    /** @inheritDoc */
+    public abstract readonly geometryFormat: GeometryFormat;
 
     /** @inheritDoc */
     public get blendState(): IBlendState {

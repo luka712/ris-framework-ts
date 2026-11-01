@@ -11,7 +11,8 @@ export class AlignUtilities {
      * @returns The aligned value.
      */
     public static align(value: number, alignment: number): number {
-        return (value + alignment - 1) & ~(alignment - 1);
+        const remainder = value % alignment;
+        return remainder == 0 ? value : value + alignment - remainder;
     }
 
     /**

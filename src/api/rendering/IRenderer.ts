@@ -3,10 +3,40 @@ import {TextureFormat} from "./texture/TextureFormat.ts";
 import {Color} from "../data/Color.ts";
 import {RenderingBackend} from "./RenderingBackend.ts";
 import {vec2} from "gl-matrix";
+import type {PowerPreferenceType} from "./PowerPreference.ts";
+import type {TextureSamplerFilteringPreset} from "../../core/rendering/enums.ts";
+import type {ColorSpace} from "./enums.ts";
 
 
 /**
+ * The configuration for the renderer. This is used to initialize the renderer.
+ * @internal
+ */
+export interface IRendererConfiguration {
+
+    /**The size of the main frame buffer. */
+    backBufferSize: vec2;
+
+    /** Should back buffer use alpha. */
+    alpha: boolean;
+
+    /** The preference when it comes to selecting GPU device. Only makes sense to set on multi-GPU devices. */
+    powerPreference: PowerPreferenceType;
+
+    /**
+     * The preset for texture sampler filtering.
+     * This is used to configure the default texture sampler in the graphics device.
+     * The default texture sampler is used when a texture is sampled without a specific sampler being bound.
+     */
+    textureFiltering: TextureSamplerFilteringPreset;
+
+    /** The desired texture color space. */
+    textureColorSpace: ColorSpace;
+}
+
+/**
  * The interface for a renderer.
+ * @public
  */
 export interface IRenderer {
 
@@ -16,9 +46,18 @@ export interface IRenderer {
     readonly graphicsDevice: IGraphicsDevice;
 
     /**
-     * The surface preferred a texture format.
+     * The preferred texture format, chosen from {@link IRendererConfiguration.textureColorSpace}.
+     * Textures that do not specify a texture format are created with it:
+     * - {@link TextureFormat.RGBA_8_UNORM_SRGB} when the color space is {@link ColorSpace.SRGB} (the default).
+     * - {@link TextureFormat.RGBA_8_UNORM} when the color space is {@link ColorSpace.LINEAR}.
      */
     readonly preferredTextureFormat: TextureFormat;
+
+    /**
+     * The preferred texture color space, taken from {@link IRendererConfiguration.textureColorSpace}.
+     * Textures that do not specify a format are treated as being in this color space.
+     */
+    readonly preferredColorSpace: ColorSpace;
 
     /**
      * The preferred depth stencil format.

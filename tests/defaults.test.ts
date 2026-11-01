@@ -16,13 +16,13 @@ import {
     StoreAction,
     SurfacePresentMode,
     SwapChainDescriptor,
-    TextureDescriptor,
     TextureFormat,
     TextureUsage,
     TextureViewDescriptor,
     TextureViewDimension,
     WindowBounds,
 } from "../src/api/index.ts";
+import {resolveTextureDescriptor} from "../src/core/rendering/texture/TextureDescriptorUtilities.ts";
 
 describe("value defaults", () => {
     it("uses an 800 by 600 window when bounds are omitted", () => {
@@ -46,7 +46,10 @@ describe("value defaults", () => {
     });
 
     it("defaults a texture to an undefined shader-readable copy destination", () => {
-        const descriptor = new TextureDescriptor();
+        const descriptor = resolveTextureDescriptor();
+
+        expect(descriptor.data).toBeUndefined();
+        expect(descriptor.blockSize).toBeUndefined();
 
         expect(descriptor.width).toBe(0);
         expect(descriptor.height).toBe(0);
@@ -56,6 +59,17 @@ describe("value defaults", () => {
         expect(descriptor.textureUsage & TextureUsage.TEXTURE_BINDING).toBe(TextureUsage.TEXTURE_BINDING);
         expect(descriptor.textureUsage & TextureUsage.COPY_DST).toBe(TextureUsage.COPY_DST);
         expect(descriptor.textureUsage & TextureUsage.RENDER_ATTACHMENT).toBe(0);
+        expect(descriptor.textureUsage).toBe(TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST);
+    });
+
+    it("keeps given texture descriptor fields and fills in the rest", () => {
+        const descriptor = resolveTextureDescriptor({width: 4, textureFormat: TextureFormat.RGBA_8_UNORM, generateMipmaps: true});
+
+        expect(descriptor.width).toBe(4);
+        expect(descriptor.textureFormat).toBe(TextureFormat.RGBA_8_UNORM);
+        expect(descriptor.generateMipmaps).toBe(true);
+        expect(descriptor.height).toBe(0);
+        expect(descriptor.label).toBeNull();
         expect(descriptor.textureUsage).toBe(TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST);
     });
 

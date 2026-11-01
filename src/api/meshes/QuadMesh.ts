@@ -1,13 +1,14 @@
-import {Mesh} from "./Mesh.ts";
+import {RenderableMesh} from "./RenderableMesh.ts";
 import {Rect} from "../data/Rect.ts";
 import type { IFramework } from "../IFramework.ts";
 import {vec2} from "gl-matrix";
 import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
+import type {IMaterial} from "../material/IMaterial.ts";
 
 /**
  * The mesh of a quad.
  */
-export class QuadMesh extends Mesh {
+export class QuadMesh extends RenderableMesh {
 
     private readonly ELEMENTS_IN_VERTEX = 9;
     private readonly TEX_COORD_POS_S = 7;
@@ -16,11 +17,12 @@ export class QuadMesh extends Mesh {
     /**
      * The constructor.
      * @param framework The framework.
+     * @param material The material.
      * @param _isUpdatable Makes mesh updatable.
      * @param scale The scale factor for geometry. If not set, it is set to (1,1).
      */
-    public constructor(framework: IFramework, private _isUpdatable: boolean, scale?: vec2) {
-    super(framework);
+    public constructor(framework: IFramework, material: IMaterial, private _isUpdatable: boolean, scale?: vec2) {
+        super(framework, material);
         if(_isUpdatable) {
             this._bufferUsage = BufferUsage.VERTEX | BufferUsage.COPY_DST;
         }

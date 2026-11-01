@@ -5,6 +5,38 @@ import type { ISpriteRenderPipeline } from "./ISpriteRenderPipeline.ts";
 import type { IInspectTextureMipsRenderPipeline } from "./IInspectTextureMipsRenderPipeline.ts";
 import type { IUnlitRenderPipeline } from "./IUnlitRenderPipeline.ts";
 import type { IPrimitiveState } from "../primitive/IPrimitiveState.ts";
+import type { IForwardBlinnPhongRenderPipeline } from "./IForwardBlinnPhongRenderPipeline.ts";
+
+/** The descriptor for the forward Blinn-Phong render pipeline. */
+export interface ForwardBlinnPhongRenderPipelineDescriptor {
+
+    /** The projection view buffer, e.g. `camera.projectionViewBuffer`. */
+    projectionViewBuffer: IUniformBuffer;
+
+    /** The world buffer. */
+    modelBuffer: IUniformBuffer;
+
+    /** The camera position buffer, e.g. `camera.positionBuffer`: std140 `vec3` world-space eye. */
+    cameraPositionBuffer: IUniformBuffer;
+
+    /** The material buffer (ambient and diffuse color). */
+    materialBuffer: IUniformBuffer;
+
+    /**
+     * The lights buffer, e.g. `lightsBuffer.buffer`.
+     * Optional: it can be set later through `pipeline.lightsBuffer`.
+     */
+    lightsBuffer?: IUniformBuffer;
+
+    /** Directional light slots to compile the shader with; must match the lights buffer. Defaults to `DEFAULT_DIRECTIONAL_LIGHTS_COUNT`. */
+    maxDirectionalLights?: number;
+
+    /** Point light slots to compile the shader with; must match the lights buffer. Defaults to `DEFAULT_POINT_LIGHTS_COUNT`. */
+    maxPointLights?: number;
+
+    /** The primitive state. */
+    primitiveState?: IPrimitiveState;
+}
 
 /**
  * The pipeline factory.
@@ -48,5 +80,12 @@ export interface IRenderPipelineFactory {
                               materialBuffer: IUniformBuffer,
                               primitiveState?: IPrimitiveState
                               ): IUnlitRenderPipeline;
+
+    /**
+     * Creates the forward Blinn-Phong render pipeline.
+     * @param descriptor - The buffers and primitive state for the pipeline.
+     * @returns The forward Blinn-Phong render pipeline.
+     */
+    createForwardBlinnPhongRenderPipeline(descriptor: ForwardBlinnPhongRenderPipelineDescriptor): IForwardBlinnPhongRenderPipeline;
 
 }

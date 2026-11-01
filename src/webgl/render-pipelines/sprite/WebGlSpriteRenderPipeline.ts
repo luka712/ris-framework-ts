@@ -1,10 +1,11 @@
-import type {
-    IFramework,
-    ISampler,
-    ISpriteRenderPipeline,
-    ITexture2D,
-    IUniformBuffer,
-    IVertexBuffer
+import {
+    GeometryFormat,
+    type IFramework,
+    type ISampler,
+    type ISpriteRenderPipeline,
+    type ITexture2D,
+    type IUniformBuffer,
+    type IVertexBuffer
 } from "../../../api/index.ts";
 import {VertexBufferLayout} from "../../../core/rendering/vertex-buffer-layout";
 import type {WebGlUniformBuffer} from "../../buffers/WebGlUniformBuffer.ts";
@@ -40,6 +41,9 @@ export class WebGlSpriteRenderPipeline extends AWebGlRenderPipeline implements I
         super(framework);
         this._projectionViewBuffer = asWebGLUniformBuffer(projectionViewBuffer);
     }
+
+    /** @inheritDoc */
+    public readonly geometryFormat = GeometryFormat.POS3_COLOR4_TEXTURECOORDS2;
 
     /** @inheritdoc */
     public get projectionViewBuffer(): IUniformBuffer {

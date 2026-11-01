@@ -1,5 +1,6 @@
 import type {vec2, vec3} from "gl-matrix";
 import {BufferUsage, type Color, type IFramework, Mesh} from "../index.ts";
+import type {SpriteMaterial} from "../material/SpriteMaterial.ts";
 
 /**
  * The sprite batch mesh.
@@ -15,14 +16,26 @@ export class SpriteBatchMesh extends Mesh {
     /** The total number of floats in a sprite. 4 for each vertex * 9 floats per vertex (xyz rgba uv). */
     static readonly TOTAL_FLOATS_IN_SPRITE = 4 * this.TOTAL_FLOATS_PER_VERTEX;
 
+    private readonly _spriteMaterial: SpriteMaterial;
     private _maxInstances = 0;
     private _lastIndex = -1;
 
+    /** The offset of the first index to draw. Defaults to 0. */
+    public indicesOffset = 0;
+
+    /** The number of indices to draw. If -1 draws all indices. */
+    public indicesCount = -1;
+
     /**
      * The constructor for the batch sprite mesh.
+     * @param framework - The framework.
+     * @param material - The material.
+     * @param numberOfInstances - The number of instances.
      */
-    public constructor(framework: IFramework, numberOfInstances: number) {
+    public constructor(framework: IFramework, material: SpriteMaterial, numberOfInstances: number) {
+        // Drawn by the sprite batch, not by a scene.
         super(framework);
+        this._spriteMaterial = material;
         this._maxInstances = numberOfInstances;
 
         this._vertexData = new Array(this.maxInstances * SpriteBatchMesh.TOTAL_FLOATS_IN_SPRITE);
@@ -46,6 +59,13 @@ export class SpriteBatchMesh extends Mesh {
         }
 
         this._indices = indices;
+    }
+
+    /**
+     * Draws the mesh with its sprite material, using {@link indicesCount} and {@link indicesOffset}.
+     */
+    public draw(): void {
+        this._spriteMaterial.render(this._vertexBuffer!, this._indexBuffer!, this.indicesCount, this.indicesOffset);
     }
 
     /** The maximum number of instances that can be batched. */
@@ -233,8 +253,7 @@ export class SpriteBatchMesh extends Mesh {
     /** @inheritDoc */
     public override applyChanges(): void {
 
-        if(this._lastIndex <= 0)
-        {
+        if (this._lastIndex <= 0) {
             return;
         }
 

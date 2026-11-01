@@ -1,6 +1,6 @@
 {
   "name": "ris-framework",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -22,6 +22,8 @@
     "build": "tsc --noEmit && npm run build:lib && npm run build:app",
     "build:lib": "rm -rf dist && vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json && node scripts/rewrite-declaration-extensions.mjs",
     "build:app": "vite build",
+    "dev:examples": "vite --config examples/vite.config.ts",
+    "build:examples": "vite build --config examples/vite.config.ts",
     "preview": "vite preview",
     "test": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit && vitest run"
   },
@@ -32,9 +34,7 @@
   },
   "dependencies": {
     "gl-matrix": "^3.4.4",
-    "reflect-metadata": "^0.2.2",
-    "ris-ktx2": "^0.1.0",
-    "tsyringe": "^4.10.0"
+    "ris-ktx2": "^0.2.0-dev.13"
   },
   "files": [
     "dist",

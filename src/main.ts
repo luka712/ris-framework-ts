@@ -1,19 +1,17 @@
 import './style.css'
-import "reflect-metadata";
 
 import typescriptLogo from './typescript.svg'
 import viteLogo from '/vite.svg'
 import {Framework} from './Framework.ts';
-import {FrameworkConfiguration} from "./api/FrameworkConfiguration.ts";
 import {TextureSamplerFilteringPreset} from "./core/rendering/enums.ts";
 import {
   Color,
-  type IFramework,
+  type IFramework, IFrameworkConfiguration,
   type ISampler,
   type ITexture2D,
   Rect,
   SamplerDescriptor,
-  SamplerFilter, TextureDescriptor, TextureFormat
+  SamplerFilter, type ITextureDescriptor, TextureFormat
 } from "./api/index.ts";
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
@@ -32,7 +30,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 `
 
 
-const frameworkConfig = new FrameworkConfiguration();
+const frameworkConfig: IFrameworkConfiguration = {} ;
 frameworkConfig.canvas = document.getElementById("game-canvas") as HTMLCanvasElement;
 frameworkConfig.textureFiltering = TextureSamplerFilteringPreset.BILINEAR;
 const framework : IFramework = new Framework(frameworkConfig);
@@ -48,9 +46,10 @@ let sampler: ISampler;
 framework.addOnLoadContentListener(async () =>
 {
 
-  const texDesc = new TextureDescriptor();
-  texDesc.generateMipmaps = true;
-  texDesc.textureFormat = TextureFormat.RGBA_8_UNORM;
+  const texDesc: ITextureDescriptor = {
+    generateMipmaps: true,
+    textureFormat: TextureFormat.RGBA_8_UNORM,
+  };
 
   tex = await framework.content.loadTexture2DAsync("/assets/test.png", texDesc);
   tex2 = await framework.content.loadTexture2DAsync("/assets/cat.jpg", texDesc);

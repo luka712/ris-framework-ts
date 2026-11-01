@@ -1,6 +1,7 @@
 import {WebGlConverter} from "./WebGlConverter.ts";
 import {AlignUtilities, TextureFormat} from "../../api/index.ts";
 import {vec2} from "gl-matrix";
+import {WebGlUtilities} from "./WebGlUtilities.ts";
 
 /**
  * The utilities for working with WebGL textures.
@@ -120,8 +121,8 @@ export class WebGlTextureUtilities {
         gl.bindTexture(gl.TEXTURE_2D, texture);
 
         const internalFormat = WebGlConverter.convertInternalFormat(gl, textureFormat);
-
         const useTexStorage = baseWidth % blockSize[0] == 0 && baseHeight % blockSize[1] == 0;
+
         if (useTexStorage) {
             gl.texStorage2D(gl.TEXTURE_2D, mipLevels, internalFormat, baseWidth, baseHeight);
         }
@@ -163,7 +164,9 @@ export class WebGlTextureUtilities {
 
         const error = gl.getError();
         if (error != gl.NO_ERROR) {
-            throw new Error("WebGlTextureUtilities error " + error.toString());
+            const errorStr ="WebGlTextureUtilities error " + WebGlUtilities.error.errorToStr(error);
+            console.error(errorStr);
+            throw new Error(errorStr);
         }
 
         return texture;

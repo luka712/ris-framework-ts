@@ -7,10 +7,12 @@ import type { IBufferFactory } from "./rendering/buffers/IBufferFactory.ts";
 import type { IGeometryBuilder } from "./geometry/IGeometryBuilder.ts";
 import type { ICameraFactory } from "./camera/ICameraFactory.ts";
 import type { ITextureFactory } from "./rendering/texture/ITextureFactory.ts";
+import type { ObjLoader } from "./loaders/ObjLoader.ts";
 import type { IContentManager } from "./content/IContentManager.ts";
 import type { IImageLoader } from "./loaders/IImageLoader.ts";
 import type { IMeshFactory } from "./meshes/IMeshFactory.ts";
 import type { IMaterialFactory } from "./material/IMaterialFactory.ts";
+import type { AmbientLightFactory } from "./lights/LightFactory.ts";
 import type { ITimeManager } from "./time/ITimeManager.ts";
 import type { IInputManager } from "./input/IInputManager.ts";
 import type { IWindowManager } from "./window/IWindowManager.ts";
@@ -18,6 +20,49 @@ import {GameTime} from "./time/GameTime.ts";
 import type { IImageProcessor } from "./image/IImageProcessor.ts";
 import type { IKtx2Factory } from "ris-ktx2";
 import type { IDisposable } from "./core/IDisposable.ts";
+import type {vec2} from "gl-matrix";
+import type {TextureSamplerFilteringPreset} from "../core/rendering/enums.ts";
+import type {PowerPreferenceType} from "./rendering/PowerPreference.ts";
+import type {ColorSpace} from "./rendering/enums.ts";
+
+
+/**
+ * The configuration for the framework.
+ * @public
+ **/
+export class IFrameworkConfiguration {
+
+    /** If true, creates and makes the KTX2 factory available. */
+    useKtx2?: boolean;
+
+    /** The size of back buffer. By default, if not specified (800, 600). */
+    backBufferSize?: vec2;
+
+    /** The texture filtering to configure */
+    textureFiltering?: TextureSamplerFilteringPreset;
+
+    /** The texture color space to use by default. By default, it is {@link ColorSpace.SRGB}. */
+     textureColorSpace?: ColorSpace;
+
+     /**
+     * The HTMLCanvasElement to use for rendering.
+     * If null, a new canvas will be created and added to the document body.
+     */
+    canvas?: HTMLCanvasElement;
+
+    /** Should back buffer use alpha. */
+    alpha?: boolean;
+
+    /** The preference when it comes to selecting GPU device. Only makes sense to set on multi-GPU devices. */
+    powerPreference ?: PowerPreferenceType;
+
+    /**
+     * The rendering backend. Defaults to WebGL.
+     * WebGPU requires `Framework.initializeAsync()`; when `navigator.gpu` is missing or no device is available,
+     * the framework falls back to WebGL with a warning.
+     */
+    renderingBackend?: RenderingBackend;
+}
 
 /** The framework interface. */
 export interface IFramework extends IDisposable {
@@ -87,9 +132,19 @@ export interface IFramework extends IDisposable {
     readonly meshFactory: IMeshFactory;
 
     /**
+     * The OBJ loader: `objLoader.loadAsync(path, blinnPhongDescriptor | subMesh => material)`.
+     */
+    readonly objLoader: ObjLoader;
+
+    /**
      * The material factory.
      */
     readonly materialFactory: IMaterialFactory;
+
+    /**
+     * The ambient light factory.
+     */
+    readonly lightsFactory: AmbientLightFactory;
 
     /**
      * The time manager.
@@ -117,14 +172,10 @@ export interface IFramework extends IDisposable {
      */
     removeOnLoadContentListener(event: () => void): void;
 
-    /**
-     * Called when the framework is initialized.
-     */
+    /** Called when the framework is initialized.*/
     addOnInitializedListener(event: () => void): void;
 
-    /**
-     * Called when the framework is initialized.
-     */
+    /** Called when the framework is initialized.*/
     removeOnInitializedListener(event: () => void): void;
 
     /**
@@ -149,5 +200,11 @@ export interface IFramework extends IDisposable {
 
     /** Initializes the framework. */
     initialize(): void;
+
+    /**
+     * Initializes the framework asynchronously and starts the event loop.
+     * Required for the WebGPU backend; for WebGL it behaves like {@link initialize}.
+     */
+    initializeAsync(): Promise<void>;
 
 }
