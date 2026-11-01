@@ -1,5 +1,5 @@
 import {WebGlConverter} from "./WebGlConverter.ts";
-import {AlignUtilities, TextureFormat} from "../../api/index.ts";
+import { TextureFormat} from "../../api/index.ts";
 import {vec2} from "gl-matrix";
 import {WebGlUtilities} from "./WebGlUtilities.ts";
 
@@ -127,6 +127,9 @@ export class WebGlTextureUtilities {
             gl.texStorage2D(gl.TEXTURE_2D, mipLevels, internalFormat, baseWidth, baseHeight);
         }
 
+        // Texture data might not be aligned to 4. So disable it.
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+
         if (data && data.length > 0) {
 
             let width = baseWidth;
@@ -140,9 +143,9 @@ export class WebGlTextureUtilities {
                     if (useTexStorage) {
                         gl.compressedTexSubImage2D(gl.TEXTURE_2D, i, 0, 0, width, height, internalFormat, mipLevelData, 0);
                     } else {
-                        const alignedWidth = AlignUtilities.align(width, blockSize[0]);
-                        const alignedHeight = AlignUtilities.align(height, blockSize[1]);
-                        gl.compressedTexImage2D(gl.TEXTURE_2D, i, internalFormat, alignedWidth, alignedHeight, 0, mipLevelData, 0);
+                        // const alignedWidth = AlignUtilities.align(width, blockSize[0]);
+                        // const alignedHeight = AlignUtilities.align(height, blockSize[1]);
+                        gl.compressedTexImage2D(gl.TEXTURE_2D, i, internalFormat, width, height, 0, mipLevelData, 0);
                     }
                 } else {
                     throw new Error("unsupported data type");
@@ -152,6 +155,9 @@ export class WebGlTextureUtilities {
                 height = Math.max(1, Math.floor(height / 2));
             }
         }
+
+        // Restore to default.
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
 
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
