@@ -11,6 +11,9 @@ import {
     type LightsBufferDescriptor,
     DEFAULT_DIRECTIONAL_LIGHTS_COUNT,
 } from "../../api/index.ts";
+import {vec3} from "gl-matrix";
+
+const _v = vec3.create();
 
 /**
  * The WebGL lights buffer. Owns a std140 uniform buffer for the `LightsBuffer` block.
@@ -191,10 +194,15 @@ export class WebGlLightsBuffer implements LightsBuffer {
             this._writeColor(offset, light?.color, light?.intensity ?? 0);
             this._data[offset + 3] = 0;
 
-            // vec3 direction
-            this._data[offset + 4] = light ? light.direction[0] : 0;
-            this._data[offset + 5] = light ? light.direction[1] : 0;
-            this._data[offset + 6] = light ? light.direction[2] : 0;
+            // vec3 direction (world space, from the transform)
+            if (light) {
+                light.getDirection(_v);
+            } else {
+                vec3.zero(_v);
+            }
+            this._data[offset + 4] = _v[0];
+            this._data[offset + 5] = _v[1];
+            this._data[offset + 6] = _v[2];
             this._data[offset + 7] = 0;
         }
 
@@ -209,10 +217,15 @@ export class WebGlLightsBuffer implements LightsBuffer {
             // An empty slot keeps constant at 1 so the shader never divides by zero.
             this._data[offset + 3] = light ? light.constant : 1;
 
-            // vec3 position, float linear
-            this._data[offset + 4] = light ? light.position[0] : 0;
-            this._data[offset + 5] = light ? light.position[1] : 0;
-            this._data[offset + 6] = light ? light.position[2] : 0;
+            // vec3 position (world space, from the transform), float linear
+            if (light) {
+                light.getPosition(_v);
+            } else {
+                vec3.zero(_v);
+            }
+            this._data[offset + 4] = _v[0];
+            this._data[offset + 5] = _v[1];
+            this._data[offset + 6] = _v[2];
             this._data[offset + 7] = light ? light.linear : 0;
 
             // float quadratic, then padding to the 16-byte struct size

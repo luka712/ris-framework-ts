@@ -10,6 +10,8 @@ import {MouseButton} from "../input/mouse/MouseButton.ts";
 import {TouchCollection} from "../input/touch/TouchCollection.ts";
 import {TouchLocation} from "../input/touch/TouchLocation.ts";
 import {InputDeviceType} from "../input/InputDeviceType.ts";
+import {CameraTransformUtilities} from "./CameraTransformUtilities.ts";
+import type {TransformNode} from "../scene/node/TransformNode.ts";
 
 /**
  * Camerae that support orbit movement.
@@ -31,6 +33,7 @@ export class OrbitCamera implements ICamera {
     private readonly _inputManager: IInputManager
 
     /** The rotation around the vertical axis. */
+    private readonly _target = vec3.create();
     private _yaw = 0;
 
     /** The tilt of the camera.*/
@@ -47,8 +50,8 @@ export class OrbitCamera implements ICamera {
                        public supportedInputTypes: InputDeviceType = InputDeviceType.MOUSE | InputDeviceType.TOUCHPAD) {
         this._coreCamera = coreCamera;
         this._inputManager = inputManager;
-        this.eye = vec3.fromValues(0, 0, -3);
-        this.target = vec3.fromValues(0, 0, 0);
+        vec3.set(this._coreCamera.transform.position, 0, 0, 3);
+        this._syncFromTransform();
         void this.POSITIVE_179_DEG;
         void this.findTarget;
     }
@@ -66,7 +69,6 @@ export class OrbitCamera implements ICamera {
     public pinchSpeed: number = 1;
 
     /** The up vector. */
-    public up = vec3.fromValues(0, 1, 0);
 
     /** The clamp values of pitch axis */
     public pitchClamp = vec2.fromValues(-this.POSITIVE_89_DEG, this.POSITIVE_89_DEG);
@@ -119,37 +121,65 @@ export class OrbitCamera implements ICamera {
     /** Orbit controls can be used if this button is pressed. */
     public orbitButton = MouseButton.LEFT;
 
-    /**
-     * The eye position of the camera.
-     */
-    public get eye(): vec3 {
-        return this._coreCamera.eye;
+    /** The orbit camera's transform: the core camera's transform. Its position is the eye; the rotation is set each update to look at {@link target}. */
+    public get transform(): TransformNode {
+        return this._coreCamera.transform;
     }
 
     /**
-     * The eye position of the camera.
+     * Sets the point the camera orbits around and looks at (the core camera's target). By default, the origin.
+     * @param target The world point.
      */
-    public set eye(value: vec3) {
-        this._coreCamera.eye = value;
-        this._setPitchAndYawFromDirection(this._coreCamera.direction);
+    public setTarget(target: vec3): void {
+        vec3.copy(this._target, target);
+        this._syncFromTransform();
+    }
+
+    /** @inheritDoc */
+    public getTarget(out: vec3 = vec3.create()): vec3 {
+        return vec3.copy(out, this._target);
     }
 
     /**
-     * The eye position of the camera.
+     * Moves the camera to a world position and re-derives the orbit (pitch, yaw, distance) around the target.
+     * @param eye The world position.
      */
-    public get target(): vec3 {
-        return this._coreCamera.target;
+    public setEye(eye: vec3): void {
+        CameraTransformUtilities.setWorldPosition(this._coreCamera.transform, eye);
+        this._syncFromTransform();
     }
 
-    /**
-     * The eye position of the camera.
-     */
-    public set target(value: vec3) {
-        this._coreCamera.target = value;
-        this._setPitchAndYawFromDirection(this._coreCamera.direction);
+    /** @inheritDoc */
+    public getEye(out?: vec3): vec3 {
+        return this._coreCamera.getEye(out);
     }
 
-    /** Gets the core camera.*/
+    /** Sets the up vector the core camera aims with (the orbit angles stay around world +Y, so this rolls the view). */
+    public setUp(up: vec3): void {
+        this._coreCamera.setUp(up);
+        this._coreCamera.setTarget(this._target);
+    }
+
+    /** @inheritDoc */
+    public getUp(out?: vec3): vec3 {
+        return this._coreCamera.getUp(out);
+    }
+
+    /** The eye: `transform.position` (world space). */
+    private get _eye(): vec3 {
+        return this._coreCamera.transform.position;
+    }
+
+    /** Re-derives pitch and yaw from the eye and target, and aims the core camera at the target. */
+    private _syncFromTransform(): void {
+        vec3.sub(this._tempDirection, this._target, this._eye);
+        if (vec3.sqrLen(this._tempDirection) === 0) {
+            return;
+        }
+        this._setPitchAndYawFromDirection(this._tempDirection);
+        this._coreCamera.setTarget(this._target);
+    }
+
     public get coreCamera(): ICamera | undefined {
         return this._coreCamera;
     }
@@ -184,7 +214,8 @@ export class OrbitCamera implements ICamera {
         vec3.normalize(lookDirection, lookDirection);
         const y = MathHelper.clamp(lookDirection[1], -1, 1);
         this._pitch = -this._pitchClamp(Math.asin(y));
-        this._yaw = -Math.atan2(lookDirection[0], lookDirection[2]);
+        // World direction; the orbit angles keep their original z-flipped convention.
+        this._yaw = -Math.atan2(lookDirection[0], 0 - lookDirection[2]);
     }
 
     private _calculateOrbitMovement() {
@@ -192,7 +223,7 @@ export class OrbitCamera implements ICamera {
         this._pitch = this._pitchClamp(this._pitch);
 
         // Convert spherical coordinates to Cartesian
-        vec3.sub(this._tempVec3, this._coreCamera.target, this._coreCamera.eye);
+        vec3.sub(this._tempVec3, this._target, this._eye);
         const radius = vec3.len(this._tempVec3);
 
         const sinPitch = Math.sin(this._pitch);
@@ -204,8 +235,9 @@ export class OrbitCamera implements ICamera {
 
         this._tempVec3[0] = x;
         this._tempVec3[1] = y;
-        this._tempVec3[2] = -z;
-        vec3.add(this._coreCamera.eye, this._coreCamera.target, this._tempVec3);
+        this._tempVec3[2] = z;
+        vec3.add(this._eye, this._target, this._tempVec3);
+        this._coreCamera.setTarget(this._target);
     }
 
     /**
@@ -267,11 +299,11 @@ export class OrbitCamera implements ICamera {
         }
 
         // Find the current distance.
-        vec3.copy(this._tempDirection, this.direction);
+        vec3.sub(this._tempDirection, this._target, this._eye);
 
         // Find the next eye position.
         vec3.normalize(this._tempDirection, this._tempDirection);
-        vec3.copy(this._tempNextEye, this.eye);
+        vec3.copy(this._tempNextEye, this._eye);
 
         if (diff < 0) {
             vec3.scale(this._tempVec3, this._tempDirection, this.pinchSpeed * deltaTime);
@@ -282,8 +314,8 @@ export class OrbitCamera implements ICamera {
         }
 
         // Find the new potential length.
-        vec3.sub(this._tempNextDirection, this.target, this._tempNextEye);
-        const nextLength = this._tempNextDirection.length;
+        vec3.sub(this._tempNextDirection, this._target, this._tempNextEye);
+        const nextLength = vec3.len(this._tempNextDirection);
         vec3.normalize(this._tempNextDirection, this._tempNextDirection);
 
         // Difference between next direction and direction.
@@ -298,8 +330,8 @@ export class OrbitCamera implements ICamera {
             return;
         }
 
-        vec3.copy(this._coreCamera.eye, this._tempNextEye);
-        this._setPitchAndYawFromDirection(this._coreCamera.direction);
+        vec3.copy(this._eye, this._tempNextEye);
+        this._syncFromTransform();
     }
 
     /** Handles forward/backward movement */
@@ -312,7 +344,7 @@ export class OrbitCamera implements ICamera {
         }
 
         // Find the current distance.
-        vec3.copy(this._tempDirection, this.direction);
+        vec3.sub(this._tempDirection, this._target, this._eye);
         const distance = vec3.len(this._tempDirection);
 
         // Map it to [1,0.1f] space.
@@ -331,7 +363,7 @@ export class OrbitCamera implements ICamera {
 
         // Find the next eye position.
         vec3.normalize(this._tempDirection, this._tempDirection);
-        vec3.copy(this._tempNextEye, this.eye);
+        vec3.copy(this._tempNextEye, this._eye);
 
         if (mouseScrollPos > 0) {
             vec3.scale(this._tempVec3, this._tempDirection, trueScrollSpeed * deltaTime);
@@ -342,8 +374,8 @@ export class OrbitCamera implements ICamera {
         }
 
         // Find the new potential length.
-        vec3.sub(this._tempNextDirection, this.target, this._tempNextEye);
-        const nextLength = this._tempNextDirection.length;
+        vec3.sub(this._tempNextDirection, this._target, this._tempNextEye);
+        const nextLength = vec3.len(this._tempNextDirection);
         vec3.normalize(this._tempNextDirection, this._tempNextDirection);
 
         // Difference between next direction and direction.
@@ -358,8 +390,8 @@ export class OrbitCamera implements ICamera {
             return;
         }
 
-        vec3.copy(this._coreCamera.eye, this._tempNextEye);
-        this._setPitchAndYawFromDirection(this._coreCamera.direction);
+        vec3.copy(this._eye, this._tempNextEye);
+        this._syncFromTransform();
     }
 
     /** @inheritDoc */
@@ -392,6 +424,7 @@ export class OrbitCamera implements ICamera {
             }
         }
 
+        this._coreCamera.setTarget(this._target);
         this._coreCamera.update(time);
     }
 

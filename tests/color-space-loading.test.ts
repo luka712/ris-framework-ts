@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { TextureUsage } from "../src/api/rendering/texture/TextureUsage.ts";
 import { KtxTranscodeFormat } from "ris-ktx2";
 import { ContentManager } from "../src/api/content/ContentManager.ts";
 import { ColorSpace, TextureFormat, TextureUtilities } from "../src/index.ts";
@@ -63,7 +64,7 @@ describe("texture descriptor pass-through and PVRTC", () => {
         renderer.colorSpace = ColorSpace.SRGB;
         const content = new ContentManager(framework, {} as IShaderModuleLoader);
 
-        await content.loadTexture2DAsync("a.png", { label: "albedo", textureUsage: 0x14 });
+        await content.loadTexture2DAsync("a.png", { label: "albedo", textureUsage: 0x14 as TextureUsage });
         const args = create.mock.calls[0] as unknown[];
         expect(args[4]).toBe("albedo");
         expect(args[5]).toBe(0x14);

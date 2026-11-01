@@ -17,13 +17,17 @@ Compared with `main` (0.1.0).
 - Render pipelines throw when no model buffer is passed.
 - Requires `ris-ktx2` 0.2.
 - `TextureDescriptor` class is replaced by the `ITextureDescriptor` interface; all fields are optional and factories fill in defaults.
+- `PrimitiveStateDescriptor` class is replaced by the `IPrimitiveStateDescriptor` interface; all fields are optional and default to back-face culled, counter-clockwise triangles.
+- `UnlitMaterialDescriptor` class is replaced by the `IUnlitMaterialDescriptor` interface (all fields optional).
+- Cameras have a `transform`; `eye`, `target` and `up` are now `setEye`/`setTarget`/`setUp` (and getters).
 
 ### Added
 
 - `Scene` with `add`/`remove` for meshes, lights and the camera, plus `SceneMesh` for owning a mesh and its materials.
-- Lights: `AmbientLight`, `DirectionalLight` and `PointLight`.
-- `ForwardBlinnPhongMaterial`, `SpriteMaterial`, and the `ICameraMaterial`/`ILightsMaterial` interfaces.
-- Mesh transforms (`position`, `rotation`, `scale`) and sub meshes (`addSubMesh`, `meshFactory.createWithSubMeshes`).
+- Lights: `AmbientLight`, `DirectionalLight` and `PointLight`, sharing the `ILight` interface. Lights are scene objects with a `transform`: point lights use `setPosition`/`getPosition`, directional lights `setDirection`/`getDirection` (forward is -Z), and parented lights work in world space.
+- `ForwardBlinnPhongMaterial`, `SpriteMaterial`, the `ILightsMaterial` interface, and `IMaterial.camera` (materials bind the camera buffers they use).
+- `TransformNode` (with a `Node` parent/child hierarchy), `ISceneObject`, and `scene.nodes`; renderable meshes get their transform from `mesh.transform`.
+- Sub meshes (`addSubMesh`, `meshFactory.createWithSubMeshes`).
 - OBJ/MTL loading through `framework.objLoader`, `ObjParser`, and `content.loadMeshAsync`, `loadUnlitMeshAsync` and `loadBlinnPhongMeshAsync`.
 - `geometryBuilder.create(descriptor)` and the exported `BaseGeometry`.
 - sRGB compressed texture formats (BC1, BC3, BC7, ETC2), with KTX2 loading choosing sRGB automatically.
@@ -40,6 +44,7 @@ Compared with `main` (0.1.0).
 
 ### Fixed
 
+- `OrbitCamera` zoom now checks the real eye-to-target distance against the near and far planes.
 - Sprites rendered white because of a stray value in the sprite shader.
 - The orthographic camera's default eye was on the wrong side (z = -1).
 - A second `Framework` instance reused the default texture and anisotropic-filtering extension from the first.

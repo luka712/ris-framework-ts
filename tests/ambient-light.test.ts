@@ -34,14 +34,14 @@ describe("light classes", () => {
         const light = new DirectionalLight();
         expect([...light.color]).toEqual([1, 1, 1, 1]);
         expect(light.intensity).toBe(1);
-        expect([...light.direction]).toEqual([0, -1, 0]);
+        Array.from(light.getDirection()).forEach((v, i) => expect(v).toBeCloseTo([0, -1, 0][i], 6));
     });
 
     it("PointLight defaults to white at the origin with the default attenuation", () => {
         const light = new PointLight();
         expect([...light.color]).toEqual([1, 1, 1, 1]);
         expect(light.intensity).toBe(1);
-        expect([...light.position]).toEqual([0, 0, 0]);
+        expect([...light.getPosition()]).toEqual([0, 0, 0]);
         expect([light.constant, light.linear, light.quadratic])
             .toEqual([PointLight.DEFAULT_CONSTANT, PointLight.DEFAULT_LINEAR, PointLight.DEFAULT_QUADRATIC]);
     });
@@ -55,11 +55,11 @@ describe("light classes", () => {
 
         const light = new PointLight({ color, position });
         expect(light.color).not.toBe(color);
-        expect(light.position).not.toBe(position);
+        expect(light.transform.position).not.toBe(position);
         color.r = 1;
         position[0] = 9;
         expect(light.color.r).toBeCloseTo(0.1);
-        expect(light.position[0]).toBe(1);
+        expect(light.getPosition()[0]).toBe(1);
     });
 });
 
@@ -153,7 +153,7 @@ describe("WebGlLightsBuffer", () => {
         lights.update();
         expect(buffer.update).toHaveBeenCalledTimes(3);
 
-        point.position = [4, 5, 6];
+        point.setPosition([4, 5, 6]);
         lights.update();
         expect(buffer.update).toHaveBeenCalledTimes(4);
         expect((buffer.update.mock.calls[3][0] as number[]).slice(12, 24)).toEqual([1, 0.5, 0.25, 1, 4, 5, 6, 0.35, 0.44, 0, 0, 0]);

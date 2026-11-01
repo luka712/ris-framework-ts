@@ -1,6 +1,8 @@
 import {Color} from "../data/Color.ts";
 import {createLightId} from "./LightId.ts";
 import type {Scene} from "../scene/Scene.ts";
+import type {ILight} from "./ILight.ts";
+import {TransformNode} from "../scene/node/TransformNode.ts";
 
 /** The descriptor for an ambient light. All fields are optional. */
 export interface AmbientLightDescriptor {
@@ -18,11 +20,12 @@ export interface AmbientLightDescriptor {
 }
 
 /**
- * The ambient light. Plain data: it has no GPU resources.
+ * The ambient light. Plain data: it has no GPU resources. It has a {@link transform} (so it can live in `scene.nodes`),
+ * but the transform has no effect on the lighting.
  * Put it into a {@link LightsBuffer} to use it in shaders.
  * @public
  */
-export class AmbientLight {
+export class AmbientLight implements ILight {
 
     /**
      * The constructor.
@@ -38,6 +41,9 @@ export class AmbientLight {
 
         scene?.add(this);
     }
+
+    /** The transform. It has no effect on an ambient light. */
+    public transform: TransformNode = new TransformNode();
 
     /** The unique id of this light. */
     public readonly id: number;

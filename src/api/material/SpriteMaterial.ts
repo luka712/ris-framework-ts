@@ -8,6 +8,7 @@ import type { IFramework } from "../IFramework.ts";
 import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
 import type { ISpriteRenderPipeline } from "../rendering/render-pipelines/ISpriteRenderPipeline.ts";
 import type { IMaterial } from "./IMaterial.ts";
+import type { ICamera } from "../camera/ICamera.ts";
 
 /** The sprite material descriptor. */
 export interface SpriteMaterialDescriptor {
@@ -26,6 +27,9 @@ export interface SpriteMaterialDescriptor {
  * The sprite material.
  */
 export class SpriteMaterial implements IMaterial {
+
+    /** The camera. Stored only: sprites render in screen space and use no camera buffers. */
+    public camera?: ICamera;
 
     private readonly _renderPipeline: ISpriteRenderPipeline;
 

@@ -53,13 +53,15 @@ const scene = new Scene(framework);
 // Passing the scene makes this the scene's camera.
 const camera = framework.cameraFactory.createPerspectiveCamera({
     aspectRatio: canvas.width / canvas.height,
-    eye: [0, 0, 3],
+    position: [0, 0, 3], // world position; aims at `target` (default origin). Later: camera.setEye(...), setTarget(...), setUp(...)
 }, scene);
 
 scene.activeAmbientLight.color = new Color(0.4, 0.4, 0.4);
 // Lights take an optional scene; passing it adds them.
 new DirectionalLight({ color: new Color(1, 1, 1), intensity: 0.8, direction: [-0.4, -0.6, 1] }, scene);
-new PointLight({ color: new Color(1, 0.5, 0.2), intensity: 1.2, linear: 0.35, quadratic: 0.44 }, scene);
+const lamp = new PointLight({ color: new Color(1, 0.5, 0.2), intensity: 1.2, linear: 0.35, quadratic: 0.44 }, scene);
+// Lights are scene objects: position and direction live in light.transform.
+lamp.setPosition([0, 2, 0]);
 
 framework.addOnUpdateListener(time => {
     camera.update(time);

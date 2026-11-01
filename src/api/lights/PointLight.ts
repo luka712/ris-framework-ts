@@ -2,6 +2,9 @@ import {vec3} from "gl-matrix";
 import {Color} from "../data/Color.ts";
 import {createLightId} from "./LightId.ts";
 import type {Scene} from "../scene/Scene.ts";
+import type {ILight} from "./ILight.ts";
+import {TransformNode} from "../scene/node/TransformNode.ts";
+import {CameraTransformUtilities} from "../camera/CameraTransformUtilities.ts";
 
 /** The descriptor for a point light. All fields are optional. */
 export interface PointLightDescriptor {
@@ -17,7 +20,7 @@ export interface PointLightDescriptor {
     /** Multiplies the colour. Defaults to 1. */
     intensity?: number;
 
-    /** World-space position. Defaults to the origin. */
+    /** The initial world position (see {@link PointLight.setPosition}). Defaults to the origin. */
     position?: vec3;
 
     /** Constant attenuation term. Defaults to 1. */
@@ -32,10 +35,11 @@ export interface PointLightDescriptor {
 
 /**
  * The point light. Plain data: it has no GPU resources.
+ * Its position is the world position of its {@link transform}.
  * Attenuation is `1 / (constant + linear * d + quadratic * d²)` for distance `d`.
  * @public
  */
-export class PointLight {
+export class PointLight implements ILight {
 
     /** The default constant attenuation. */
     public static readonly DEFAULT_CONSTANT = 1;
@@ -57,7 +61,7 @@ export class PointLight {
         this.name = descriptor?.name;
         this.color = descriptor?.color?.copy() ?? Color.white();
         this.intensity = descriptor?.intensity ?? 1;
-        this.position = descriptor?.position ? vec3.clone(descriptor.position) : vec3.create();
+        vec3.copy(this.transform.position, descriptor?.position ?? [0, 0, 0]);
         this.constant = descriptor?.constant ?? PointLight.DEFAULT_CONSTANT;
         this.linear = descriptor?.linear ?? PointLight.DEFAULT_LINEAR;
         this.quadratic = descriptor?.quadratic ?? PointLight.DEFAULT_QUADRATIC;
@@ -77,8 +81,25 @@ export class PointLight {
     /** Multiplies {@link color} when written to the lights buffer. */
     public intensity: number;
 
-    /** World-space position of the light. */
-    public position: vec3;
+    /** The transform. Its world position is the light position. */
+    public transform: TransformNode = new TransformNode();
+
+    /**
+     * Moves the light to a world position (converted into the parent's space when parented).
+     * @param position The world position.
+     */
+    public setPosition(position: vec3): void {
+        CameraTransformUtilities.setWorldPosition(this.transform, position);
+    }
+
+    /**
+     * Gets the world position of the light, read from the transform.
+     * @param out The optional output vector.
+     */
+    public getPosition(out: vec3 = vec3.create()): vec3 {
+        const m = this.transform.modelMatrix;
+        return vec3.set(out, m[12], m[13], m[14]);
+    }
 
     /** Constant attenuation term. */
     public constant: number;
