@@ -2,8 +2,11 @@
 
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+An unreleased version is dated `{{YYYY-MM-DD}}`; the publish pipeline fills in the date when it is merged to `main`.
 
-## [0.2.0] - Unreleased
+## [0.3.0] - {{YYYY-MM-DD}}
+
+## [0.2.0] - 2026-11-01
 
 Compared with `main` (0.1.0).
 
@@ -51,7 +54,7 @@ Compared with `main` (0.1.0).
 - A leftover `debugger` statement in WebGL device initialization.
 - Swapped BC/S3TC compression flags could select BC7 on GPUs without BPTC support.
 
-## [0.1.0]
+## [0.1.0] - 2026-10-08
 
 - Initial release setup. `development` publishes a prerelease on the npm `next` tag. `main` publishes this version on `latest`.
 - The package entry is compiled JavaScript and declarations in `dist`. Consumers import `Framework`, `FrameworkConfiguration`, `TextureSamplerFilteringPreset`, and the types formerly published as `ris-framework-api` from `ris-framework` without compiling this repository. Built-in shaders and the browser KTX2 loader are included in that JavaScript.
