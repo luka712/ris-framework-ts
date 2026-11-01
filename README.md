@@ -36,7 +36,7 @@ framework.renderer.clearColor = Color.cornerFlowerBlue();
 | `canvas` | created and appended | The canvas to render into. |
 | `backBufferSize` | `800 × 600` | Back buffer size. |
 | `textureFiltering` | `BILINEAR` | Default sampler preset. |
-| `textureColorSpace` | `SRGB` | Default texture colour space. |
+| `textureColorSpace` | `LINEAR` | Default texture colour space; switch at runtime with `framework.renderer.colorSpace`. |
 | `useKtx2` | `false` | Creates `framework.ktx2Factory`. |
 | `alpha` | `false` | Whether the back buffer has an alpha channel. |
 | `powerPreference` | `DEFAULT` | GPU preference on multi-GPU systems. |
@@ -60,7 +60,7 @@ scene.activeAmbientLight.color = new Color(0.4, 0.4, 0.4);
 // Lights take an optional scene; passing it adds them.
 new DirectionalLight({ color: new Color(1, 1, 1), intensity: 0.8, direction: [-0.4, -0.6, 1] }, scene);
 const lamp = new PointLight({ color: new Color(1, 0.5, 0.2), intensity: 1.2, linear: 0.35, quadratic: 0.44 }, scene);
-// Lights are scene objects: position and direction live in light.transform.
+// Lights implement ILight and are scene objects: position and direction live in light.transform.
 lamp.setPosition([0, 2, 0]);
 
 framework.addOnUpdateListener(time => {
@@ -76,9 +76,9 @@ framework.addOnRenderListener(() => scene.render());
 
 - `IMesh` / `Mesh` hold geometry and the vertex and index buffers.
 - `IRenderableMesh` / `RenderableMesh` add a material, an index range and sub meshes (`mesh.addSubMesh(material, start, count)` or `meshFactory.createWithSubMeshes`). The root mesh owns the transform and one model buffer, which all its sub meshes share.
-- Transforms: `mesh.position`, `mesh.rotation` (Euler radians, applied Y, then X, then Z) and `mesh.scale`. `mesh.modelMatrix` is recomputed only when one of them changes.
+- Transforms: `mesh.transform` is a `TransformNode` with `position`, `rotation` (Euler radians, applied Y, then X, then Z) and `scale`. `transform.modelMatrix` is recomputed only when one of them changes, and parenting one transform to another (`parent.addChild(child)`) makes it relative to the parent. Meshes, cameras and lights are all scene objects (`ISceneObject`) with a `transform`.
 - `SceneMesh`: `scene.add(mesh)` wraps a renderable mesh in a `SceneMesh`, which owns its materials. `sceneMesh.dispose()` and `scene.dispose()` dispose the mesh and each material once.
-- Materials come from `framework.materialFactory`. They include unlit, `ForwardBlinnPhongMaterial` and `SpriteMaterial`.
+- Materials come from `framework.materialFactory`. They include unlit (`createUnlitMaterial(descriptor?: IUnlitMaterialDescriptor)`), `ForwardBlinnPhongMaterial` and `SpriteMaterial`.
 
 ## Loading OBJ/MTL
 
@@ -111,7 +111,7 @@ const desc: ITextureDescriptor = { generateMipmaps: true, textureFormat: Texture
 const cat = await framework.content.loadTexture2DAsync("/assets/cat.jpg", desc);
 ```
 
-Textures without a format use `RGBA_8_UNORM_SRGB` when `textureColorSpace` is `SRGB` (the default) and `RGBA_8_UNORM` when it is `LINEAR`.
+Textures without a format use `RGBA_8_UNORM` when the colour space is `LINEAR` (the default) and `RGBA_8_UNORM_SRGB` when it is `SRGB`.
 
 Paths ending in `.ktx2` are loaded through `ris-ktx2`.
 
