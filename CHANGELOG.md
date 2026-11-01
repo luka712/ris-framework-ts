@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 An unreleased version is dated `{{YYYY-MM-DD}}`; the publish pipeline fills in the date when it is merged to `main`.
 
+## [0.4.0] - {{YYYY-MM-DD}}
+
 ## [0.3.0] - {{YYYY-MM-DD}}
 
 Compared with 0.2.0.
