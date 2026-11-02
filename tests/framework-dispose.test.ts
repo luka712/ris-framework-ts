@@ -104,14 +104,14 @@ describe("Framework.dispose", () => {
         vi.stubGlobal("cancelAnimationFrame", caf);
         const { framework } = createFramework("x");
         const tick = vi.fn();
-        framework.windowManager.addUpdateListener(tick);
-        framework.windowManager.runEventLoop();
+        framework.canvasManager.addUpdateListener(tick);
+        framework.canvasManager.runEventLoop();
         expect(tick).toHaveBeenCalledOnce();
 
         framework.dispose();
         framework.dispose();
         expect(caf).toHaveBeenCalledExactlyOnceWith(7);
-        framework.windowManager.runEventLoop();
+        framework.canvasManager.runEventLoop();
         expect(tick).toHaveBeenCalledOnce();
         vi.unstubAllGlobals();
     });

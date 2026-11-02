@@ -43,10 +43,8 @@ export interface IGraphicsDevice extends IDisposable {
      */
     readonly defaultPrimitiveState: IPrimitiveState;
 
-    /**
-     * Initializes the graphics device.
-     */
-    initialize(): void;
+    /** Initializes the graphics device. */
+    initializeAsync(): Promise<void>;
 
     /**
      * Sets up the debug callback for the graphics device.
@@ -81,12 +79,13 @@ export interface IGraphicsDevice extends IDisposable {
     createRenderPass(descriptor: RenderPassDescriptor): IRenderPass;
 
     /**
-     * // TODO: fix this for window.
      * Creates a swap chain for the graphics device.
      * The swap chain is used to present the rendered image to the screen.
+     * @param canvas The canvas to present to (C# `IWindow`).
+     * @param swapChainDescription The swap chain descriptor.
      * @returns The swap chain instance.
      */
-    createSwapChain(window: any, swapChainDescription: SwapChainDescriptor): ISwapChain;
+    createSwapChain(canvas: HTMLCanvasElement, swapChainDescription: SwapChainDescriptor): ISwapChain;
 
     /**
      * Pushes a debug group with the specified name onto the graphics device's debug stack.

@@ -21,7 +21,7 @@ export class WebGlRenderer extends ARenderer {
 
   /** @inheritdoc */
   protected createGraphicsDevice(): IGraphicsDevice {
-    return new WebGlGraphicsDevice(this._framework.windowManager, {
+    return new WebGlGraphicsDevice(this._framework.canvasManager, {
       samplerFilteringPreset: this._renderConfiguration.textureFiltering,
       alpha: this._renderConfiguration.alpha,
       powerPreference: this._renderConfiguration.powerPreference,

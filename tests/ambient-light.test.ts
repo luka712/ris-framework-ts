@@ -92,10 +92,10 @@ describe("WebGlLightsBuffer", () => {
 
         const data = Array.from(createUniformBuffer.mock.calls[0][0]);
         expect(data).toHaveLength(4 + 8 + 2 * 12);
-        expect(data.slice(12)).toEqual([
+        expect(Array.from(data.slice(12))).toEqual(Array.from(new Float32Array([
             1, 0.5, 0.25, 1, 1, 2, 3, 0.35, 0.44, 0, 0, 0,
             0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]);
+        ])));
     });
 
     it("writes every light colour premultiplied by its intensity", () => {
@@ -109,9 +109,9 @@ describe("WebGlLightsBuffer", () => {
         });
 
         const data = Array.from(createUniformBuffer.mock.calls[0][0]);
-        expect(data.slice(0, 3)).toEqual([1, 0.5, 2]);
-        expect(data.slice(4, 7)).toEqual([0.5, 0.25, 0.125]);
-        expect(data.slice(12, 15)).toEqual([2, 2, 2]);
+        expect(Array.from(data.slice(0, 3))).toEqual([1, 0.5, 2]);
+        expect(Array.from(data.slice(4, 7))).toEqual([0.5, 0.25, 0.125]);
+        expect(Array.from(data.slice(12, 15))).toEqual([2, 2, 2]);
     });
 
     it("defaults to a black ambient light and the shader's light counts", () => {
@@ -126,7 +126,7 @@ describe("WebGlLightsBuffer", () => {
         expect(data.slice(0, directionalEnd).every(v => v === 0)).toBe(true);
         // Empty point slots are black with constant attenuation 1 (no division by zero in the shader).
         for (let i = 0; i < DEFAULT_POINT_LIGHTS_COUNT; i++) {
-            expect(data.slice(directionalEnd + 12 * i, directionalEnd + 12 * (i + 1))).toEqual([0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]);
+            expect(Array.from(data.slice(directionalEnd + 12 * i, directionalEnd + 12 * (i + 1)))).toEqual([0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]);
         }
     });
 
@@ -146,7 +146,7 @@ describe("WebGlLightsBuffer", () => {
         lights.ambientLight.intensity = 2;
         lights.update();
         expect(buffer.update).toHaveBeenCalledTimes(2);
-        expect((buffer.update.mock.calls[1][0] as number[]).slice(0, 4)).toEqual([1, 1, 1, 0]);
+        expect(Array.from((buffer.update.mock.calls[1][0] as number[]).slice(0, 4))).toEqual([1, 1, 1, 0]);
 
         const point = lamp();
         lights.add(point);
@@ -156,7 +156,7 @@ describe("WebGlLightsBuffer", () => {
         point.setPosition([4, 5, 6]);
         lights.update();
         expect(buffer.update).toHaveBeenCalledTimes(4);
-        expect((buffer.update.mock.calls[3][0] as number[]).slice(12, 24)).toEqual([1, 0.5, 0.25, 1, 4, 5, 6, 0.35, 0.44, 0, 0, 0]);
+        expect(Array.from((buffer.update.mock.calls[3][0] as number[]).slice(12, 24))).toEqual(Array.from(new Float32Array([1, 0.5, 0.25, 1, 4, 5, 6, 0.35, 0.44, 0, 0, 0])));
     });
 
     it("replaces the ambient light through its setter", () => {
@@ -167,7 +167,7 @@ describe("WebGlLightsBuffer", () => {
         lights.ambientLight = ambient;
         lights.update();
         expect(lights.ambientLight).toBe(ambient);
-        expect(buffer.update.mock.calls[0][0]).toEqual([0.25, 0.25, 0.25, 0]);
+        expect(Array.from(buffer.update.mock.calls[0][0])).toEqual([0.25, 0.25, 0.25, 0]);
     });
 
     it("adds and removes lights by kind; adding twice is a no-op", () => {
@@ -188,7 +188,7 @@ describe("WebGlLightsBuffer", () => {
         expect(lights.directionalLights).toEqual([]);
         lights.update();
         // The freed slot is written as black again.
-        expect((buffer.update.mock.calls[1][0] as number[]).slice(4, 12)).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
+        expect(Array.from((buffer.update.mock.calls[1][0] as number[]).slice(4, 12))).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
     });
 
     it("throws a clear error when a kind's slots are full", () => {

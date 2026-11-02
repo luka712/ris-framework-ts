@@ -96,6 +96,10 @@ export interface IRenderer {
      * The new size of the renderer.
      */
     removeOnResizedListener(event: (sender: any, e: vec2) => void): void;
+
+    /** Initializes the renderer asynchronously. */
+    initializeAsync(): Promise<void>;
+
     /**
      * After initialization.
      */

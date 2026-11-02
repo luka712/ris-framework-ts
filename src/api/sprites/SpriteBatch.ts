@@ -128,7 +128,7 @@ export class SpriteBatch implements ISpriteBatch {
         this._currentSampler = sampler ?? this._framework.graphicsDevice.defaultTextureSampler;
 
         if (projectionViewMatrix) {
-            this._currentProjectionViewBuffer.update(projectionViewMatrix);
+            this._currentProjectionViewBuffer.update(projectionViewMatrix as Float32Array);
         }
 
         for (const texSamplerDrawableKvp of this._spriteBatchDrawables) {

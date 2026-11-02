@@ -1,5 +1,4 @@
 import {WebGlAmbientLightFactory} from "./webgl/lights/WebGlAmbientLightFactory.ts";
-import {WindowManager} from "./api/window/WindowManager.ts";
 import {GeometryBuilder} from "./api/geometry/GeometryBuilder.ts";
 import {ContentManager} from "./api/content/ContentManager.ts";
 import {ObjLoader} from "./api/loaders/ObjLoader.ts";
@@ -29,7 +28,7 @@ import {
     type ISpriteBatch,
     type ITextureFactory,
     type ITimeManager,
-    type IWindowManager,
+    type ICanvasManager,
     MaterialFactory,
     MeshFactory,
     RenderingBackend,
@@ -47,7 +46,6 @@ import type {IKtx2Factory} from "ris-ktx2";
 import {Ktx2Factory} from "ris-ktx2";
 import {PowerPreferenceType} from "./api/rendering/PowerPreference.ts";
 import {vec2} from "gl-matrix";
-import {ARenderer} from "./core/rendering/ARenderer.ts";
 import {WebGpuRenderer} from "./webgpu/WebGpuRenderer.ts";
 import {WebGpuTextureFactory} from "./webgpu/texture/WebGpuTextureFactory.ts";
 import {WebGpuRenderPipelineFactory} from "./webgpu/render-pipelines/WebGpuRenderPipelineFactory.ts";
@@ -55,6 +53,7 @@ import {WebGpuShaderModuleLoader} from "./webgpu/shader/WebGpuShaderModuleLoader
 import {WebGpuBuffersFactory} from "./webgpu/buffers/WebGpuBuffersFactory.ts";
 import {WebGpuTexture2D} from "./webgpu/texture/WebGpuTexture2D.ts";
 import {ColorSpace} from "./api/rendering/enums.ts";
+import { CanvasManager } from "./api/canvas/CanvasManager.ts";
 
 /** The Ris framework */
 export class Framework implements IFramework {
@@ -86,13 +85,13 @@ export class Framework implements IFramework {
             this._configuration.backBufferSize = vec2.fromValues(800, 600);
         }
 
-        // Without a canvas, WindowManager creates one and appends it to document.body.
+        // Without a canvas, CanvasManager creates one and appends it to document.body.
         if(!this._configuration.canvas){
             console.warn("Canvas not provided. Creating canvas and appending it to document.body.")
         }
         this._configuration.backBufferSize = this._configuration.backBufferSize ?? vec2.fromValues(800, 600);
 
-        this.windowManager = new WindowManager(this._configuration.canvas ?? null);
+        this.canvasManager = new CanvasManager(this._configuration.canvas ?? null);
 
         // Services are created here and get their dependencies through their constructors.
         this._rendererConfiguration  = {
@@ -113,7 +112,6 @@ export class Framework implements IFramework {
             console.warn("WebGPU was requested, but navigator.gpu is missing. Falling back to WebGL.");
             backend = RenderingBackend.WEB_GL;
         }
-        this.renderingBackend = backend;
         this._setupBackendServices(backend);
 
         this._geometryBuilder = new GeometryBuilder();
@@ -136,7 +134,6 @@ export class Framework implements IFramework {
     /** @inheritDoc */
     public readonly imageLoader: IImageLoader;
 
-    renderingBackend: RenderingBackend;
 
     /** @inheritDoc */
     public readonly imageProcessor :IImageProcessor;
@@ -151,7 +148,6 @@ export class Framework implements IFramework {
      * @param backend WEB_GL or WEB_GPU.
      */
     private _setupBackendServices(backend: RenderingBackend): void {
-        this.renderingBackend = backend;
         if (backend === RenderingBackend.WEB_GPU) {
             this._renderer = new WebGpuRenderer(this, this._rendererConfiguration);
             this._textureFactory = new WebGpuTextureFactory(this);
@@ -241,7 +237,7 @@ export class Framework implements IFramework {
     }
 
     /** @inheritdoc */
-    public readonly windowManager: IWindowManager;
+    public readonly canvasManager: ICanvasManager;
 
     /** @inheritdoc */
     public get textureFactory(): ITextureFactory {
@@ -278,36 +274,11 @@ export class Framework implements IFramework {
     /** @inheritDoc */
     public readonly input: IInputManager;
 
-    /** @inheritdoc */
-    public initialize(): void {
-
-        // WebGPU needs an async device request; initialize() keeps the synchronous WebGL path.
-        if (this.renderingBackend === RenderingBackend.WEB_GPU) {
-            console.warn("WebGPU needs Framework.initializeAsync(). initialize() falls back to WebGL.");
-            this._setupBackendServices(RenderingBackend.WEB_GL);
-        }
-
-        if(this.ktx2Factory) {
-            this.ktx2Factory.initializeAsync();
-        }
-
-        this._initializeCore();
-    }
-
-    /**
-     * Initializes the framework and starts the event loop. Required for WebGPU, which requests its adapter
-     * and device asynchronously; for WebGL it behaves like {@link initialize}.
-     * If the WebGPU device cannot be acquired, the framework falls back to WebGL with a warning.
-     */
+   
+    /** @inheritdoc */ 
     public async initializeAsync(): Promise<void> {
-        if (this.renderingBackend === RenderingBackend.WEB_GPU) {
-            try {
-                await (this._renderer as WebGpuRenderer).acquireDeviceAsync();
-            } catch (error) {
-                console.warn(`WebGPU could not be initialized (${(error as Error)?.message ?? error}). Falling back to WebGL.`);
-                this._setupBackendServices(RenderingBackend.WEB_GL);
-            }
-        }
+       
+        await this.renderer.initializeAsync();
 
         if (this.ktx2Factory) {
             this.ktx2Factory.initializeAsync();
@@ -317,7 +288,6 @@ export class Framework implements IFramework {
     }
 
     private _initializeCore(): void {
-        (this._renderer as ARenderer).initialize();
         this.spriteBatch.initialize();
         this.input.initialize();
 
@@ -335,7 +305,7 @@ export class Framework implements IFramework {
 
         this.renderer.afterInitialize();
 
-        this.windowManager.addUpdateListener(() => {
+        this.canvasManager.addUpdateListener(() => {
             // Update logic here
             this.timeManager.frameStart();
             this.input.update();
@@ -346,7 +316,7 @@ export class Framework implements IFramework {
 
             this.input.afterUpdate();
         });
-        this.windowManager.addRenderListener(() => {
+        this.canvasManager.addRenderListener(() => {
             this.renderer.beginRenderPass();
 
             // Invoke render listeners.
@@ -357,7 +327,7 @@ export class Framework implements IFramework {
             this.spriteBatch.frameEnd();
             this.renderer.endRenderPass();
         });
-        this.windowManager.runEventLoop();
+        this.canvasManager.runEventLoop();
     }
 
     /**
@@ -371,7 +341,7 @@ export class Framework implements IFramework {
         }
         this._disposed = true;
 
-        this.windowManager.dispose();
+        this.canvasManager.dispose();
         (this.input as Partial<IDisposable>).dispose?.();
 
         this._onLoadContentListeners.length = 0;

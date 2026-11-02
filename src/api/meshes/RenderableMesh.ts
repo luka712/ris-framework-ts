@@ -127,7 +127,7 @@ export class RenderableMesh extends Mesh implements IRenderableMesh {
         const matrix = root.transform.modelMatrix;
         if (!mat4.exactEquals(root._uploadedMatrix, matrix)) {
             mat4.copy(root._uploadedMatrix, matrix);
-            buffer.update(root._uploadedMatrix);
+            buffer.update(root._uploadedMatrix as Float32Array);
         }
         return buffer;
     }

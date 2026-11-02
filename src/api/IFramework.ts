@@ -15,7 +15,7 @@ import type { IMaterialFactory } from "./material/IMaterialFactory.ts";
 import type { AmbientLightFactory } from "./lights/LightFactory.ts";
 import type { ITimeManager } from "./time/ITimeManager.ts";
 import type { IInputManager } from "./input/IInputManager.ts";
-import type { IWindowManager } from "./window/IWindowManager.ts";
+import type { ICanvasManager } from "./canvas/ICanvasManager.ts";
 import {GameTime} from "./time/GameTime.ts";
 import type { IImageProcessor } from "./image/IImageProcessor.ts";
 import type { IKtx2Factory } from "ris-ktx2";
@@ -72,10 +72,6 @@ export interface IFramework extends IDisposable {
      */
     readonly imageLoader: IImageLoader;
 
-    /**
-     * The used rendering backend.
-     */
-    readonly renderingBackend: RenderingBackend;
 
     /**
      * The sprite batches.
@@ -155,7 +151,7 @@ export interface IFramework extends IDisposable {
     readonly input: IInputManager;
 
     /** The window manager. */
-    readonly windowManager: IWindowManager;
+    readonly canvasManager: ICanvasManager;
 
     /** The image processor. */
     readonly imageProcessor: IImageProcessor;
@@ -198,13 +194,7 @@ export interface IFramework extends IDisposable {
      */
     removeOnRenderListener(event: () => void): void;
 
-    /** Initializes the framework. */
-    initialize(): void;
-
-    /**
-     * Initializes the framework asynchronously and starts the event loop.
-     * Required for the WebGPU backend; for WebGL it behaves like {@link initialize}.
-     */
+    /** Initializes the framework asynchronously and starts the event loop. */
     initializeAsync(): Promise<void>;
 
 }

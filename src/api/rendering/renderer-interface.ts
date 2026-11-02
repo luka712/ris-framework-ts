@@ -40,10 +40,6 @@ export interface ITempRenderer extends IRenderer {
      */
     backBufferMatchesSwapChain: boolean;
 
-    /**
-     * Initializes the renderer.
-     */
-    initialize(): void;
 
     /**
      * Performs any additional initialization steps after the main initialization is complete.

@@ -1,10 +1,10 @@
 /**/import type { vec2 } from "gl-matrix";
-import {WindowBounds, type IWindowManager} from "../index.ts";
+import {CanvasBounds, type ICanvasManager} from "../index.ts";
 
 /**
- * The implementation of the IWindowManager interface.
+ * The implementation of the ICanvasManager interface.
  */
-export class WindowManager implements IWindowManager {
+export class CanvasManager implements ICanvasManager {
   private readonly _canvas: HTMLCanvasElement;
   private readonly _updateCallbacks: Array<() => void> = [];
   private readonly _renderCallbacks: Array<() => void> = [];
@@ -13,7 +13,7 @@ export class WindowManager implements IWindowManager {
   private _disposed = false;
 
   /**
-   * The constructor for the WindowManager class.
+   * The constructor for the CanvasManager class.
    * @param canvas An optional HTMLCanvasElement to associate with the window manager. If `null`, the window manager creates its own canvas and appends it to `document.body`.
    */
   public constructor(canvas: HTMLCanvasElement | null = null) {
@@ -25,7 +25,7 @@ export class WindowManager implements IWindowManager {
   }
 
   handleSwapChain = true;
-    windowBounds = new WindowBounds();
+    canvasBounds = new CanvasBounds();
     title = "";
     addUpdateListener(event: () => void): void {
         this._updateCallbacks.push(event);
@@ -45,18 +45,13 @@ export class WindowManager implements IWindowManager {
             this._renderCallbacks.splice(index, 1);
         }
     }
-    addOnResizeListener(_event: (arg1: IWindowManager, arg2: vec2) => void): void {
+    addOnResizeListener(_event: (arg1: ICanvasManager, arg2: vec2) => void): void {
         throw new Error("Method not implemented.");
     }
-    removeOnResizeListener(_event: (arg1: IWindowManager, arg2: vec2) => void): void {
+    removeOnResizeListener(_event: (arg1: ICanvasManager, arg2: vec2) => void): void {
         throw new Error("Method not implemented.");
     }
-    initializeForWebGPU(): void {
-        throw new Error("Method not implemented.");
-    }
-    initializeForWebGl(): void {
-        throw new Error("Method not implemented.");
-    }
+
     /** Stops the event loop, drops all callbacks and removes the canvas when this manager created it. */
     dispose(): void {
         if (this._disposed) {

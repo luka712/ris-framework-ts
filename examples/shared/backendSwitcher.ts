@@ -77,13 +77,13 @@ export function runWithBackendSwitcher(canvasSelector: string, setup: (context: 
         if (backend === RenderingBackend.WEB_GPU) {
             await framework.initializeAsync();
         } else {
-            framework.initialize();
+            framework.initializeAsync();
         }
         if (run !== generation) {
             return;
         }
         current.afterInitialize?.();
-        updateUi(framework.renderingBackend);
+        updateUi(framework.renderer.backend);
     };
 
     const stop = () => {

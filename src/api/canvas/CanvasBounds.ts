@@ -1,9 +1,9 @@
 /**
- * WindowBounds represents the width and height of a window.
+ * CanvasBounds represents the width and height of a canvas.
  * @param width - The width of a window. By default, it is 800.
  * @param height - The height of a window. By default, it is 600.
  */
-export class WindowBounds {
+export class CanvasBounds {
 
     /**
      * Creates window bounds with the given width and height.

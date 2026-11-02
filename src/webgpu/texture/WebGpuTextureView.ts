@@ -1,5 +1,4 @@
 import {type ITextureView, TextureFormat, TextureViewDimension} from "../../api/index.ts";
-import type {GpuTextureView} from "../WebGpuTypes.ts";
 
 /**
  * The WebGPU texture view.
@@ -7,7 +6,7 @@ import type {GpuTextureView} from "../WebGpuTypes.ts";
  */
 export class WebGpuTextureView implements ITextureView {
 
-    private _gpuTextureView: GpuTextureView | null;
+    private _gpuTextureView: GPUTextureView | null;
 
     /**
      * The constructor.
@@ -15,7 +14,7 @@ export class WebGpuTextureView implements ITextureView {
      * @param textureFormat The view format.
      * @param dimension The view dimension.
      */
-    public constructor(gpuTextureView: GpuTextureView, textureFormat: TextureFormat, dimension = TextureViewDimension.DIMENSION_2D) {
+    public constructor(gpuTextureView: GPUTextureView, textureFormat: TextureFormat, dimension = TextureViewDimension.DIMENSION_2D) {
         this._gpuTextureView = gpuTextureView;
         this.textureFormat = textureFormat;
         this.dimension = dimension;
@@ -28,7 +27,7 @@ export class WebGpuTextureView implements ITextureView {
     public readonly dimension: TextureViewDimension;
 
     /** The WebGPU view. */
-    public get gpuTextureView(): GpuTextureView {
+    public get gpuTextureView(): GPUTextureView {
         if (!this._gpuTextureView) {
             throw new Error("WebGpuTextureView: the view is disposed.");
         }

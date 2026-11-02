@@ -5,16 +5,11 @@ import {
     StoreAction,
 } from "../../api/index.ts";
 import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
-import type {
-    GpuCommandEncoder,
-    GpuRenderPassColorAttachment,
-    GpuRenderPassDepthStencilAttachment,
-    GpuRenderPassDescriptor,
-} from "../WebGpuTypes.ts";
 import {WebGpuConverter} from "../utilities/WebGpuConverter.ts";
 import {WebGpuTexture2D} from "../texture/WebGpuTexture2D.ts";
 import {WebGpuTextureView} from "../texture/WebGpuTextureView.ts";
 import type {WebGpuSwapChain} from "../swap-chain/WebGpuSwapChain.ts";
+import {WebGpuUtilities} from "../utilities/WebGpuUtilities.ts";
 
 /**
  * The WebGPU render pass. `beginPass` creates a command encoder and begins a render pass,
@@ -25,7 +20,7 @@ export class WebGpuRenderPass implements IRenderPass {
 
     private readonly _graphicsDevice: WebGpuGraphicsDevice;
     private readonly _descriptor: RenderPassDescriptor;
-    private _commandEncoder: GpuCommandEncoder | null = null;
+    private _commandEncoder: GPUCommandEncoder | null = null;
 
     /**
      * The constructor.
@@ -40,8 +35,8 @@ export class WebGpuRenderPass implements IRenderPass {
         }
     }
 
-    private _buildDescriptor(): GpuRenderPassDescriptor {
-        const colorAttachments: GpuRenderPassColorAttachment[] = this._descriptor.colorAttachments!.map(attachment => {
+    private _buildDescriptor(): GPURenderPassDescriptor {
+        const colorAttachments: GPURenderPassColorAttachment[] = this._descriptor.colorAttachments!.map(attachment => {
             let view;
             if (attachment.swapChain) {
                 view = (attachment.swapChain as WebGpuSwapChain).currentTextureView;
@@ -64,7 +59,7 @@ export class WebGpuRenderPass implements IRenderPass {
             };
         });
 
-        const result: GpuRenderPassDescriptor = {
+        const result: GPURenderPassDescriptor = {
             label: this._descriptor.label,
             colorAttachments,
         };
@@ -73,7 +68,7 @@ export class WebGpuRenderPass implements IRenderPass {
         if (depth && (depth.texture || depth.view)) {
             const texture = depth.texture as WebGpuTexture2D | undefined;
             const format = depth.view?.textureFormat ?? texture!.textureFormat;
-            const attachment: GpuRenderPassDepthStencilAttachment = {
+            const attachment: GPURenderPassDepthStencilAttachment = {
                 view: depth.view ? (depth.view as WebGpuTextureView).gpuTextureView : texture!.gpuDefaultView,
                 depthClearValue: depth.depthClearValue,
                 depthLoadOp: WebGpuConverter.convertLoadAction(depth.depthLoadAction),
@@ -105,7 +100,7 @@ export class WebGpuRenderPass implements IRenderPass {
             throw new Error("WebGpuRenderPass: the pass is already open.");
         }
         const device = this._graphicsDevice.device;
-        this._commandEncoder = device.createCommandEncoder({label: this._descriptor.label});
+        this._commandEncoder = WebGpuUtilities.commandEncoder.create(device, this._descriptor.label);
         this._graphicsDevice.currentRenderPassEncoder = this._commandEncoder.beginRenderPass(this._buildDescriptor());
     }
 
@@ -116,7 +111,7 @@ export class WebGpuRenderPass implements IRenderPass {
         }
         this._graphicsDevice.currentRenderPassEncoder?.end();
         this._graphicsDevice.currentRenderPassEncoder = null;
-        this._graphicsDevice.device.queue.submit([this._commandEncoder.finish()]);
+        WebGpuUtilities.commandEncoder.submit(this._graphicsDevice.device, this._commandEncoder);
         this._commandEncoder = null;
     }
 

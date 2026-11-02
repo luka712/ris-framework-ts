@@ -35,8 +35,8 @@ export class WebGlBuffersFactory implements IBufferFactory {
 
     /** @inheritdoc */
     public createIndexBuffer(data: ArrayLike<number>, label?: string): IIndexBuffer {
-        const buffer = new WebGLIndexBuffer(this._framework, label);
-        buffer.initialize(data);
+        const buffer = new WebGLIndexBuffer(this._framework, data, label);
+        buffer.initialize();
         return buffer;
     }
 

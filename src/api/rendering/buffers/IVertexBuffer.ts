@@ -24,9 +24,9 @@ export interface IVertexBuffer extends IBuffer  {
     /**
      * Update the vertex buffer.
      * @param data - The data to be written to buffer.
-     * @param offset - The offset to write data. By default, 0. This is in bytes of the buffer.
-     * @param length - The length to copy. If 0 or less, entire array is copied.
+     * @param offset - The first element to write, in floats. The data mirrors the buffer, so it is used for both. By default, 0.
+     * @param length - The number of floats to write. If 0 or less, everything after the offset is written.
      */
-    update(data: number[], offset?: number, length?: number): void;
+    update(data: Float32Array, offset?: number, length?: number): void;
 
 }

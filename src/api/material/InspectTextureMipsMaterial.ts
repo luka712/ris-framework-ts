@@ -16,7 +16,7 @@ import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
 export class InspectTextureMipsMaterial {
 
     private readonly _framework: IFramework;
-    private _mipLevel = [0];
+    private _mipLevel = new Float32Array(1);
     /** Created when the model buffer is assigned (the pipeline requires one). */
     private _pipeline?: IInspectTextureMipsRenderPipeline;
     /** Texture and sampler set before the pipeline exists; applied when it is created. */

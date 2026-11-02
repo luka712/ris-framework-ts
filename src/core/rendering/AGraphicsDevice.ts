@@ -84,7 +84,7 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     }
 
     /** @inheritdoc */
-    public initialize(): void {
+    public async initializeAsync(): Promise<void> {
         this._defaultTextureSampler = this.configureAndCreateDefaultSampler();
         this._defaultBlendState = this.createBlendState(new BlendStateDescriptor());
         this._defaultPrimitiveState = this.createPrimitiveState();

@@ -1,37 +1,44 @@
 import {BufferUsage, type IFramework, type IIndexBuffer, IndexBufferType} from "../../api/index.ts";
 import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
-import {GpuBufferUsage, type GpuBuffer, type GpuIndexFormat} from "../WebGpuTypes.ts";
+import { WebGpuUtilities } from "../utilities/WebGpuUtilities.ts";
 
 /**
  * The WebGPU index buffer. Uses uint16 when every index fits, otherwise uint32.
- * The allocation and the write are padded to 4 bytes, because WebGPU requires it (odd uint16 counts).
+ * The allocation and to write are padded to 4 bytes, because WebGPU requires it (odd uint16 counts).
  * @internal
  */
 export class WebGpuIndexBuffer implements IIndexBuffer {
 
     private readonly _graphicsDevice: WebGpuGraphicsDevice;
     private readonly _label?: string;
-    private _type = IndexBufferType.UINT_16;
-    private _elementByteSize = 0;
-    private _indicesCount = 0;
-    private _byteSize = 0;
-    private _gpuBuffer: GpuBuffer | null = null;
+    private _initialData: Uint16Array | Uint32Array | null = null;
+    private readonly _type: IndexBufferType;
+    private readonly _elementByteSize: number;
+    private readonly _indicesCount: number;
+    private readonly _byteSize: number;
+    private _gpuBuffer: GPUBuffer | null = null;
 
     /**
      * The constructor.
      * @param framework The framework.
+     * @param data The index data.
      * @param label The label.
      */
-    public constructor(framework: IFramework, label?: string) {
+    public constructor(framework: IFramework, data: ArrayLike<number>, label?: string) {
         this._graphicsDevice = framework.renderer.graphicsDevice as WebGpuGraphicsDevice;
         this._label = label;
+        this._initialData = WebGpuIndexBuffer._canUseUint16(data) ? new Uint16Array(data) : new Uint32Array(data);
+        this._type = this._initialData instanceof Uint16Array ? IndexBufferType.UINT_16 : IndexBufferType.UINT_32;
+        this._elementByteSize = this._initialData.BYTES_PER_ELEMENT;
+        this._indicesCount = this._initialData.length;
+        this._byteSize = this._initialData.byteLength;
     }
 
     /** @inheritDoc */
-    public readonly usage: BufferUsage = BufferUsage.INDEX;
+    public readonly usage: BufferUsage = BufferUsage.INDEX | BufferUsage.COPY_DST;
 
     /** The WebGPU buffer. */
-    public get gpuBuffer(): GpuBuffer {
+    public get gpuBuffer(): GPUBuffer {
         if (!this._gpuBuffer) {
             throw new Error("WebGpuIndexBuffer: the buffer is not initialized or is disposed.");
         }
@@ -39,7 +46,7 @@ export class WebGpuIndexBuffer implements IIndexBuffer {
     }
 
     /** The WebGPU index format. */
-    public get gpuIndexFormat(): GpuIndexFormat {
+    public get gpuIndexFormat(): GPUIndexFormat {
         return this._type === IndexBufferType.UINT_16 ? "uint16" : "uint32";
     }
 
@@ -84,30 +91,23 @@ export class WebGpuIndexBuffer implements IIndexBuffer {
     }
 
     /** @inheritDoc */
-    public initialize(data: ArrayLike<number>): void {
+    public initialize(): void {
         this._gpuBuffer?.destroy();
-        const use16 = WebGpuIndexBuffer._canUseUint16(data);
-        this._type = use16 ? IndexBufferType.UINT_16 : IndexBufferType.UINT_32;
-        this._elementByteSize = use16 ? 2 : 4;
-        this._indicesCount = data.length;
-        this._byteSize = this._indicesCount * this._elementByteSize;
+        this._gpuBuffer = WebGpuUtilities.buffer.createIndexBufferAsync(this._graphicsDevice.device, this._initialData ?? this._byteSize, this.usage, this._label);
+        this._initialData = null;
+    }
 
-        const padded = Math.max(4, this.paddedByteSize);
-        // Allocate the padded size so the write below can include the padding.
-        const bytes = new ArrayBuffer(padded);
-        if (use16) {
-            new Uint16Array(bytes, 0, data.length).set(data);
-        } else {
-            new Uint32Array(bytes, 0, data.length).set(data);
+    /**
+     * Updates the buffer. The data must use the same index type as the buffer.
+     * @param data The index data.
+     * @param offset The first element to write (in indices).
+     * @param length The number of elements to write; 0 or less writes everything after the offset.
+     */
+    public update(data: Uint16Array | Uint32Array, offset: number = 0, length: number = 0): void {
+        if (data.BYTES_PER_ELEMENT !== this._elementByteSize) {
+            throw new Error("WebGpuIndexBuffer: the data type does not match the index buffer type.");
         }
-
-        const device = this._graphicsDevice.device;
-        this._gpuBuffer = device.createBuffer({
-            label: this._label,
-            size: padded,
-            usage: GpuBufferUsage.INDEX | GpuBufferUsage.COPY_DST,
-        });
-        device.queue.writeBuffer(this._gpuBuffer, 0, bytes, 0, padded);
+        WebGpuUtilities.buffer.writeBuffer(this._graphicsDevice.device.queue, this.gpuBuffer, data, offset, length);
     }
 
     /** @inheritDoc */

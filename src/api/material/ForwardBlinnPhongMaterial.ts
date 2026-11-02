@@ -56,11 +56,11 @@ export class ForwardBlinnPhongMaterial implements IMaterial, ILightsMaterial {
     private _shininessCache: number;
 
     // std140: each vec3 starts on a 16-byte boundary, so pad each colour to 4 floats.
-    private _materialData = [
+    private _materialData = new Float32Array([
         0.1, 0.1, 0.1, 0, // Ambient
         0.8, 0.8, 0.8, 0, // Diffuse
         0.5, 0.5, 0.5, 32, // Specular, shininess (the float fills the vec3's padding)
-    ];
+    ]);
 
     /** Created when the model buffer is assigned (the pipeline requires one). */
     private _pipeline?: IForwardBlinnPhongRenderPipeline;

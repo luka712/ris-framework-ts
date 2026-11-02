@@ -1,7 +1,7 @@
 import {type IFramework, type IShaderModule, ShaderStage} from "../../api/index.ts";
 import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
-import type {GpuShaderModule} from "../WebGpuTypes.ts";
 import {WgslShaderContent} from "./WgslShaderContent.ts";
+import {WebGpuUtilities} from "../utilities/WebGpuUtilities.ts";
 
 /**
  * A WGSL shader module. One module holds both stages (`main_vs` and `main_fs`).
@@ -9,7 +9,7 @@ import {WgslShaderContent} from "./WgslShaderContent.ts";
  */
 export class WebGpuShaderModule implements IShaderModule {
 
-    private _gpuShaderModule: GpuShaderModule | null;
+    private _gpuShaderModule: GPUShaderModule | null;
 
     /**
      * The constructor.
@@ -28,15 +28,8 @@ export class WebGpuShaderModule implements IShaderModule {
             }
         }
         const device = (framework.renderer.graphicsDevice as WebGpuGraphicsDevice).device;
-        this._gpuShaderModule = device.createShaderModule({label: id, code});
+        this._gpuShaderModule = WebGpuUtilities.shaderModule.create(device, code, id);
         this.label = id;
-        this._gpuShaderModule.getCompilationInfo?.().then(info => {
-            for (const message of info.messages) {
-                if (message.type === "error") {
-                    console.error(`WGSL ${id}:${message.lineNum}:${message.linePos} ${message.message}`);
-                }
-            }
-        }).catch(() => { /* ignore */ });
     }
 
     /** The shader id. */
@@ -46,7 +39,7 @@ export class WebGpuShaderModule implements IShaderModule {
     public readonly stages: ShaderStage[] = [ShaderStage.VERTEX, ShaderStage.FRAGMENT];
 
     /** The WebGPU shader module. */
-    public get gpuShaderModule(): GpuShaderModule {
+    public get gpuShaderModule(): GPUShaderModule {
         if (!this._gpuShaderModule) {
             throw new Error("WebGpuShaderModule: the module is disposed.");
         }

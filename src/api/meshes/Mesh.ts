@@ -21,7 +21,7 @@ export class Mesh implements IMesh {
 
     protected _bufferUsage = BufferUsage.VERTEX;
     protected _state = State.CREATED;
-    protected _vertexData?: number[];
+    protected _vertexData?: Float32Array;
     protected _positions?: number[];
     protected _indices?: number[];
     protected _colors?: number[];
@@ -152,7 +152,7 @@ export class Mesh implements IMesh {
 
         // 3 for vertex, 4 for color and 2 for uvs.
         const stride = (3 + 4 + 2) * Float32Array.BYTES_PER_ELEMENT;
-        this._vertexData = new Array((3 + 4 + 2) * vertexCount);
+        this._vertexData = new Float32Array((3 + 4 + 2) * vertexCount);
 
         let vertexIndex = 0;
         let positionsIndex = 0;

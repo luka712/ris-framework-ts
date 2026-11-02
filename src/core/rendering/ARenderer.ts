@@ -9,7 +9,7 @@ import {
     type IRenderPass,
     type ISwapChain,
     type ITexture2D,
-    type IWindowManager,
+    type ICanvasManager,
     RenderingBackend,
     RenderPassColorAttachment,
     RenderPassDepthStencilAttachment,
@@ -29,7 +29,7 @@ export abstract class ARenderer implements ITempRenderer {
      */
     protected _resizeListeners: ((sender: any, size: vec2) => void)[] = [];
 
-    private readonly _windowManager: IWindowManager;
+    private readonly _canvasManager: ICanvasManager;
     private _graphicsDevice: IGraphicsDevice = null!;
     private _preferredDepthStencilFormat: TextureFormat = TextureFormat.DEPTH_24_STENCIL_8;
     private readonly _currentBackBufferSize: vec2 = [0, 0];
@@ -127,9 +127,9 @@ export abstract class ARenderer implements ITempRenderer {
     protected constructor(framework: IFramework, configuration: IRendererConfiguration) {
         this._framework = framework;
         this._renderConfiguration = configuration;
-        this._windowManager = framework.windowManager;
-        this._currentBackBufferSize[0] = this._windowManager.canvas.width;
-        this._currentBackBufferSize[1] = this._windowManager.canvas.height;
+        this._canvasManager = framework.canvasManager;
+        this._currentBackBufferSize[0] = this._canvasManager.canvas.width;
+        this._currentBackBufferSize[1] = this._canvasManager.canvas.height;
         this._colorSpace = configuration.textureColorSpace;
     }
 
@@ -162,11 +162,13 @@ export abstract class ARenderer implements ITempRenderer {
     protected abstract createGraphicsDevice(): IGraphicsDevice;
 
     /** @inheritdoc */
-    public initialize(): void {
+    public async initializeAsync(): Promise<void> {
+
         this._graphicsDevice = this.createGraphicsDevice();
-        this._graphicsDevice.initialize();
+        await this._graphicsDevice.initializeAsync();
+
         this._swapChain = this._graphicsDevice.createSwapChain(
-            this._windowManager.canvas,
+            this._canvasManager.canvas,
             new SwapChainDescriptor());
         // TODO: RESIZE EVENT
 

@@ -64,17 +64,21 @@ export class WebGlUniformBuffer implements IUniformBuffer {
 
 
     /** @inheritdoc */
-    public update(data: number[], offset?: number, length?: number): void {
-        this._gl.bindBuffer(this._gl.UNIFORM_BUFFER, this.glBuffer);
+    public update(data: Float32Array, offset: number = 0, length: number = 0): void {
+        length = length > 0 ? length : data.length - offset;
+        length = Math.min(length, data.length - offset, this._data.length - offset);
+        if (length <= 0) {
+            return;
+        }
 
-        offset = offset ?? 0;
-        length = length ?? this._data.length;
-        for(let i = offset; i < length; i++)
+        for(let i = offset; i < offset + length; i++)
         {
             this._data[i] = data[i];
         }
 
-        this._gl.bufferSubData(this._gl.UNIFORM_BUFFER, offset ?? 0, this._data);
+        this._gl.bindBuffer(this._gl.UNIFORM_BUFFER, this.glBuffer);
+        this._gl.bufferSubData(this._gl.UNIFORM_BUFFER, offset * Float32Array.BYTES_PER_ELEMENT, this._data, offset, length);
+        this._gl.bindBuffer(this._gl.UNIFORM_BUFFER, null);
     }
 
     /** @inheritdoc */

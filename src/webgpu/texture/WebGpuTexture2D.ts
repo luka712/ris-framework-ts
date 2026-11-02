@@ -9,10 +9,10 @@ import {
 } from "../../api/index.ts";
 import {ATexture2D} from "../../core/rendering/texture/texture.ts";
 import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
-import {GpuTextureUsage, type GpuTexture, type GpuTextureView} from "../WebGpuTypes.ts";
 import {WebGpuConverter} from "../utilities/WebGpuConverter.ts";
 import {WebGpuTextureView} from "./WebGpuTextureView.ts";
 import {type ResolvedTextureDescriptor, resolveTextureDescriptor} from "../../core/rendering/texture/TextureDescriptorUtilities.ts";
+import {WebGpuUtilities} from "../utilities/WebGpuUtilities.ts";
 
 /**
  * The WebGPU 2D texture.
@@ -25,8 +25,8 @@ export class WebGpuTexture2D extends ATexture2D {
 
     private readonly _graphicsDevice: WebGpuGraphicsDevice;
     private readonly _image?: HTMLImageElement;
-    private _gpuTexture: GpuTexture | null = null;
-    private _gpuDefaultView: GpuTextureView | null = null;
+    private _gpuTexture: GPUTexture | null = null;
+    private _gpuDefaultView: GPUTextureView | null = null;
 
     /**
      * The constructor.
@@ -41,7 +41,7 @@ export class WebGpuTexture2D extends ATexture2D {
     }
 
     /** The WebGPU texture. */
-    public get gpuTexture(): GpuTexture {
+    public get gpuTexture(): GPUTexture {
         if (!this._gpuTexture) {
             throw new Error("WebGpuTexture2D: the texture is not initialized or is disposed.");
         }
@@ -49,7 +49,7 @@ export class WebGpuTexture2D extends ATexture2D {
     }
 
     /** The default WebGPU view of the whole texture. */
-    public get gpuDefaultView(): GpuTextureView {
+    public get gpuDefaultView(): GPUTextureView {
         if (!this._gpuDefaultView) {
             throw new Error("WebGpuTexture2D: the texture is not initialized or is disposed.");
         }
@@ -76,43 +76,34 @@ export class WebGpuTexture2D extends ATexture2D {
         let usage = WebGpuConverter.convertTextureUsage(this.textureUsage);
         // Uploading needs COPY_DST; copyExternalImageToTexture also needs RENDER_ATTACHMENT.
         if (hasData || this._image) {
-            usage |= GpuTextureUsage.COPY_DST;
+            usage |= GPUTextureUsage.COPY_DST;
         }
         if (this._image) {
-            usage |= GpuTextureUsage.RENDER_ATTACHMENT;
+            usage |= GPUTextureUsage.RENDER_ATTACHMENT;
         }
 
         const device = this._graphicsDevice.device;
-        this._gpuTexture = device.createTexture({
-            label: this.label ?? `WebGpuTexture2D ${this.id}`,
-            size: {width: this.width, height: this.height, depthOrArrayLayers: 1},
-            mipLevelCount: this._mipLevels,
-            format: WebGpuConverter.convertTextureFormat(this.textureFormat),
-            usage,
-        });
+        this._gpuTexture = WebGpuUtilities.texture.create(
+            device, this.width, this.height,
+            WebGpuConverter.convertTextureFormat(this.textureFormat),
+            usage, this._mipLevels, 1,
+            this.label ?? `WebGpuTexture2D ${this.id}`);
 
         if (this._image) {
-            device.queue.copyExternalImageToTexture(
-                {source: this._image},
-                {texture: this._gpuTexture},
-                {width: this.width, height: this.height});
+            WebGpuUtilities.texture.writeImageToTexture(device.queue, this._gpuTexture, this._image, this.width, this.height);
         } else if (hasData) {
             let width = this.width;
             let height = this.height;
             for (let level = 0; level < this._data!.length; level++) {
                 const levelData = this._data![level];
                 const bytesPerPixel = TextureUtilities.getVRamSize(this.textureFormat, 1, 1);
-                device.queue.writeTexture(
-                    {texture: this._gpuTexture, mipLevel: level},
-                    levelData,
-                    {bytesPerRow: width * bytesPerPixel, rowsPerImage: height},
-                    {width, height});
+                WebGpuUtilities.texture.writeToTexture(device.queue, this._gpuTexture, levelData, width, height, bytesPerPixel, level);
                 width = Math.max(1, Math.floor(width / 2));
                 height = Math.max(1, Math.floor(height / 2));
             }
         }
 
-        this._gpuDefaultView = this._gpuTexture.createView({label: `${this.label ?? "WebGpuTexture2D"} default view`});
+        this._gpuDefaultView = WebGpuUtilities.textureView.create(this._gpuTexture, {label: `${this.label ?? "WebGpuTexture2D"} default view`});
         // ATexture2D declares the default view readonly and sets it to null; fill it in here.
         (this as { defaultTextureView: ITextureView }).defaultTextureView =
             new WebGpuTextureView(this._gpuDefaultView, this.textureFormat);
@@ -136,11 +127,8 @@ export class WebGpuTexture2D extends ATexture2D {
         if (descriptor.dimension !== TextureViewDimension.DIMENSION_2D) {
             throw new Error("Only 2D texture views are implemented for WebGPU.");
         }
-        const view = this.gpuTexture.createView({
-            label: descriptor.label,
-            format: WebGpuConverter.convertTextureFormat(descriptor.textureFormat),
-            dimension: "2d",
-        });
+        const view = WebGpuUtilities.textureView.create2D(
+            this.gpuTexture, WebGpuConverter.convertTextureFormat(descriptor.textureFormat), descriptor.label);
         return new WebGpuTextureView(view, descriptor.textureFormat, descriptor.dimension);
     }
 
@@ -149,7 +137,7 @@ export class WebGpuTexture2D extends ATexture2D {
         if (this._state == State.DISPOSING || this._state == State.DISPOSED) {
             return;
         }
-        this._gpuTexture?.destroy();
+        WebGpuUtilities.texture.dispose(this._gpuTexture);
         this._gpuTexture = null;
         this._gpuDefaultView = null;
         this.defaultTextureView?.dispose();

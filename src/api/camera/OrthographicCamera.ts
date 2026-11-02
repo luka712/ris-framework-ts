@@ -91,7 +91,7 @@ export class OrthographicCamera implements IOrthographicCamera {
     private _projectionViewBuffer: IUniformBuffer = null!;
     private _positionBuffer: IUniformBuffer = null!;
     /** std140 vec3 world-space eye, padded to 4 floats. */
-    private readonly _positionData = [0, 0, 0, 0];
+    private readonly _positionData = new Float32Array(4);
 
     /**
      *
@@ -248,7 +248,7 @@ export class OrthographicCamera implements IOrthographicCamera {
     }
 
     /** Writes the transform's world position into the std140 position data. */
-    private _updatePositionData(): number[] {
+    private _updatePositionData(): Float32Array {
         const m = this.transform.modelMatrix;
         this._positionData[0] = m[12];
         this._positionData[1] = m[13];
@@ -295,9 +295,9 @@ export class OrthographicCamera implements IOrthographicCamera {
     /** @inheritDoc */
     public updateBuffers(): void {
         this._updateMatrices();
-        this.projectionBuffer.update(this.projectionMatrix);
-        this.viewBuffer.update(this.viewMatrix);
-        this.projectionViewBuffer.update(this.projectionViewMatrix);
+        this.projectionBuffer.update(this.projectionMatrix as Float32Array);
+        this.viewBuffer.update(this.viewMatrix as Float32Array);
+        this.projectionViewBuffer.update(this.projectionViewMatrix as Float32Array);
         this.positionBuffer.update(this._updatePositionData());
     }
 

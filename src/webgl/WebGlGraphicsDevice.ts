@@ -14,7 +14,7 @@ import {
     type IRenderPass,
     type ISampler,
     type ISwapChain,
-    type IWindowManager,
+    type ICanvasManager,
     type IPrimitiveStateDescriptor,
     RenderPassDescriptor,
     SwapChainDescriptor
@@ -43,7 +43,7 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
         throw new Error("Method not implemented.");
     }
 
-    private readonly _windowManager: IWindowManager;
+    private readonly _canvasManager: ICanvasManager;
     private _canvas: HTMLCanvasElement = null!;
     private _gl: WebGL2RenderingContext = null!;
     private _features: WebGLGraphicsDeviceFeatures = null!;
@@ -51,13 +51,13 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
 
     /**
      * The constructor.
-     * @param windowManager The window manager that provides access to the canvas element and other window-related functionalities needed for initializing the graphics device and creating rendering contexts.
+     * @param canvasManager The window manager that provides access to the canvas element and other window-related functionalities needed for initializing the graphics device and creating rendering contexts.
      * @param descriptor The descriptor for the graphics device. This is used to configure the graphics device during initialization.
      */
-    public constructor(windowManager: IWindowManager, descriptor: IGraphicsDeviceDescriptor) {
+    public constructor(canvasManager: ICanvasManager, descriptor: IGraphicsDeviceDescriptor) {
 
         super(descriptor);
-        this._windowManager = windowManager;
+        this._canvasManager = canvasManager;
     }
 
     /**
@@ -78,9 +78,9 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
     }
 
     /** @inheritdoc */
-    public initialize(): void {
+    public async initializeAsync(): Promise<void> {
 
-        this._canvas = this._windowManager.canvas;
+        this._canvas = this._canvasManager.canvas;
 
         const contextOptions: WebGLContextAttributes = {
             antialias: false,
@@ -101,7 +101,7 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
         this._features = new WebGLGraphicsDeviceFeatures(this._gl);
         this._gpuInfo = new WebGlGpuInfo(this);
 
-        super.initialize();
+        await super.initializeAsync();
     }
 
     /** @inheritdoc */

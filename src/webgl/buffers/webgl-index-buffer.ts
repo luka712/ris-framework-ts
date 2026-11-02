@@ -16,13 +16,15 @@ export class WebGLIndexBuffer implements IIndexBuffer {
     private _elementByteSize = 0;
     private _indicesCount = 0;
     private _byteSize = 0;
+    private _initialData: ArrayLike<number> | null;
 
     /**
      * The constructor.
      * @param framework The framework.
      * @param label An optional label for the index buffer, which can be used for debugging purposes.
      */
-    constructor(framework: IFramework, label?: string) {
+    constructor(framework: IFramework, data: ArrayLike<number>, label?: string) {
+        this._initialData = data;
         this._gl = asWebGLGraphicsDevice(framework.renderer.graphicsDevice).gl;
         this._label = label;
         this.usage = BufferUsage.INDEX;
@@ -79,7 +81,9 @@ export class WebGLIndexBuffer implements IIndexBuffer {
     }
 
     /** @inheritdoc */
-    public initialize(data: ArrayLike<number>): void {
+    public initialize(): void {
+        const data = this._initialData ?? [];
+        this._initialData = null;
 
         const typedData = this._canUseUint16(data) ? new Uint16Array(data) : new Uint32Array(data);
 
@@ -98,6 +102,18 @@ export class WebGLIndexBuffer implements IIndexBuffer {
         this.buffer = WebGlUtilities.buffer.createIndexBuffer(this._gl, typedData, BufferUsage.INDEX, this._label);
     }
 
+
+    /** @inheritdoc */
+    public update(data: Uint16Array | Uint32Array, offset: number = 0, length: number = 0): void {
+        length = length > 0 ? length : data.length - offset;
+        length = Math.min(length, data.length - offset);
+        if (length <= 0) {
+            return;
+        }
+        this._gl.bindBuffer(this._gl.COPY_WRITE_BUFFER, this.buffer);
+        this._gl.bufferSubData(this._gl.COPY_WRITE_BUFFER, offset * data.BYTES_PER_ELEMENT, data, offset, length);
+        this._gl.bindBuffer(this._gl.COPY_WRITE_BUFFER, null);
+    }
 
      /** @inheritdoc */
     public dispose(): void {

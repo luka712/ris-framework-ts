@@ -3,18 +3,12 @@
  */
 export enum RenderingBackend {
 
-    /**
-     * If default is set, the renderer will be chosen automatically.
-     */
+    /** If default is set, the renderer will be chosen automatically. */
     DEFAULT = 0,
 
-    /**
-     * The WebGPU rendering backend.
-     */
+    /** The WebGPU rendering backend. */
     WEB_GPU = 1,
 
-    /**
-     * The WebGL rendering backend.
-     */
+    /** The WebGL rendering backend. */
     WEB_GL = 2,
 }

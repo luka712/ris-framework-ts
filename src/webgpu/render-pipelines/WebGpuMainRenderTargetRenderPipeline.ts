@@ -13,7 +13,7 @@ import type {WebGpuTexture2D} from "../texture/WebGpuTexture2D.ts";
 import type {WebGpuVertexBuffer} from "../buffers/WebGpuVertexBuffer.ts";
 import type {WebGpuIndexBuffer} from "../buffers/WebGpuIndexBuffer.ts";
 import type {WebGpuShaderModule} from "../shader/WebGpuShaderModule.ts";
-import {GpuShaderStage, type GpuBindGroup, type GpuBindGroupLayout} from "../WebGpuTypes.ts";
+import {WebGpuUtilities} from "../utilities/WebGpuUtilities.ts";
 
 /**
  * Draws the main render target to the swap chain with `main_frame_buffer.wgsl`.
@@ -25,8 +25,8 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
     private _vertexBuffer: WebGpuVertexBuffer = null!;
     private _indexBuffer: WebGpuIndexBuffer = null!;
     private _mainRenderTarget: WebGpuTexture2D;
-    private _bindGroupLayout: GpuBindGroupLayout = null!;
-    private _bindGroup: GpuBindGroup | null = null;
+    private _bindGroupLayout: GPUBindGroupLayout = null!;
+    private _bindGroup: GPUBindGroup | null = null;
 
     /**
      * The constructor.
@@ -66,13 +66,10 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
 
         this.vertexBufferLayouts = [VertexBufferLayout.createFloat3Float2Layout()];
 
-        this._bindGroupLayout = this._graphicsDevice.device.createBindGroupLayout({
-            label: "Main Frame Buffer bind group layout",
-            entries: [
-                {binding: 0, visibility: GpuShaderStage.FRAGMENT, texture: {sampleType: "float"}},
-                {binding: 1, visibility: GpuShaderStage.FRAGMENT, sampler: {type: "filtering"}},
-            ],
-        });
+        this._bindGroupLayout = WebGpuUtilities.bindGroupLayout.create(this._graphicsDevice.device, [
+            WebGpuUtilities.bindGroupLayoutEntry.createTextureBindGroupLayoutEntry(0, GPUShaderStage.FRAGMENT),
+            WebGpuUtilities.bindGroupLayoutEntry.createSamplerBindGroupLayoutEntry(1, GPUShaderStage.FRAGMENT),
+        ], "Main Frame Buffer bind group layout");
 
         // Drawn in the swap chain pass, which has no depth attachment.
         this._createGpuPipeline(
@@ -87,16 +84,12 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
      */
     public colorSpace: ColorSpace = ColorSpace.LINEAR;
 
-    private _getBindGroup(): GpuBindGroup {
+    private _getBindGroup(): GPUBindGroup {
         if (!this._bindGroup) {
-            this._bindGroup = this._graphicsDevice.device.createBindGroup({
-                label: "Main Frame Buffer bind group",
-                layout: this._bindGroupLayout,
-                entries: [
-                    {binding: 0, resource: this._mainRenderTarget.gpuDefaultView},
-                    {binding: 1, resource: this._defaultTextureSampler.gpuSampler},
-                ],
-            });
+            this._bindGroup = WebGpuUtilities.bindGroup.create(this._graphicsDevice.device, this._bindGroupLayout, [
+                {binding: 0, resource: this._mainRenderTarget.gpuDefaultView},
+                {binding: 1, resource: this._defaultTextureSampler.gpuSampler},
+            ], "Main Frame Buffer bind group");
         }
         return this._bindGroup;
     }

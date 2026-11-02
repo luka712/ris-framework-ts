@@ -132,7 +132,7 @@ export class InputManager implements IInputManager {
     /** @inheritDoc */
     public initialize(): void {
 
-        const canvas = this._framework.windowManager.canvas;
+        const canvas = this._framework.canvasManager.canvas;
         this._handleMouseEvents(canvas);
         this._handleTouchEvents(canvas);
     }

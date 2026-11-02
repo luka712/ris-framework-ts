@@ -5,7 +5,7 @@ import {
     type IIndexBuffer,
     type IUniformBuffer,
     type IVertexBuffer,
-} from "../../api/index.ts";
+} from "../../api";
 import {WebGpuVertexBuffer} from "./WebGpuVertexBuffer.ts";
 import {WebGpuIndexBuffer} from "./WebGpuIndexBuffer.ts";
 import {WebGpuUniformBuffer} from "./WebGpuUniformBuffer.ts";
@@ -39,8 +39,8 @@ export class WebGpuBuffersFactory implements IBufferFactory {
 
     /** @inheritDoc */
     public createIndexBuffer(data: ArrayLike<number>, label?: string): IIndexBuffer {
-        const buffer = new WebGpuIndexBuffer(this._framework, label);
-        buffer.initialize(data);
+        const buffer = new WebGpuIndexBuffer(this._framework, data, label);
+        buffer.initialize();
         return buffer;
     }
 }

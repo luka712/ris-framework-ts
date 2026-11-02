@@ -15,7 +15,7 @@ export * from "./rendering/primitive/_export.ts";
 export * from "./rendering/blending/_export.ts";
 export * from "./loaders/_export.ts";
 export * from "./rendering/renderpass/_export.ts";
-export * from "./window/_export.ts";
+export * from "./canvas/_export.ts";
 export * from "./rendering/swapchain/_export.ts";
 export * from "./rendering/sampler/_export.ts"
 export * from "./utilities/_export.ts"

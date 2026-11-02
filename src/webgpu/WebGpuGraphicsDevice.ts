@@ -8,89 +8,65 @@ import {
     type IRenderPass,
     type ISampler,
     type ISwapChain,
-    type IWindowManager,
     type IPrimitiveStateDescriptor,
     RenderPassDescriptor,
     SwapChainDescriptor,
+    type ICanvasManager,
 } from "../api/index.ts";
-import {getNavigatorGpu, type GpuAdapter, type GpuDevice, type GpuRenderPassEncoder} from "./WebGpuTypes.ts";
-import {PowerPreferenceType} from "../api/rendering/PowerPreference.ts";
 import {WebGpuGraphicsDeviceFeatures} from "./WebGpuGraphicsDeviceFeatures.ts";
-import {WebGpuGpuInfo} from "./WebGpuGpuInfo.ts";
+import {WebGPUInfo} from "./WebGpuInfo.ts";
 import {WebGpuSwapChain} from "./swap-chain/WebGpuSwapChain.ts";
 import {WebGpuSampler} from "./sampler/WebGpuSampler.ts";
 import {WebGpuRenderPass} from "./render-pass/WebGpuRenderPass.ts";
 import {WebGpuBlendState} from "./blending/WebGpuBlendState.ts";
 import {WebGpuPrimitiveState} from "./primitive/WebGpuPrimitiveState.ts";
+import { WebGpuUtilities } from "./utilities/WebGpuUtilities.ts";
 
 /**
- * The WebGPU graphics device. It requests its own adapter and device in {@link createAsync},
+ * The WebGPU graphics device. It requests its own adapter and device in {@link initializeAsync},
  * so everything after creation is synchronous like WebGL.
  * @internal
  */
 export class WebGpuGraphicsDevice extends AGraphicsDevice {
 
-    private readonly _windowManager: IWindowManager;
-    private readonly _adapter: GpuAdapter;
-    private readonly _device: GpuDevice;
+    private readonly _canvasManager: ICanvasManager;
+    private _context: GPUCanvasContext = null!;
+    private _adapter: GPUAdapter = null!;
+    private _device: GPUDevice = null!;
     private _features: WebGpuGraphicsDeviceFeatures = null!;
-    private _gpuInfo: WebGpuGpuInfo = null!;
+    private _gpuInfo: WebGPUInfo = null!;
     private _swapChain: WebGpuSwapChain | null = null;
 
     /**
      * The render pass encoder of the pass that is currently open, or null between passes.
      * Set by {@link WebGpuRenderPass.beginPass}, like `currentRenderPassEncoder` in the C# device.
      */
-    public currentRenderPassEncoder: GpuRenderPassEncoder | null = null;
+    public currentRenderPassEncoder: GPURenderPassEncoder | null = null;
+
 
     /**
-     * Creates the graphics device: requests the WebGPU adapter and device.
-     * Throws when WebGPU is unavailable or no adapter is found.
-     * @param windowManager The window manager.
+     * The constructor. Call {@link initializeAsync} before use (done by `ARenderer.initializeAsync()`).
+     * @param canvasManager The canvas manager.
      * @param descriptor The device descriptor.
-     * @returns The created graphics device.
+
      */
-    public static async createAsync(windowManager: IWindowManager, descriptor: IGraphicsDeviceDescriptor): Promise<WebGpuGraphicsDevice> {
-        const gpu = getNavigatorGpu();
-        if (!gpu) {
-            throw new Error("WebGPU is not supported: navigator.gpu is missing.");
-        }
-        const preference = descriptor.powerPreference;
-        const adapter = await gpu.requestAdapter(
-            preference && preference !== PowerPreferenceType.DEFAULT
-                ? {powerPreference: preference as unknown as "low-power" | "high-performance"}
-                : undefined);
-        if (!adapter) {
-            throw new Error("WebGPU is not supported: no adapter was found.");
-        }
-        // WebGPU only enables the features that are requested, so ask for every compression family the adapter has.
-        const requiredFeatures = ["texture-compression-bc", "texture-compression-etc2", "texture-compression-astc"]
-            .filter(feature => adapter.features.has(feature));
-        const device = await adapter.requestDevice({label: "RisFramework WebGPU device", requiredFeatures});
-        return new WebGpuGraphicsDevice(windowManager, descriptor, adapter, device);
+    public constructor(canvasManager: ICanvasManager, descriptor: IGraphicsDeviceDescriptor) {
+        super(descriptor);
+        this._canvasManager = canvasManager;
     }
 
-    /**
-     * The constructor. Use {@link createAsync} to create the device.
-     * @param windowManager The window manager.
-     * @param descriptor The device descriptor.
-     * @param adapter The WebGPU adapter.
-     * @param device The WebGPU device.
-     */
-    private constructor(windowManager: IWindowManager, descriptor: IGraphicsDeviceDescriptor, adapter: GpuAdapter, device: GpuDevice) {
-        super(descriptor);
-        this._windowManager = windowManager;
-        this._adapter = adapter;
-        this._device = device;
+    /** The WebGPU canvas context. */
+    public get context(): GPUCanvasContext {
+        return this._context;
     }
 
     /** The WebGPU device. */
-    public get device(): GpuDevice {
+    public get device(): GPUDevice {
         return this._device;
     }
 
     /** The WebGPU adapter. */
-    public get adapter(): GpuAdapter {
+    public get adapter(): GPUAdapter {
         return this._adapter;
     }
 
@@ -105,8 +81,8 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
     }
 
     /** The window manager. */
-    public get windowManager(): IWindowManager {
-        return this._windowManager;
+    public get canvasManager(): ICanvasManager {
+        return this._canvasManager;
     }
 
     /** @inheritDoc */
@@ -120,7 +96,7 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
     }
 
     /** The current render pass encoder. Throws when no pass is open. */
-    public get renderPassEncoder(): GpuRenderPassEncoder {
+    public get renderPassEncoder(): GPURenderPassEncoder {
         if (!this.currentRenderPassEncoder) {
             throw new Error("WebGpuGraphicsDevice: no render pass is open. Draw calls must happen between beginRenderPass and endRenderPass.");
         }
@@ -128,17 +104,29 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
     }
 
     /** @inheritDoc */
-    public initialize(): void {
-        this._features = new WebGpuGraphicsDeviceFeatures(this._device.features);
-        this._gpuInfo = new WebGpuGpuInfo(this._adapter, this._features);
+    public async initializeAsync(): Promise<void> {
+
+
+        this._context = this._canvasManager.canvas.getContext("webgpu") as GPUCanvasContext;
+        if (!this._context) {
+            throw new Error("WebGPU canvas context is not available.");
+        }
+
+
+        this._adapter = await WebGpuUtilities.adapter.requestAdapterAsync(this._descriptor.powerPreference);
+        this._features = new WebGpuGraphicsDeviceFeatures(this._adapter.features);
+
+        this._device  = await WebGpuUtilities.device.requestDeviceAsync(this._adapter, this._features.deviceRequiredFeatures, {}, "RisFramework WebGPU device");
+        this._gpuInfo = new WebGPUInfo(this._adapter, this._features);
         this.setupDebugCallback();
-        super.initialize();
+        await super.initializeAsync();  
     }
 
     /** @inheritDoc */
-    public createSwapChain(canvas: HTMLCanvasElement, descriptor: SwapChainDescriptor): ISwapChain {
+    public createSwapChain(_canvas: HTMLCanvasElement, descriptor: SwapChainDescriptor): ISwapChain {
+        // The swap chain reads the canvas from the device's canvas manager, which is the same canvas.
         this._swapChain?.dispose();
-        this._swapChain = new WebGpuSwapChain(canvas, this, descriptor);
+        this._swapChain = new WebGpuSwapChain(this, descriptor);
         return this._swapChain;
     }
 

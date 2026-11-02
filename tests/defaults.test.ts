@@ -20,18 +20,18 @@ import {
     TextureUsage,
     TextureViewDescriptor,
     TextureViewDimension,
-    WindowBounds,
+    CanvasBounds,
 } from "../src/api/index.ts";
 import {resolveTextureDescriptor} from "../src/core/rendering/texture/TextureDescriptorUtilities.ts";
 
 describe("value defaults", () => {
     it("uses an 800 by 600 window when bounds are omitted", () => {
-        const bounds = new WindowBounds();
+        const bounds = new CanvasBounds();
 
         expect(bounds.width).toBe(800);
         expect(bounds.height).toBe(600);
-        expect(new WindowBounds(1280, 720).width).toBe(1280);
-        expect(new WindowBounds(1280, 720).height).toBe(720);
+        expect(new CanvasBounds(1280, 720).width).toBe(1280);
+        expect(new CanvasBounds(1280, 720).height).toBe(720);
     });
 
     it("orders resource state from created through disposed", () => {

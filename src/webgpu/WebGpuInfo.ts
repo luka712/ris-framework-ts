@@ -1,19 +1,18 @@
-import {type IGPUInfo, RenderingBackend, TextureFormat} from "../api/index.ts";
-import type {GpuAdapter} from "./WebGpuTypes.ts";
+import {ASTC_TEXTURE_FORMATS, type IGPUInfo, RenderingBackend, TextureFormat} from "../api/index.ts";
 import type {WebGpuGraphicsDeviceFeatures} from "./WebGpuGraphicsDeviceFeatures.ts";
 
 /**
  * The WebGPU GPU info, read from the adapter info.
  * @internal
  */
-export class WebGpuGpuInfo implements IGPUInfo {
+export class WebGPUInfo implements IGPUInfo {
 
     /**
      * The constructor.
      * @param adapter The adapter.
      * @param features The device features.
      */
-    public constructor(adapter: GpuAdapter, features: WebGpuGraphicsDeviceFeatures) {
+    public constructor(adapter: GPUAdapter, features: WebGpuGraphicsDeviceFeatures) {
         const info = adapter.info;
         this.name = info?.description || info?.device || info?.architecture || "Unknown";
         this.vendor = info?.vendor || "Unknown";
@@ -25,7 +24,7 @@ export class WebGpuGpuInfo implements IGPUInfo {
         // Features are read from the device (only requested features are enabled), so this lists what can be created.
         const formats: TextureFormat[] = [];
         if (features.supportsTextureCompressionASTC) {
-            formats.push(TextureFormat.ASTC_4X4_RGBA_UNORM, TextureFormat.ASTC_4X4_RGBA_SRGB);
+            formats.push(...ASTC_TEXTURE_FORMATS);
         }
         if (features.supportsTextureCompressionS3TC) {
             formats.push(TextureFormat.BC1_RGB_UNORM, TextureFormat.BC1_RGB_SRGB,

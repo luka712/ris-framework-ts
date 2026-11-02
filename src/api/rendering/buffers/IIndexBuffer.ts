@@ -22,16 +22,14 @@ export interface IIndexBuffer extends IBuffer {
      */
     readonly indicesCount: number;
 
-    /**
-     * Initialize the index buffer.
-     * @param data - The data to initialize with.
-     */
-    initialize(data: number[]): void;
+    /** Initialize the index buffer. */
+    initialize(): void;
 
     /**
-     * Initialize the index buffer.
-     * @param data - The data to initialize with.
+     * Update the index buffer.
+     * @param data - The data to be written to buffer.
+     * @param offset - The first index to write, in elements. The data mirrors the buffer, so it is used for both. By default, 0.
+     * @param length - The number of indices to write. If 0 or less, everything after the offset is written.
      */
-    initialize(data: number[]): void;
-
+    update(data: Uint16Array | Uint32Array, offset?: number, length?: number): void;
 }

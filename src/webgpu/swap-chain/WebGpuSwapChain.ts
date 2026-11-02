@@ -1,7 +1,7 @@
 import {vec2} from "gl-matrix";
-import {type ISwapChain, SwapChainDescriptor, TextureFormat} from "../../api/index.ts";
+import {type ISwapChain, SwapChainDescriptor, TextureFormat} from "../../api";
 import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
-import {GpuTextureUsage, type GpuCanvasContext, type GpuTextureView} from "../WebGpuTypes.ts";
+import {WebGpuUtilities} from "../utilities/WebGpuUtilities.ts";
 
 /**
  * The WebGPU swap chain, backed by the canvas' `webgpu` context.
@@ -12,37 +12,32 @@ import {GpuTextureUsage, type GpuCanvasContext, type GpuTextureView} from "../We
  */
 export class WebGpuSwapChain implements ISwapChain {
 
-    private readonly _canvas: HTMLCanvasElement;
     private readonly _graphicsDevice: WebGpuGraphicsDevice;
-    private readonly _context: GpuCanvasContext;
+    private _context: GPUCanvasContext;
+    private _device: GPUDevice;
     private readonly _backBufferSize: vec2;
-    private _currentView: GpuTextureView | null = null;
+    private _currentView: GPUTextureView | null = null;
 
     /**
      * The constructor.
-     * @param canvas The canvas.
      * @param graphicsDevice The graphics device.
      * @param _descriptor The swap chain descriptor. WebGPU canvases always present with FIFO.
      */
-    public constructor(canvas: HTMLCanvasElement, graphicsDevice: WebGpuGraphicsDevice, _descriptor?: SwapChainDescriptor) {
-        this._canvas = canvas;
+    public constructor( graphicsDevice: WebGpuGraphicsDevice, _descriptor?: SwapChainDescriptor) {
         this._graphicsDevice = graphicsDevice;
-        const context = canvas.getContext("webgpu" as "webgl2") as unknown as GpuCanvasContext | null;
-        if (!context) {
-            throw new Error("WebGPU canvas context is not available.");
-        }
-        this._context = context;
+        const canvas = graphicsDevice.canvasManager.canvas;
+        this._context = graphicsDevice.context;
+        this._device = graphicsDevice.device;
         this._backBufferSize = vec2.fromValues(canvas.width, canvas.height);
         this._configure();
     }
 
     private _configure(): void {
-        this._context.configure({
-            device: this._graphicsDevice.device,
-            format: "rgba8unorm",
-            usage: GpuTextureUsage.RENDER_ATTACHMENT,
-            alphaMode: this._graphicsDevice.alpha ? "premultiplied" : "opaque",
-        });
+        WebGpuUtilities.context.configure(
+            this._context,
+            this._device,
+            TextureFormat.RGBA_8_UNORM,
+            this._graphicsDevice.alpha ? "premultiplied" : "opaque");
     }
 
     /** @inheritDoc */
@@ -58,7 +53,7 @@ export class WebGpuSwapChain implements ISwapChain {
     /**
      * The view of the current canvas texture. Acquired once per frame and released on {@link present}.
      */
-    public get currentTextureView(): GpuTextureView {
+    public get currentTextureView(): GPUTextureView {
         if (!this._currentView) {
             this._currentView = this._context.getCurrentTexture().createView();
         }
@@ -71,8 +66,6 @@ export class WebGpuSwapChain implements ISwapChain {
             return;
         }
         this._currentView = null;
-        this._canvas.width = width;
-        this._canvas.height = height;
         this._backBufferSize[0] = width;
         this._backBufferSize[1] = height;
     }
@@ -81,8 +74,6 @@ export class WebGpuSwapChain implements ISwapChain {
     public present(): void {
         // The browser presents the canvas texture after the task; the next frame needs a fresh texture.
         this._currentView = null;
-        this._backBufferSize[0] = this._canvas.width;
-        this._backBufferSize[1] = this._canvas.height;
     }
 
     /** @inheritDoc */

@@ -78,7 +78,7 @@ framework.addOnRenderListener(() =>
   spriteBatch.end();
 });
 
-framework.initialize();
+framework.initializeAsync();
 framework.renderer.clearColor = Color.lightPink();
 
 

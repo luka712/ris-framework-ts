@@ -1,8 +1,8 @@
 import {SamplerDescriptor} from "../../core/rendering/sampler/sampler-descriptor.ts";
 import {type ISampler, MipMapSamplerFilter} from "../../api/index.ts";
 import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
-import type {GpuSampler} from "../WebGpuTypes.ts";
 import {WebGpuConverter} from "../utilities/WebGpuConverter.ts";
+import {WebGpuUtilities} from "../utilities/WebGpuUtilities.ts";
 
 /**
  * The WebGPU sampler.
@@ -12,7 +12,7 @@ export class WebGpuSampler implements ISampler {
 
     private static _nextId = 0;
 
-    private _gpuSampler: GpuSampler | null;
+    private _gpuSampler: GPUSampler | null;
 
     /**
      * The constructor.
@@ -29,7 +29,7 @@ export class WebGpuSampler implements ISampler {
         this.addressModeV = descriptor.addressModeV;
         this.addressModeW = descriptor.addressModeW;
 
-        this._gpuSampler = graphicsDevice.device.createSampler({
+        this._gpuSampler = WebGpuUtilities.sampler.create(graphicsDevice.device, {
             label: `WebGpuSampler ${this.id}`,
             minFilter: WebGpuConverter.convertFilter(this.minFilter),
             magFilter: WebGpuConverter.convertFilter(this.magFilter),
@@ -64,7 +64,7 @@ export class WebGpuSampler implements ISampler {
     public readonly addressModeW;
 
     /** The WebGPU sampler. */
-    public get gpuSampler(): GpuSampler {
+    public get gpuSampler(): GPUSampler {
         if (!this._gpuSampler) {
             throw new Error("WebGpuSampler: the sampler is disposed.");
         }

@@ -15,22 +15,7 @@ import {
 } from "../../api/index.ts";
 import {VertexFormat} from "../../api/geometry/VertexFormat.ts";
 import {BlendFactor, BlendOperation} from "../../core/rendering/blending/enums.ts";
-import {
-    GpuBufferUsage,
-    GpuTextureUsage,
-    type GpuAddressMode,
-    type GpuBlendFactor,
-    type GpuBlendOperation,
-    type GpuCullMode,
-    type GpuFilterMode,
-    type GpuFrontFace,
-    type GpuLoadOp,
-    type GpuPrimitiveTopology,
-    type GpuStoreOp,
-    type GpuTextureFormat,
-    type GpuVertexBufferLayout,
-    type GpuVertexFormat,
-} from "../WebGpuTypes.ts";
+
 
 /**
  * Converts framework enums to WebGPU values.
@@ -41,28 +26,28 @@ export class WebGpuConverter {
     /** Converts buffer usage flags. */
     public static convertBufferUsage(usage: BufferUsage): number {
         let result = 0;
-        if (usage & BufferUsage.VERTEX) result |= GpuBufferUsage.VERTEX;
-        if (usage & BufferUsage.INDEX) result |= GpuBufferUsage.INDEX;
-        if (usage & BufferUsage.UNIFORM) result |= GpuBufferUsage.UNIFORM;
-        if (usage & BufferUsage.STORAGE) result |= GpuBufferUsage.STORAGE;
-        if (usage & BufferUsage.MAP_READ) result |= GpuBufferUsage.MAP_READ;
-        if (usage & BufferUsage.COPY_DST) result |= GpuBufferUsage.COPY_DST;
+        if (usage & BufferUsage.VERTEX) result |= GPUBufferUsage.VERTEX;
+        if (usage & BufferUsage.INDEX) result |= GPUBufferUsage.INDEX;
+        if (usage & BufferUsage.UNIFORM) result |= GPUBufferUsage.UNIFORM;
+        if (usage & BufferUsage.STORAGE) result |= GPUBufferUsage.STORAGE;
+        if (usage & BufferUsage.MAP_READ) result |= GPUBufferUsage.MAP_READ;
+        if (usage & BufferUsage.COPY_DST) result |= GPUBufferUsage.COPY_DST;
         return result;
     }
 
     /** Converts texture usage flags. `TextureUsage.NONE` maps to 0. */
     public static convertTextureUsage(usage: TextureUsage): number {
         let result = 0;
-        if (usage & TextureUsage.COPY_SRC) result |= GpuTextureUsage.COPY_SRC;
-        if (usage & TextureUsage.COPY_DST) result |= GpuTextureUsage.COPY_DST;
-        if (usage & TextureUsage.TEXTURE_BINDING) result |= GpuTextureUsage.TEXTURE_BINDING;
-        if (usage & TextureUsage.STORAGE_BINDING) result |= GpuTextureUsage.STORAGE_BINDING;
-        if (usage & TextureUsage.RENDER_ATTACHMENT) result |= GpuTextureUsage.RENDER_ATTACHMENT;
+        if (usage & TextureUsage.COPY_SRC) result |= GPUTextureUsage.COPY_SRC;
+        if (usage & TextureUsage.COPY_DST) result |= GPUTextureUsage.COPY_DST;
+        if (usage & TextureUsage.TEXTURE_BINDING) result |= GPUTextureUsage.TEXTURE_BINDING;
+        if (usage & TextureUsage.STORAGE_BINDING) result |= GPUTextureUsage.STORAGE_BINDING;
+        if (usage & TextureUsage.RENDER_ATTACHMENT) result |= GPUTextureUsage.RENDER_ATTACHMENT;
         return result;
     }
 
     /** Converts a texture format. Throws for formats the WebGPU backend does not support yet. */
-    public static convertTextureFormat(format: TextureFormat): GpuTextureFormat {
+    public static convertTextureFormat(format: TextureFormat): GPUTextureFormat {
         switch (format) {
             case TextureFormat.RGBA_8_UNORM:
                 return "rgba8unorm";
@@ -161,6 +146,27 @@ export class WebGpuConverter {
         }
     }
 
+    /**
+     * Converts a WebGPU texture format back to the framework format.
+     * Returns `TextureFormat.UNDEFINED` for formats the framework has no value for (for example `bgra8unorm`).
+     */
+    public static convertGpuTextureFormat(format: GPUTextureFormat): TextureFormat {
+        switch (format) {
+            case "rgba8unorm":
+                return TextureFormat.RGBA_8_UNORM;
+            case "rgba8unorm-srgb":
+                return TextureFormat.RGBA_8_UNORM_SRGB;
+            case "depth24plus-stencil8":
+                return TextureFormat.DEPTH_24_STENCIL_8;
+            case "depth32float":
+                return TextureFormat.DEPTH_32_FLOAT;
+            case "r32float":
+                return TextureFormat.RED_32_FLOAT;
+            default:
+                return TextureFormat.UNDEFINED;
+        }
+    }
+
     /** Whether the format has a stencil aspect. */
     public static hasStencil(format: TextureFormat): boolean {
         return format === TextureFormat.DEPTH_24_STENCIL_8;
@@ -172,17 +178,17 @@ export class WebGpuConverter {
     }
 
     /** Converts a load action. WebGPU has no "don't care", so `UNDEFINED` clears. */
-    public static convertLoadAction(action: LoadAction): GpuLoadOp {
+    public static convertLoadAction(action: LoadAction): GPULoadOp {
         return action === LoadAction.LOAD ? "load" : "clear";
     }
 
     /** Converts a store action. */
-    public static convertStoreAction(action: StoreAction): GpuStoreOp {
+    public static convertStoreAction(action: StoreAction): GPUStoreOp {
         return action === StoreAction.DISCARD ? "discard" : "store";
     }
 
     /** Converts a sampler address mode. WebGPU has no border clamp, so it falls back to clamp to edge. */
-    public static convertAddressMode(mode: SamplerAddressMode): GpuAddressMode {
+    public static convertAddressMode(mode: SamplerAddressMode): GPUAddressMode {
         switch (mode) {
             case SamplerAddressMode.REPEAT:
                 return "repeat";
@@ -194,17 +200,17 @@ export class WebGpuConverter {
     }
 
     /** Converts a sampler filter. */
-    public static convertFilter(filter: SamplerFilter): GpuFilterMode {
+    public static convertFilter(filter: SamplerFilter): GPUFilterMode {
         return filter === SamplerFilter.LINEAR ? "linear" : "nearest";
     }
 
     /** Converts a mip map filter. `NONE` maps to nearest; the sampler then clamps to mip 0. */
-    public static convertMipMapFilter(filter: MipMapSamplerFilter): GpuFilterMode {
+    public static convertMipMapFilter(filter: MipMapSamplerFilter): GPUFilterMode {
         return filter === MipMapSamplerFilter.LINEAR ? "linear" : "nearest";
     }
 
     /** Converts a blend factor. */
-    public static convertBlendFactor(factor: BlendFactor): GpuBlendFactor {
+    public static convertBlendFactor(factor: BlendFactor): GPUBlendFactor {
         switch (factor) {
             case BlendFactor.ONE:
                 return "one";
@@ -218,7 +224,7 @@ export class WebGpuConverter {
     }
 
     /** Converts a blend operation. */
-    public static convertBlendOperation(operation: BlendOperation): GpuBlendOperation {
+    public static convertBlendOperation(operation: BlendOperation): GPUBlendOperation {
         switch (operation) {
             case BlendOperation.ADD:
                 return "add";
@@ -236,7 +242,7 @@ export class WebGpuConverter {
     }
 
     /** Converts a primitive topology. */
-    public static convertTopology(topology: PrimitiveTopology): GpuPrimitiveTopology {
+    public static convertTopology(topology: PrimitiveTopology): GPUPrimitiveTopology {
         switch (topology) {
             case PrimitiveTopology.LINE_LIST:
                 return "line-list";
@@ -252,7 +258,7 @@ export class WebGpuConverter {
     }
 
     /** Converts a cull mode. */
-    public static convertCullMode(mode: CullMode): GpuCullMode {
+    public static convertCullMode(mode: CullMode): GPUCullMode {
         switch (mode) {
             case CullMode.BACK:
                 return "back";
@@ -264,12 +270,12 @@ export class WebGpuConverter {
     }
 
     /** Converts a front face. */
-    public static convertFrontFace(face: FrontFace): GpuFrontFace {
+    public static convertFrontFace(face: FrontFace): GPUFrontFace {
         return face === FrontFace.CW ? "cw" : "ccw";
     }
 
     /** Converts a vertex format. */
-    public static convertVertexFormat(format: VertexFormat): GpuVertexFormat {
+    public static convertVertexFormat(format: VertexFormat): GPUVertexFormat {
         switch (format) {
             case VertexFormat.FLOAT_32:
                 return "float32";
@@ -285,7 +291,7 @@ export class WebGpuConverter {
     }
 
     /** Converts a vertex buffer layout. */
-    public static convertVertexBufferLayout(layout: IVertexBufferLayout): GpuVertexBufferLayout {
+    public static convertVertexBufferLayout(layout: IVertexBufferLayout): GPUVertexBufferLayout {
         return {
             arrayStride: layout.arrayStride,
             stepMode: layout.stepMode === VertexStepMode.INSTANCE ? "instance" : "vertex",

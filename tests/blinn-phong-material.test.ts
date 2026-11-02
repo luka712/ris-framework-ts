@@ -128,11 +128,11 @@ describe("ForwardBlinnPhongMaterial", () => {
         new ForwardBlinnPhongMaterial(framework, shared()).modelBuffer = fakeModel();
 
         const descriptor = (createForwardBlinnPhongRenderPipeline.mock.calls[0] as unknown[])[0] as { materialBuffer: { data: number[] } };
-        expect(descriptor.materialBuffer.data).toEqual([
+        expect(descriptor.materialBuffer.data).toEqual(Array.from(new Float32Array([
             0.1, 0.1, 0.1, 0,
             0.8, 0.8, 0.8, 0,
             0.5, 0.5, 0.5, 32,
-        ]);
+        ])));
     });
 
     it("uploads specular colour and shininess only when they change", () => {
@@ -148,7 +148,7 @@ describe("ForwardBlinnPhongMaterial", () => {
         material.shininess = 64;
         material.beforeRender();
         expect(descriptor.materialBuffer.update).toHaveBeenCalledOnce();
-        expect((descriptor.materialBuffer.update.mock.calls[0][0] as number[]).slice(8, 12)).toEqual([1, 0.5, 0.25, 64]);
+        expect(Array.from(descriptor.materialBuffer.update.mock.calls[0][0] as Float32Array).slice(8, 12)).toEqual([1, 0.5, 0.25, 64]);
 
         material.beforeRender();
         expect(descriptor.materialBuffer.update).toHaveBeenCalledOnce();
@@ -166,6 +166,6 @@ describe("PerspectiveCamera.positionBuffer", () => {
 
         camera.transform.position = [0, 0, 5];
         camera.updateBuffers();
-        expect(buffers[0].update).toHaveBeenCalledWith([0, 0, 5, 0]);
+        expect(buffers[0].update).toHaveBeenCalledWith(new Float32Array([0, 0, 5, 0]));
     });
 });

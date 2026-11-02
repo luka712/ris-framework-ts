@@ -15,12 +15,7 @@ import type {WebGpuUniformBuffer} from "../../buffers/WebGpuUniformBuffer.ts";
 import type {WebGpuVertexBuffer} from "../../buffers/WebGpuVertexBuffer.ts";
 import type {WebGpuIndexBuffer} from "../../buffers/WebGpuIndexBuffer.ts";
 import type {WebGpuShaderModule} from "../../shader/WebGpuShaderModule.ts";
-import {
-    GpuShaderStage,
-    type GpuBindGroup,
-    type GpuBindGroupLayout,
-    type GpuBuffer,
-} from "../../WebGpuTypes.ts";
+import {WebGpuUtilities} from "../../utilities/WebGpuUtilities.ts";
 
 /**
  * One uniform buffer binding of a uniform bind group.
@@ -48,9 +43,9 @@ export interface IWebGpuUniformGroup {
 
 interface UniformGroupState {
     descriptor: IWebGpuUniformGroup;
-    layout: GpuBindGroupLayout;
-    bindGroup: GpuBindGroup | null;
-    lastBuffers: GpuBuffer[];
+    layout: GPUBindGroupLayout;
+    bindGroup: GPUBindGroup | null;
+    lastBuffers: GPUBuffer[];
 }
 
 /**
@@ -63,8 +58,8 @@ export abstract class AWebGpuMeshRenderPipeline extends AWebGpuRenderPipeline {
 
     private _uniformGroups: UniformGroupState[] = [];
     private _textureGroupIndex = 1;
-    private _textureGroupLayout: GpuBindGroupLayout = null!;
-    private readonly _textureBindGroups = new Map<string, GpuBindGroup>();
+    private _textureGroupLayout: GPUBindGroupLayout = null!;
+    private readonly _textureBindGroups = new Map<string, GPUBindGroup>();
     private readonly _watchedTextures = new Set<ITexture2D>();
     private readonly _onTextureDisposed = (texture: ITexture2D) => this._forgetTexture(texture);
 
@@ -117,26 +112,22 @@ export abstract class AWebGpuMeshRenderPipeline extends AWebGpuRenderPipeline {
         const module = this._framework.content.loadShaderModule(this._shaderId) as WebGpuShaderModule;
 
         this._textureGroupIndex = this._textureGroup;
-        this._textureGroupLayout = device.createBindGroupLayout({
-            label: `${this._shaderId} texture group layout`,
-            entries: [
-                {binding: 0, visibility: GpuShaderStage.FRAGMENT, texture: {sampleType: "float"}},
-                {binding: 1, visibility: GpuShaderStage.FRAGMENT, sampler: {type: "filtering"}},
-            ],
-        });
+        this._textureGroupLayout = WebGpuUtilities.bindGroupLayout.create(device, [
+            WebGpuUtilities.bindGroupLayoutEntry.createTextureBindGroupLayoutEntry(0, GPUShaderStage.FRAGMENT),
+            WebGpuUtilities.bindGroupLayoutEntry.createSamplerBindGroupLayoutEntry(1, GPUShaderStage.FRAGMENT),
+        ], `${this._shaderId} texture group layout`);
 
         this._uniformGroups = this._describeUniformGroups().map(descriptor => ({
             descriptor,
-            layout: device.createBindGroupLayout({
-                label: `${this._shaderId} group ${descriptor.group} layout`,
-                entries: descriptor.bindings.map(b => ({binding: b.binding, visibility: b.visibility, buffer: {type: "uniform"}})),
-            }),
+            layout: WebGpuUtilities.bindGroupLayout.create(device,
+                descriptor.bindings.map(b => WebGpuUtilities.bindGroupLayoutEntry.createUniformBufferBindGroupLayoutEntry(b.binding, b.visibility)),
+                `${this._shaderId} group ${descriptor.group} layout`),
             bindGroup: null,
             lastBuffers: [],
         }));
 
         const groupCount = Math.max(this._textureGroupIndex, ...this._uniformGroups.map(g => g.descriptor.group)) + 1;
-        const layouts: GpuBindGroupLayout[] = [];
+        const layouts: GPUBindGroupLayout[] = [];
         for (let i = 0; i < groupCount; i++) {
             const layout = i === this._textureGroupIndex
                 ? this._textureGroupLayout
@@ -156,26 +147,24 @@ export abstract class AWebGpuMeshRenderPipeline extends AWebGpuRenderPipeline {
             renderer.preferredDepthStencilFormat);
     }
 
-    private _getUniformBindGroup(state: UniformGroupState): GpuBindGroup {
+    private _getUniformBindGroup(state: UniformGroupState): GPUBindGroup {
         const buffers = state.descriptor.bindings.map(b => (b.buffer() as WebGpuUniformBuffer).gpuBuffer);
         const dirty = !state.bindGroup
             || buffers.length !== state.lastBuffers.length
             || buffers.some((buffer, i) => buffer !== state.lastBuffers[i]);
         if (dirty) {
-            state.bindGroup = this._graphicsDevice.device.createBindGroup({
-                label: `${this._shaderId} group ${state.descriptor.group}`,
-                layout: state.layout,
-                entries: state.descriptor.bindings.map((b, i) => ({
+            state.bindGroup = WebGpuUtilities.bindGroup.create(this._graphicsDevice.device, state.layout,
+                state.descriptor.bindings.map((b, i) => ({
                     binding: b.binding,
                     resource: {buffer: buffers[i], offset: 0, size: buffers[i].size},
                 })),
-            });
+                `${this._shaderId} group ${state.descriptor.group}`);
             state.lastBuffers = buffers;
         }
         return state.bindGroup!;
     }
 
-    private _getTextureBindGroup(): GpuBindGroup {
+    private _getTextureBindGroup(): GPUBindGroup {
         const texture = (this._texture && this._texture.textureState !== State.DISPOSED)
             ? this._texture
             : WebGpuTexture2D.getOrCreateDefault(this._framework);
@@ -183,14 +172,10 @@ export abstract class AWebGpuMeshRenderPipeline extends AWebGpuRenderPipeline {
         const key = `${texture.id}:${sampler.id}`;
         let bindGroup = this._textureBindGroups.get(key);
         if (!bindGroup) {
-            bindGroup = this._graphicsDevice.device.createBindGroup({
-                label: `${this._shaderId} texture group ${key}`,
-                layout: this._textureGroupLayout,
-                entries: [
-                    {binding: 0, resource: texture.gpuDefaultView},
-                    {binding: 1, resource: sampler.gpuSampler},
-                ],
-            });
+            bindGroup = WebGpuUtilities.bindGroup.create(this._graphicsDevice.device, this._textureGroupLayout, [
+                {binding: 0, resource: texture.gpuDefaultView},
+                {binding: 1, resource: sampler.gpuSampler},
+            ], `${this._shaderId} texture group ${key}`);
             this._textureBindGroups.set(key, bindGroup);
             if (!this._watchedTextures.has(texture)) {
                 this._watchedTextures.add(texture);
