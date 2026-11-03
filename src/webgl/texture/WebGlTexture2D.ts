@@ -2,12 +2,12 @@ import {WebGlUtilities} from "../utilities/WebGlUtilities.ts";
 import {
     type IFramework, State,
     type ITextureView,
-    type TextureViewDescriptor, TextureUtilities
+    type TextureViewDescriptor, TextureUtilities,
+    type ITextureDescriptor,
 } from "../../api/index.ts";
 import type {WebGlGraphicsDevice} from "../WebGlGraphicsDevice.ts";
 import {ATexture2D} from "../../core/rendering/texture/texture.ts";
 import {vec2} from "gl-matrix";
-import {type ResolvedTextureDescriptor, resolveTextureDescriptor} from "../../core/rendering/texture/TextureDescriptorUtilities.ts";
 
 /**
  * The WebGL implementation of ITexture2D.
@@ -25,7 +25,7 @@ export class WebGlTexture2D extends ATexture2D {
      */
     constructor(
         private readonly _framework: IFramework,
-        textureDescriptor: ResolvedTextureDescriptor
+        textureDescriptor: ITextureDescriptor
     ) {
         super(textureDescriptor);
         this._graphicsDevice = this._framework.renderer.graphicsDevice as WebGlGraphicsDevice;
@@ -51,7 +51,7 @@ export class WebGlTexture2D extends ATexture2D {
         if (TextureUtilities.isCompressedTextureFormat(this.textureFormat)) {
             this._glTexture = WebGlUtilities.texture.createCompressedTexture2D(
                 this._gl, vec2.fromValues(this.width, this.height),
-                this._blockSize, this._data, this.label, this.textureFormat, 0);
+                this._blockSize, this._data as Uint8Array[] | undefined, this.label, this.textureFormat, 0);
         } else {
             this._glTexture = WebGlUtilities.texture.createTexture2D(
                 this._gl,
@@ -121,13 +121,13 @@ export class WebGlTexture2D extends ATexture2D {
         let texture = WebGlTexture2D._defaultFilled.get(framework);
         if (!texture || texture.state === State.DISPOSED) {
 
-            const desc = resolveTextureDescriptor({
+            const desc: ITextureDescriptor = {
                 width: 1,
                 height: 1,
                 data: [new Uint8Array([255, 255, 255, 255])],
                 textureFormat: framework.renderer.preferredTextureFormat,
                 label: "RisDefaultFilledTexture",
-            });
+            };
 
             texture = new WebGlTexture2D(framework, desc);
             texture.initialize();

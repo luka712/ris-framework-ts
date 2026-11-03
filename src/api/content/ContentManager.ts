@@ -19,7 +19,6 @@ import {
 import {ObjGeometryMapper} from "../loaders/ObjGeometryMapper.ts";
 import {ObjLoader} from "../loaders/ObjLoader.ts";
 import {Ktx2Factory} from "ris-ktx2";
-import {resolveTextureDescriptor} from "../../core/rendering/texture/TextureDescriptorUtilities.ts";
 import type {IKtx2Texture} from "ris-ktx2";
 
 const KTX2_EXTENSION = ".ktx2";
@@ -82,13 +81,11 @@ export class ContentManager implements IContentManager {
                                     contentConfig?: ContentConfig,
     ): Promise<ITexture2D> {
 
-        const desc = resolveTextureDescriptor(textureDescriptor);
-
         // TODO: check texture cache
         if (path.endsWith(KTX2_EXTENSION)) {
 
             const ktx2Texture = await this.loadKtx2Async(path);
-            const tex = this._framework.textureFactory.createFromKtx2(ktx2Texture, desc);
+            const tex = this._framework.textureFactory.createFromKtx2(ktx2Texture, textureDescriptor?.textureFormat, textureDescriptor?.preferredColorSpace);
             if (contentConfig?.keepDataCached !== true) {
                 ktx2Texture.delete();
             }
@@ -96,12 +93,12 @@ export class ContentManager implements IContentManager {
         }
 
         // The descriptor's color space overrides the renderer's; an explicit format overrides both.
-        let format = desc.preferredColorSpace
-            ? (desc.preferredColorSpace == ColorSpace.SRGB ? TextureFormat.RGBA_8_UNORM_SRGB : TextureFormat.RGBA_8_UNORM)
+        let format = textureDescriptor?.preferredColorSpace
+            ? (textureDescriptor.preferredColorSpace == ColorSpace.SRGB ? TextureFormat.RGBA_8_UNORM_SRGB : TextureFormat.RGBA_8_UNORM)
             : this._framework.renderer.preferredTextureFormat;
 
-        if (desc.textureFormat != TextureFormat.UNDEFINED) {
-            format = desc.textureFormat;
+        if (textureDescriptor?.textureFormat && textureDescriptor.textureFormat != TextureFormat.UNDEFINED) {
+            format = textureDescriptor.textureFormat;
         }
 
         const imageLoader = this._framework.imageLoader;
@@ -111,10 +108,10 @@ export class ContentManager implements IContentManager {
             data.baseWidth, data.baseHeight,
             data.getData(0) as Uint8Array,
             data.channels,
-            desc.label ?? path,
+            textureDescriptor?.label ?? path,
             textureDescriptor?.textureUsage ?? (TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_SRC),
             format,
-            desc.generateMipmaps
+            textureDescriptor?.generateMipmaps ?? false
         );
     }
 

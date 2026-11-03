@@ -46,18 +46,6 @@ describe("color space when loading images", () => {
     });
 });
 
-describe("TextureUtilities.resolveExplicitFormat", () => {
-    it("allows the file's format and its sRGB/linear variant", () => {
-        expect(TextureUtilities.resolveExplicitFormat(TextureFormat.RGBA_8_UNORM, TextureFormat.RGBA_8_UNORM_SRGB)).toBe(TextureFormat.RGBA_8_UNORM_SRGB);
-        expect(TextureUtilities.resolveExplicitFormat(TextureFormat.ASTC_4X4_RGBA_SRGB, TextureFormat.ASTC_4X4_RGBA_UNORM)).toBe(TextureFormat.ASTC_4X4_RGBA_UNORM);
-        expect(TextureUtilities.resolveExplicitFormat(TextureFormat.BC7_RGBA_UNORM, TextureFormat.BC7_RGBA_UNORM)).toBe(TextureFormat.BC7_RGBA_UNORM);
-    });
-
-    it("throws for a format the data cannot be reinterpreted as", () => {
-        expect(() => TextureUtilities.resolveExplicitFormat(TextureFormat.RGBA_8_UNORM, TextureFormat.BC7_RGBA_UNORM)).toThrow(/not compatible/);
-    });
-});
-
 describe("texture descriptor pass-through and PVRTC", () => {
     it("passes the descriptor's label and usage to the factory, and keeps raw pixels linear", async () => {
         const { framework, renderer, create } = fakeFramework();

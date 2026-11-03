@@ -46,7 +46,7 @@ export interface ITextureDescriptor {
      * The data per mip level.
      * By default, it is undefined.
      */
-    data?: Uint8Array[];
+    data?: Uint8Array[] | HTMLImageElement[];
 
     /**
      * Should mipmaps be generated.

@@ -2,8 +2,8 @@ import {Color} from "../../data/Color.ts";
 import {TextureUsage} from "./TextureUsage.ts";
 import {TextureFormat} from "./TextureFormat.ts";
 import type { ITexture2D } from "./ITexture2D.ts";
-import type {ITextureDescriptor} from "./ITextureDescriptor.ts";
 import type {IKtx2Texture} from "ris-ktx2";
+import { ColorSpace } from "../enums.ts";
 
 /**
  * The texture factory.
@@ -51,8 +51,9 @@ export interface ITextureFactory {
     /**
      * Create a texture from a KTX2 file.
      * @param ktxTexture - The ktx2 texture.
-     * @param descriptor - The optional texture descriptor.
+     * @param textureFormat - The desired texture format. By default, TextureFormat.UNDEFINED, which picks the format from the GPU features.
+     * @param colorSpace - The preferred color space. By default, null, which uses renderer.colorSpace.
      * @returns The 2D texture.
      */
-    createFromKtx2(ktxTexture: IKtx2Texture, descriptor?: ITextureDescriptor): ITexture2D;
+    createFromKtx2(ktxTexture: IKtx2Texture, textureFormat?: TextureFormat, colorSpace?: ColorSpace | null): ITexture2D;
 }

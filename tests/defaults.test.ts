@@ -22,7 +22,40 @@ import {
     TextureViewDimension,
     CanvasBounds,
 } from "../src/api/index.ts";
-import {resolveTextureDescriptor} from "../src/core/rendering/texture/TextureDescriptorUtilities.ts";
+import {ATexture2D} from "../src/core/rendering/texture/texture.ts";
+import {ATextureFactory} from "../src/api/rendering/texture/ATextureFactory.ts";
+import type {IFramework, ITexture2D, ITextureDescriptor, ITextureView} from "../src/api/index.ts";
+
+/** A texture without a backend, to read the defaults ATexture2D applies. */
+class TestTexture extends ATexture2D {
+    public initialized = false;
+    public constructor(public readonly descriptor: ITextureDescriptor) {
+        super(descriptor);
+    }
+    public get generateMipMaps(): boolean {
+        return this._generateMipMaps;
+    }
+    public initialize(): void {
+        this.initialized = true;
+    }
+    public createView(): ITextureView {
+        throw new Error("Not used.");
+    }
+    public dispose(): void {
+    }
+}
+
+/** A factory without a backend, to read the descriptor ATextureFactory builds. */
+class TestTextureFactory extends ATextureFactory {
+    public constructor() {
+        super({renderer: {preferredTextureFormat: TextureFormat.RGBA_8_UNORM_SRGB}} as unknown as IFramework);
+    }
+    protected _createAndInitializeTexture(descriptor: ITextureDescriptor): ITexture2D {
+        const texture = new TestTexture(descriptor);
+        texture.initialize();
+        return texture;
+    }
+}
 
 describe("value defaults", () => {
     it("uses an 800 by 600 window when bounds are omitted", () => {
@@ -45,32 +78,56 @@ describe("value defaults", () => {
         expect(new ContentConfig().keepDataCached).toBe(false);
     });
 
-    it("defaults a texture to an undefined shader-readable copy destination", () => {
-        const descriptor = resolveTextureDescriptor();
+    it("defaults a texture to a shader-readable copy destination without mipmaps or label", () => {
+        const texture = new TestTexture({width: 2, height: 3, textureFormat: TextureFormat.RGBA_8_UNORM});
 
-        expect(descriptor.data).toBeUndefined();
-        expect(descriptor.blockSize).toBeUndefined();
-
-        expect(descriptor.width).toBe(0);
-        expect(descriptor.height).toBe(0);
-        expect(descriptor.textureFormat).toBe(TextureFormat.UNDEFINED);
-        expect(descriptor.generateMipmaps).toBe(false);
-        expect(descriptor.label).toBeNull();
-        expect(descriptor.textureUsage & TextureUsage.TEXTURE_BINDING).toBe(TextureUsage.TEXTURE_BINDING);
-        expect(descriptor.textureUsage & TextureUsage.COPY_DST).toBe(TextureUsage.COPY_DST);
-        expect(descriptor.textureUsage & TextureUsage.RENDER_ATTACHMENT).toBe(0);
-        expect(descriptor.textureUsage).toBe(TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST);
+        expect(texture.width).toBe(2);
+        expect(texture.height).toBe(3);
+        expect(texture.textureFormat).toBe(TextureFormat.RGBA_8_UNORM);
+        expect(texture.textureUsage).toBe(TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST);
+        expect(texture.textureUsage & TextureUsage.RENDER_ATTACHMENT).toBe(0);
+        expect(texture.generateMipMaps).toBe(false);
+        expect(texture.label).toBeNull();
+        expect(texture.mipLevels).toBe(1);
     });
 
-    it("keeps given texture descriptor fields and fills in the rest", () => {
-        const descriptor = resolveTextureDescriptor({width: 4, textureFormat: TextureFormat.RGBA_8_UNORM, generateMipmaps: true});
+    it("keeps given texture descriptor fields", () => {
+        const texture = new TestTexture({
+            width: 4, height: 4, textureFormat: TextureFormat.RGBA_8_UNORM,
+            textureUsage: TextureUsage.RENDER_ATTACHMENT, generateMipmaps: true, label: "t",
+        });
 
-        expect(descriptor.width).toBe(4);
-        expect(descriptor.textureFormat).toBe(TextureFormat.RGBA_8_UNORM);
-        expect(descriptor.generateMipmaps).toBe(true);
-        expect(descriptor.height).toBe(0);
-        expect(descriptor.label).toBeNull();
-        expect(descriptor.textureUsage).toBe(TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST);
+        expect(texture.textureUsage).toBe(TextureUsage.RENDER_ATTACHMENT);
+        expect(texture.generateMipMaps).toBe(true);
+        expect(texture.label).toBe("t");
+    });
+
+    it("rejects a texture without size or format", () => {
+        expect(() => new TestTexture({textureFormat: TextureFormat.RGBA_8_UNORM})).toThrow();
+        expect(() => new TestTexture({width: 1, height: 1})).toThrow();
+    });
+
+    it("fills factory defaults: preferred format, copy destination usage, no mipmaps", () => {
+        const factory = new TestTextureFactory();
+        const texture = factory.createEmpty(8, 8) as TestTexture;
+
+        expect(texture.descriptor.textureFormat).toBe(TextureFormat.RGBA_8_UNORM_SRGB);
+        expect(texture.descriptor.textureUsage).toBe(TextureUsage.COPY_DST | TextureUsage.TEXTURE_BINDING);
+        expect(texture.descriptor.generateMipmaps).toBe(false);
+        expect(texture.descriptor.label).toBeNull();
+        expect(texture.descriptor.data).toBeUndefined();
+        expect(texture.initialized).toBe(true);
+    });
+
+    it("passes pixel data to the backend texture as one Uint8Array level", () => {
+        const factory = new TestTextureFactory();
+        const texture = factory.create(1, 1, [1, 2, 3, 4], 4, "px", undefined, TextureFormat.RGBA_8_UNORM) as TestTexture;
+
+        expect(texture.descriptor.textureFormat).toBe(TextureFormat.RGBA_8_UNORM);
+        expect(texture.descriptor.label).toBe("px");
+        const data = texture.descriptor.data as Uint8Array[];
+        expect(data).toHaveLength(1);
+        expect(Array.from(data[0])).toEqual([1, 2, 3, 4]);
     });
 
     it("defaults a 2D texture view to RGBA8", () => {

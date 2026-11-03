@@ -1,12 +1,11 @@
 import {
-    type ITexture2D, type ITextureView,
+    type ITexture2D, type ITextureDescriptor, type ITextureView,
     State,
     type TextureFormat,
     TextureUsage,
     TextureViewDescriptor
 } from "../../../api/index.ts";
 import {vec2} from "gl-matrix";
-import type {ResolvedTextureDescriptor} from "./TextureDescriptorUtilities.ts";
 
 /**
  * The ATexture2D class is an abstract base class that implements the ITexture2D interface. It provides common properties and a constructor for initializing a 2D texture, but it does not implement the actual texture creation and management logic, which must be provided by subclasses that extend this base class.
@@ -20,7 +19,7 @@ export abstract class ATexture2D implements ITexture2D {
     protected _size = 0;
     protected _generateMipMaps: boolean = false;
     protected _mipLevels: number;
-    protected _data?: Uint8Array[];
+    protected _data?: Uint8Array[] | HTMLImageElement[];
     protected _blockSize: vec2;
 
     protected _disposedListeners: ((tex: ITexture2D) => void)[] = [];
@@ -30,7 +29,7 @@ export abstract class ATexture2D implements ITexture2D {
      * @param descriptor - The texture descriptor.
      */
     protected constructor(
-        descriptor: ResolvedTextureDescriptor,
+        descriptor: ITextureDescriptor,
     ) {
 
         if (!descriptor.textureFormat) {
@@ -39,14 +38,14 @@ export abstract class ATexture2D implements ITexture2D {
 
         this.id = ATexture2D.generateId();
         this.textureFormat = descriptor.textureFormat;
-        this.textureUsage = descriptor.textureUsage;
+        this.textureUsage = descriptor.textureUsage ?? (TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST);
         this.textureViewFormat = descriptor.textureFormat;
-        this.width = descriptor.width;
-        this.height = descriptor.height;
+        this.width = descriptor.width ?? 0;
+        this.height = descriptor.height ?? 0;
         this._data = descriptor.data;
         this._mipLevels = this._data?.length ?? 1;
-        this._generateMipMaps = descriptor.generateMipmaps && this._mipLevels <= 1;
-        this.label = descriptor.label;
+        this._generateMipMaps = (descriptor.generateMipmaps ?? false) && this._mipLevels <= 1;
+        this.label = descriptor.label ?? null;
         this._blockSize = descriptor.blockSize ?? vec2.fromValues(1, 1);
 
         if (this.width == 0 || this.height == 0) {

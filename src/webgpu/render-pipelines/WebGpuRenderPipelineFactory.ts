@@ -13,6 +13,7 @@ import type {
 } from "../../api/index.ts";
 import {WebGpuMainRenderTargetRenderPipeline} from "./WebGpuMainRenderTargetRenderPipeline.ts";
 import {WebGpuUnlitRenderPipeline} from "./material/WebGpuUnlitRenderPipeline.ts";
+import {WebGpuSpriteRenderPipeline} from "./sprite/WebGpuSpriteRenderPipeline.ts";
 
 /**
  * The WebGPU render pipeline factory. Slice 1 implements the main render target and unlit pipelines.
@@ -50,8 +51,10 @@ export class WebGpuRenderPipelineFactory implements IRenderPipelineFactory {
     }
 
     /** @inheritDoc */
-    public createSpriteRenderPipeline(_projectionViewBuffer: IUniformBuffer): ISpriteRenderPipeline {
-        throw new Error("The sprite render pipeline is not implemented for WebGPU.");
+    public createSpriteRenderPipeline(projectionViewBuffer: IUniformBuffer): ISpriteRenderPipeline {
+        const pipeline = new WebGpuSpriteRenderPipeline(this._framework, projectionViewBuffer);
+        pipeline.initialize();
+        return pipeline;
     }
 
     /** @inheritDoc */
