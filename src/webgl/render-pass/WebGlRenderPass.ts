@@ -126,7 +126,7 @@ export class WebGlRenderPass implements IRenderPass {
                     format = TextureFormat.DEPTH_32_FLOAT;
                 }
                 var colorTex = colorAttachments[0].texture!;
-                this._depthStencilRenderBuffer = WebGlUtilities.renderBuffer.create(this._gl, format, colorTex.width, colorTex.height, null);
+                this._depthStencilRenderBuffer = WebGlUtilities.renderBuffer.create(this._gl, format, colorTex.nativeSize[0], colorTex.nativeSize[1], null);
                 WebGlUtilities.framebuffer.attachDepthStencilRenderBuffer(this._gl, this._frameBuffer!, this._depthStencilRenderBuffer, format);
             }
         }

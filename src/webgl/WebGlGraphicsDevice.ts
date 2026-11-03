@@ -4,7 +4,7 @@ import {AGraphicsDevice, type IGraphicsDeviceDescriptor} from "../core/rendering
 import {type BlendStateDescriptor} from "../core/rendering/blending/blend-state-descriptor";
 import {WebGlBlendState} from "./blending/webgl-blend-state";
 import {WebGlPrimitiveState} from "./primitive/WebGlPrimitiveState.ts";
-import {WebGLGraphicsDeviceFeatures} from "./WebGLGraphicsDeviceFeatures.ts";
+import {WebGlGraphicsDeviceFeatures} from "./WebGLGraphicsDeviceFeatures.ts";
 import {WebGlSwapChain} from "./swap-chain/WebGlSwapChain.ts";
 import {WebGlGpuInfo} from "./WebGlGpuInfo.ts";
 import type {SamplerDescriptor} from "../core/rendering/sampler/sampler-descriptor.ts";
@@ -17,7 +17,7 @@ import {
     type ICanvasManager,
     type IPrimitiveStateDescriptor,
     RenderPassDescriptor,
-    SwapChainDescriptor
+    type ISwapChainDescriptor
 } from "../api/index.ts";
 
 /**
@@ -46,7 +46,7 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
     private readonly _canvasManager: ICanvasManager;
     private _canvas: HTMLCanvasElement = null!;
     private _gl: WebGL2RenderingContext = null!;
-    private _features: WebGLGraphicsDeviceFeatures = null!;
+    private _features: WebGlGraphicsDeviceFeatures = null!;
     private _gpuInfo: WebGlGpuInfo = null!;
 
     /**
@@ -98,14 +98,14 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
             throw new Error("WebGL not supported.");
         }
 
-        this._features = new WebGLGraphicsDeviceFeatures(this._gl);
+        this._features = new WebGlGraphicsDeviceFeatures(this._gl);
         this._gpuInfo = new WebGlGpuInfo(this);
 
         await super.initializeAsync();
     }
 
     /** @inheritdoc */
-    public createSwapChain(canvas: HTMLCanvasElement, _: SwapChainDescriptor): ISwapChain {
+    public createSwapChain(canvas: HTMLCanvasElement, _: ISwapChainDescriptor): ISwapChain {
         return new WebGlSwapChain(canvas, this);
     }
 

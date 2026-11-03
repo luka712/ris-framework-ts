@@ -27,7 +27,7 @@ export interface ITextureDescriptor {
      */
     textureFormat?: TextureFormat;
 
-    /** The preferred color space. If not defined, it is specified by framework.  */
+    /** The preferred color space. By default, undefined: KTX2 files follow their own color space, other images use renderer.colorSpace. */
     preferredColorSpace?: ColorSpace;
 
     /**
@@ -36,11 +36,8 @@ export interface ITextureDescriptor {
      */
     textureUsage?: TextureUsage;
 
-    /**
-     * The texture label.
-     * By default, it is null.
-     */
-    label?: string | null;
+    /** The texture label. */
+    label?: string;
 
     /**
      * The data per mip level.

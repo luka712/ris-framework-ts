@@ -1,4 +1,4 @@
-import {ColorSpace} from "../rendering/enums.ts";
+import { ColorSpace } from "../rendering/enums.ts";
 import {
     type IShaderModule,
     type IContentManager,
@@ -16,10 +16,10 @@ import {
     type ICamera,
     type IDisposable,
 } from "../index.ts";
-import {ObjGeometryMapper} from "../loaders/ObjGeometryMapper.ts";
-import {ObjLoader} from "../loaders/ObjLoader.ts";
-import {Ktx2Factory} from "ris-ktx2";
-import type {IKtx2Texture} from "ris-ktx2";
+import { ObjGeometryMapper } from "../loaders/ObjGeometryMapper.ts";
+import { ObjLoader } from "../loaders/ObjLoader.ts";
+import { Ktx2Factory } from "ris-ktx2";
+import type { IKtx2Texture } from "ris-ktx2";
 
 const KTX2_EXTENSION = ".ktx2";
 
@@ -77,15 +77,18 @@ export class ContentManager implements IContentManager {
 
     /** @inheritDoc */
     public async loadTexture2DAsync(path: string,
-                                    textureDescriptor?: ITextureDescriptor,
-                                    contentConfig?: ContentConfig,
+        textureDescriptor?: ITextureDescriptor,
+        contentConfig?: ContentConfig,
     ): Promise<ITexture2D> {
 
         // TODO: check texture cache
         if (path.endsWith(KTX2_EXTENSION)) {
 
             const ktx2Texture = await this.loadKtx2Async(path);
-            const tex = this._framework.textureFactory.createFromKtx2(ktx2Texture, textureDescriptor?.textureFormat, textureDescriptor?.preferredColorSpace);
+            const tex = this._framework.textureFactory.createFromKtx2(
+                ktx2Texture,
+                textureDescriptor?.textureFormat,
+                textureDescriptor?.preferredColorSpace);
             if (contentConfig?.keepDataCached !== true) {
                 ktx2Texture.delete();
             }
@@ -124,7 +127,7 @@ export class ContentManager implements IContentManager {
 
     /** @inheritDoc */
     public async loadMeshAsync(path: string, geometryFormat: GeometryFormat): Promise<IMesh> {
-        const model = await ObjLoader.parseAsync(path, {ignoreMaterials: true});
+        const model = await ObjLoader.parseAsync(path, { ignoreMaterials: true });
         const geometry = this._framework.geometryBuilder.create(ObjGeometryMapper.toDescriptor(model.geometry));
         return this._framework.meshFactory.createMesh(geometry, geometryFormat);
     }
@@ -132,7 +135,7 @@ export class ContentManager implements IContentManager {
     /** @inheritDoc */
     public loadUnlitMeshAsync(path: string, camera?: ICamera): Promise<IRenderableMesh> {
         return this._framework.objLoader.loadAsync(path, subMesh => {
-            const material = this._framework.materialFactory.createUnlitMaterial({camera});
+            const material = this._framework.materialFactory.createUnlitMaterial({ camera });
             const diffuse = subMesh.material?.diffuseColor ?? [1, 1, 1];
             material.diffuseColor = new Color(diffuse[0], diffuse[1], diffuse[2], subMesh.material?.opacity ?? 1);
             return material;

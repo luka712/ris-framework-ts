@@ -8,23 +8,23 @@ import {
     TextureViewDimension,
     type ITextureDescriptor,
 } from "../../api/index.ts";
-import {ATexture2D} from "../../core/rendering/texture/texture.ts";
-import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
-import {WebGpuConverter} from "../utilities/WebGpuConverter.ts";
-import {WebGpuTextureView} from "./WebGpuTextureView.ts";
-import {WebGpuUtilities} from "../utilities/WebGpuUtilities.ts";
+import { ATexture2D } from "../../core/rendering/texture/texture.ts";
+import type { WebGpuGraphicsDevice } from "../WebGpuGraphicsDevice.ts";
+import { WebGpuConverter } from "../utilities/WebGpuConverter.ts";
+import { WebGpuTextureView } from "./WebGpuTextureView.ts";
+import { WebGpuUtilities } from "../utilities/WebGpuUtilities.ts";
+import { vec2 } from "gl-matrix";
 
 /**
  * The WebGPU 2D texture.
  *
- * Supports `Uint8Array` mip levels (uncompressed or compressed, e.g. from KTX2) or an `HTMLImageElement` as `data[0]`.
- * Mipmap generation and compressed (KTX2) formats are not implemented for WebGPU yet.
+ * Supports `Uint8Array` mip levels (uncompressed or compressed, e.g. from KTX2) or `HTMLImageElement` mip levels.
+ * Mipmap generation is not implemented for WebGPU yet.
  * @internal
  */
 export class WebGpuTexture2D extends ATexture2D {
 
     private readonly _graphicsDevice: WebGpuGraphicsDevice;
-    private readonly _image?: HTMLImageElement;
     private _gpuTexture: GPUTexture | null = null;
     private _gpuDefaultView: GPUTextureView | null = null;
 
@@ -36,9 +36,9 @@ export class WebGpuTexture2D extends ATexture2D {
     public constructor(framework: IFramework, descriptor: ITextureDescriptor) {
         super(descriptor);
         this._graphicsDevice = framework.renderer.graphicsDevice as WebGpuGraphicsDevice;
-        const first = descriptor.data?.[0];
-        if (typeof HTMLImageElement !== "undefined" && first instanceof HTMLImageElement) {
-            this._image = first;
+
+        if (!this._label) {
+            this._label = `WebGpuTexture2D ${this.id}`;
         }
     }
 
@@ -60,61 +60,50 @@ export class WebGpuTexture2D extends ATexture2D {
 
     /** @inheritDoc */
     public initialize(): void {
-        if (this._state == State.INITIALIZED) {
-            throw new Error("Texture is already initialized.");
-        } else if (this._state == State.DISPOSED) {
-            throw new Error("Texture is already disposed.");
-        }
+        this._validateState();
 
         const isCompressed = TextureUtilities.isCompressedTextureFormat(this.textureFormat);
-        if (this._generateMipMaps && !isCompressed) {
-            console.warn("WebGpuTexture2D: mipmap generation is not implemented for WebGPU; only the base level is used.");
-            this._generateMipMaps = false;
-        }
 
-        const hasData = !this._image && !!this._data && this._data.length > 0;
-        let usage = WebGpuConverter.convertTextureUsage(this.textureUsage);
-        // Uploading needs COPY_DST; copyExternalImageToTexture also needs RENDER_ATTACHMENT.
-        if (hasData || this._image) {
-            usage |= GPUTextureUsage.COPY_DST;
-        }
-        if (this._image) {
-            usage |= GPUTextureUsage.RENDER_ATTACHMENT;
+        if (this._generateMipMaps) {
+            throw new Error("Not implemented!");
         }
 
         const device = this._graphicsDevice.device;
-        // Compressed formats need a block-aligned base size (e.g. ASTC 10x5 at 768x512 -> 770x515).
-        // The copies below use the logical mip sizes rounded up to whole blocks, which stay within the physical mips.
-        const [gpuWidth, gpuHeight] = isCompressed
-            ? WebGpuUtilities.texture.alignSizeToBlock(this.width, this.height, this._blockSize[0], this._blockSize[1])
-            : [this.width, this.height];
-        this._gpuTexture = WebGpuUtilities.texture.create(
-            device, gpuWidth, gpuHeight,
-            WebGpuConverter.convertTextureFormat(this.textureFormat),
-            usage, this._mipLevels, 1,
-            this.label ?? `WebGpuTexture2D ${this.id}`);
+        const data = this._data;
+        const hasImages = typeof HTMLImageElement !== "undefined" && !!data && data[0] instanceof HTMLImageElement;
 
-        if (this._image) {
-            WebGpuUtilities.texture.writeImageToTexture(device.queue, this._gpuTexture, this._image, this.width, this.height);
-        } else if (hasData) {
-            let width = this.width;
-            let height = this.height;
-            const levels = this._data as Uint8Array[];
-            for (let level = 0; level < levels.length; level++) {
-                if (isCompressed) {
-                    WebGpuUtilities.texture.writeCompressedToTexture(device.queue, this._gpuTexture, levels[level],
-                        width, height, this._blockSize[0], this._blockSize[1],
-                        TextureUtilities.getVRamSize(this.textureFormat, this._blockSize[0], this._blockSize[1]), level);
-                } else {
-                    const bytesPerPixel = TextureUtilities.getVRamSize(this.textureFormat, 1, 1);
-                    WebGpuUtilities.texture.writeToTexture(device.queue, this._gpuTexture, levels[level], width, height, bytesPerPixel, level);
-                }
-                width = Math.max(1, Math.floor(width / 2));
-                height = Math.max(1, Math.floor(height / 2));
+        if (isCompressed) {
+            if (hasImages) {
+                throw new Error("WebGpuTexture2D: compressed formats need Uint8Array data, not images.");
             }
+
+            // Compressed formats need a block-aligned base size (e.g. ASTC 10x5 at 768x512 -> 770x515).
+            const result = WebGpuUtilities.texture.createCompressedTexture(
+                device,
+                this._baseSize,
+                this._blockSize,
+                this.textureFormat,
+                this.textureUsage,
+                data as Uint8Array[] | undefined,
+                this._mipLevels,
+                1,
+                this.label);
+
+            this._gpuTexture = result.texture;
+            this._nativeSize = vec2.fromValues(result.size.width, result.size.height!);
+        }
+        else {
+            this._gpuTexture = WebGpuUtilities.texture.create(
+                device,
+                this._baseSize,
+                this.textureFormat,
+                this.textureUsage,
+                data,
+                this._mipLevels, 1,
+                this.label);
         }
 
-        this._gpuDefaultView = WebGpuUtilities.textureView.create(this._gpuTexture, {label: `${this.label ?? "WebGpuTexture2D"} default view`});
+        this._gpuDefaultView = WebGpuUtilities.textureView.create(this._gpuTexture, { label: `${this.label} default view` });
         // ATexture2D declares the default view readonly and sets it to null; fill it in here.
         (this as { defaultTextureView: ITextureView }).defaultTextureView =
             new WebGpuTextureView(this._gpuDefaultView, this.textureFormat);
@@ -122,11 +111,11 @@ export class WebGpuTexture2D extends ATexture2D {
 
         this._state = State.INITIALIZED;
 
-        let width = this.width;
-        let height = this.height;
-        this._size = 0;
+        let width = this.nativeSize[0];
+        let height = this.nativeSize[1];
+        this._vramSize = 0;
         for (let i = 0; i < this.mipLevels; i++) {
-            this._size += TextureUtilities.getVRamSize(this.textureFormat, width, height);
+            this._vramSize += TextureUtilities.getVRamSize(this.textureFormat, width, height);
             width = Math.max(1, Math.floor(width / 2));
             height = Math.max(1, Math.floor(height / 2));
         }

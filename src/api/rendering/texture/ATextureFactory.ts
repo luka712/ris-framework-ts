@@ -1,4 +1,4 @@
-import { type IKtx2Texture, KtxTranscodeFlags, KtxTranscodeFormat, VkFormat } from "ris-ktx2";
+import { type IKtx2Texture, KtxDFTransfer, KtxTranscodeFlags, KtxTranscodeFormat, VkFormat } from "ris-ktx2";
 import { vec2 } from "gl-matrix";
 import type { ITextureFactory } from "./ITextureFactory.ts";
 import type { IFramework } from "../../IFramework.ts";
@@ -31,7 +31,8 @@ export abstract class ATextureFactory implements ITextureFactory {
      * Create a texture from a KTX2 file.
      * @param ktxTexture The ktx2 texture.
      * @param textureFormat The desired texture format. By default, TextureFormat.UNDEFINED, which picks the format from the GPU features.
-     * @param colorSpace The preferred color space. By default, null, which uses renderer.colorSpace.
+     * @param colorSpace The color space override. By default, null, which follows the file: its DFD transfer function (sRGB or linear),
+     * or, if unspecified, the file's vkFormat (non-transcoded) or linear (transcoded).
      * @returns The 2D texture.
      */
     public createFromKtx2(ktxTexture: IKtx2Texture, textureFormat = TextureFormat.UNDEFINED, colorSpace: ColorSpace | null = null): ITexture2D {
@@ -44,8 +45,11 @@ export abstract class ATextureFactory implements ITextureFactory {
         let transcodeFormat = KtxTranscodeFormat.NO_SELECTION;
         const gpuFeatures = this._framework.graphicsDevice.features;
 
-        // Textures always adapt to the framework's preferred color space, unless user defined it's preferred.
-        const preferSrgb = (colorSpace ?? this._framework.renderer.colorSpace) == ColorSpace.SRGB;
+        // An explicit color space wins; otherwise follow the file's DFD transfer function (null = not specified by the file).
+        const oetf = ktxTexture.oetf;
+        const fileSrgb: boolean | null = oetf == KtxDFTransfer.SRGB ? true : oetf == KtxDFTransfer.LINEAR ? false : null;
+        const requestedSrgb: boolean | null = colorSpace != null ? colorSpace == ColorSpace.SRGB : fileSrgb;
+        const preferSrgb = requestedSrgb ?? false;
 
         const userSpecifiedTextureFormat = textureFormat != TextureFormat.UNDEFINED;
 
@@ -86,17 +90,23 @@ export abstract class ATextureFactory implements ITextureFactory {
             ktxTexture.transcodeBasis(transcodeFormat, KtxTranscodeFlags.HIGH_QUALITY);
         }
         else {
-            // No transcoding path: map the vkFormat, then switch to the preferred color space variant.
+            // No transcoding path: map the vkFormat, then switch to the requested color space variant (override, else the file's DFD).
             const fileFormat = TextureUtilities.convertVkFormatToTextureFormat(vkFormat);
+
             textureFormat = userSpecifiedTextureFormat ? requestedFormat : fileFormat;
 
-            if (!userSpecifiedTextureFormat) {
-                if (preferSrgb && !TextureUtilities.isSrgbFormat(textureFormat)) {
+            if (!userSpecifiedTextureFormat && requestedSrgb != null) {
+                if (requestedSrgb && !TextureUtilities.isSrgbFormat(textureFormat)) {
                     textureFormat = TextureUtilities.convertToSrgbVariant(textureFormat);
-                } else if (!preferSrgb && TextureUtilities.isSrgbFormat(textureFormat)) {
+                } else if (!requestedSrgb && TextureUtilities.isSrgbFormat(textureFormat)) {
                     textureFormat = TextureUtilities.convertToLinearVariant(textureFormat);
                 }
             }
+        }
+
+        // The device must support the final format (the file's format, or the transcode target).
+        if (!gpuFeatures.supportsTextureFormat(textureFormat!)) {
+            throw new Error(`Texture format ${textureFormat} of '${ktxTexture.filePath}' is not supported by this graphics device.`);
         }
 
         // After transcoding, the block size is the one of the transcoded format, not of the file's vkFormat.
@@ -120,6 +130,7 @@ export abstract class ATextureFactory implements ITextureFactory {
             textureFormat,
             blockSize: vec2.fromValues(blockSize.blockWidth, blockSize.blockHeight),
             textureUsage: TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST,
+            label: ktxTexture.filePath
         };
 
         return this._createAndInitializeTexture(textureDescriptor);
@@ -168,7 +179,7 @@ export abstract class ATextureFactory implements ITextureFactory {
             textureFormat,
             textureUsage,
             generateMipmaps: useMipMaps,
-            label,
+            label: label ?? undefined,
         };
 
         return this._createAndInitializeTexture(desc);
@@ -176,12 +187,15 @@ export abstract class ATextureFactory implements ITextureFactory {
 
     /** @inheritdoc */
     public createEmpty(
-        width: number, height: number,
+        size: vec2,
         color: Color | null = null,
         textureUsage = TextureUsage.COPY_DST | TextureUsage.TEXTURE_BINDING,
         textureFormat = TextureFormat.UNDEFINED,
         label: string | null = null,
         useMipmap = false): ITexture2D {
+
+        const width = size[0];
+        const height = size[1];
 
         if (width == 0 || height == 0) {
             throw new Error("Width and height must be greater than 0.");
@@ -196,7 +210,7 @@ export abstract class ATextureFactory implements ITextureFactory {
             height,
             textureUsage,
             textureFormat,
-            label,
+            label: label ?? undefined,
             generateMipmaps: useMipmap,
         };
 

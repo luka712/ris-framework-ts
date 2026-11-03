@@ -1,3 +1,4 @@
+import {vec2} from "gl-matrix";
 import { resolvePrimitiveStateDescriptor } from "../src/core/rendering/primitive/PrimitiveStateDescriptorUtilities.ts";
 import { describe, expect, it } from "vitest";
 import {
@@ -15,7 +16,6 @@ import {
     State,
     StoreAction,
     SurfacePresentMode,
-    SwapChainDescriptor,
     TextureFormat,
     TextureUsage,
     TextureViewDescriptor,
@@ -24,7 +24,7 @@ import {
 } from "../src/api/index.ts";
 import {ATexture2D} from "../src/core/rendering/texture/texture.ts";
 import {ATextureFactory} from "../src/api/rendering/texture/ATextureFactory.ts";
-import type {IFramework, ITexture2D, ITextureDescriptor, ITextureView} from "../src/api/index.ts";
+import type {IFramework, ISwapChainDescriptor, ITexture2D, ITextureDescriptor, ITextureView} from "../src/api/index.ts";
 
 /** A texture without a backend, to read the defaults ATexture2D applies. */
 class TestTexture extends ATexture2D {
@@ -81,13 +81,13 @@ describe("value defaults", () => {
     it("defaults a texture to a shader-readable copy destination without mipmaps or label", () => {
         const texture = new TestTexture({width: 2, height: 3, textureFormat: TextureFormat.RGBA_8_UNORM});
 
-        expect(texture.width).toBe(2);
-        expect(texture.height).toBe(3);
+        expect(Array.from(texture.size)).toEqual([2, 3]);
+        expect(Array.from(texture.nativeSize)).toEqual([2, 3]);
         expect(texture.textureFormat).toBe(TextureFormat.RGBA_8_UNORM);
         expect(texture.textureUsage).toBe(TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST);
         expect(texture.textureUsage & TextureUsage.RENDER_ATTACHMENT).toBe(0);
         expect(texture.generateMipMaps).toBe(false);
-        expect(texture.label).toBeNull();
+        expect(texture.label).toBeUndefined();
         expect(texture.mipLevels).toBe(1);
     });
 
@@ -109,12 +109,12 @@ describe("value defaults", () => {
 
     it("fills factory defaults: preferred format, copy destination usage, no mipmaps", () => {
         const factory = new TestTextureFactory();
-        const texture = factory.createEmpty(8, 8) as TestTexture;
+        const texture = factory.createEmpty(vec2.fromValues(8, 8)) as TestTexture;
 
         expect(texture.descriptor.textureFormat).toBe(TextureFormat.RGBA_8_UNORM_SRGB);
         expect(texture.descriptor.textureUsage).toBe(TextureUsage.COPY_DST | TextureUsage.TEXTURE_BINDING);
         expect(texture.descriptor.generateMipmaps).toBe(false);
-        expect(texture.descriptor.label).toBeNull();
+        expect(texture.descriptor.label).toBeUndefined();
         expect(texture.descriptor.data).toBeUndefined();
         expect(texture.initialized).toBe(true);
     });
@@ -175,11 +175,11 @@ describe("value defaults", () => {
         expect(attachment.view).toBeUndefined();
     });
 
-    it("defaults a swap chain to zero-sized FIFO presentation", () => {
-        const descriptor = new SwapChainDescriptor();
+    it("leaves every swap chain descriptor field optional", () => {
+        const descriptor: ISwapChainDescriptor = {};
 
-        expect(descriptor.width).toBe(0);
-        expect(descriptor.height).toBe(0);
-        expect(descriptor.desiredPresentationMode).toBe(SurfacePresentMode.FIFO);
+        expect(descriptor.width ?? 0).toBe(0);
+        expect(descriptor.height ?? 0).toBe(0);
+        expect(descriptor.desiredPresentationMode ?? SurfacePresentMode.FIFO).toBe(SurfacePresentMode.FIFO);
     });
 });

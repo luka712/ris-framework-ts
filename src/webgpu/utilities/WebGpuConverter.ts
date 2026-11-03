@@ -37,12 +37,14 @@ export class WebGpuConverter {
 
     /** Converts texture usage flags. `TextureUsage.NONE` maps to 0. */
     public static convertTextureUsage(usage: TextureUsage): number {
-        let result = 0;
+        let result : number = 0;
+
         if (usage & TextureUsage.COPY_SRC) result |= GPUTextureUsage.COPY_SRC;
         if (usage & TextureUsage.COPY_DST) result |= GPUTextureUsage.COPY_DST;
         if (usage & TextureUsage.TEXTURE_BINDING) result |= GPUTextureUsage.TEXTURE_BINDING;
         if (usage & TextureUsage.STORAGE_BINDING) result |= GPUTextureUsage.STORAGE_BINDING;
         if (usage & TextureUsage.RENDER_ATTACHMENT) result |= GPUTextureUsage.RENDER_ATTACHMENT;
+
         return result;
     }
 

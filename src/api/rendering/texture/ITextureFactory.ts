@@ -4,6 +4,7 @@ import {TextureFormat} from "./TextureFormat.ts";
 import type { ITexture2D } from "./ITexture2D.ts";
 import type {IKtx2Texture} from "ris-ktx2";
 import { ColorSpace } from "../enums.ts";
+import type {vec2} from "gl-matrix";
 
 /**
  * The texture factory.
@@ -12,15 +13,14 @@ export interface ITextureFactory {
 
     /**
      * Creates empty texture.
-     * @param width The texture width.
-     * @param height The texture height.
-     * @param defaultColor The optional color.
-     * @param textureUsage Texture usage.
-     * @param textureFormat Texture format.
-     * @param label The label.
+     * @param size The texture size [width, height] in pixels. Both must be greater than 0.
+     * @param defaultColor The optional fill color. By default, none (black and none skip the upload).
+     * @param textureUsage Texture usage. By default, `TextureUsage.COPY_DST | TextureUsage.TEXTURE_BINDING`.
+     * @param textureFormat Texture format. By default, `TextureFormat.UNDEFINED`, which uses the renderer's preferred texture format.
+     * @param label The label. By default, none.
      */
     createEmpty(
-        width: number, height: number,
+        size: vec2,
         defaultColor?: Color,
         textureUsage?: TextureUsage,
         textureFormat?: TextureFormat,
@@ -52,7 +52,8 @@ export interface ITextureFactory {
      * Create a texture from a KTX2 file.
      * @param ktxTexture - The ktx2 texture.
      * @param textureFormat - The desired texture format. By default, TextureFormat.UNDEFINED, which picks the format from the GPU features.
-     * @param colorSpace - The preferred color space. By default, null, which uses renderer.colorSpace.
+     * @param colorSpace - The color space override. By default, null, which follows the file: its DFD transfer function (sRGB or linear),
+     * or, if unspecified, the file's vkFormat (non-transcoded) or linear (transcoded).
      * @returns The 2D texture.
      */
     createFromKtx2(ktxTexture: IKtx2Texture, textureFormat?: TextureFormat, colorSpace?: ColorSpace | null): ITexture2D;

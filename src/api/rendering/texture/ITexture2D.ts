@@ -4,6 +4,7 @@ import {TextureUsage} from "./TextureUsage.ts";
 import {State} from "../../data/State.ts";
 import {TextureViewDescriptor} from "./TextureViewDescriptor.ts";
 import {TextureFormat} from "./TextureFormat.ts";
+import type {vec2} from "gl-matrix";
 
 /**
  * The texture 2D interface.
@@ -44,10 +45,8 @@ export interface ITexture2D extends IContent {
      */
     readonly handle?: any;
 
-    /**
-     * The label.
-     */
-    readonly label: string | null;
+    /** The label of the texture. The label is used as a label of underlying GPU texture. */
+    readonly label?: string;
 
     /**
      * The current state.
@@ -55,20 +54,25 @@ export interface ITexture2D extends IContent {
     readonly textureState: State;
 
     /**
-     * The size of this texture in RAM.
-     * Note that size if rough approximation as real size can depend on driver implementation.
+     * The approximate size of this texture in VRAM, in bytes, computed from the native size.
+     * Note that it is a rough approximation, as the real size depends on the driver implementation.
      */
-    readonly size: number;
+    readonly vramSize: number;
 
     /**
-     * The width of the texture.
+     * The logical size of the texture [width, height] in pixels, as described by the texture data
+     * (e.g. 768x512 for a 768x512 KTX2 image). Use this for sprite sizes, UVs and layout.
+     * Do not modify the returned vector.
      */
-    readonly width: number;
+    readonly size: vec2;
 
     /**
-     * The height of the texture.
+     * The native size of the texture [width, height] in pixels, i.e. the size actually allocated on the GPU.
+     * For block-compressed formats on backends that require it (WebGPU), this is the logical size rounded up
+     * to whole blocks (e.g. ASTC 10x5 at 768x512 -> 770x515). Otherwise, it is equal to `size`.
+     * Do not modify the returned vector.
      */
-    readonly height: number;
+    readonly nativeSize: vec2;
 
     /**
      * The number of mipmap levels.

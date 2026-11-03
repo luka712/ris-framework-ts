@@ -1,4 +1,4 @@
-import {ASTC_TEXTURE_FORMATS, type IGPUInfo, RenderingBackend, TextureFormat} from "../api/index.ts";
+import {type IGPUInfo, RenderingBackend, TextureFormat, TextureUtilities} from "../api/index.ts";
 import type {WebGpuGraphicsDeviceFeatures} from "./WebGpuGraphicsDeviceFeatures.ts";
 
 /**
@@ -22,21 +22,8 @@ export class WebGPUInfo implements IGPUInfo {
         this.underlyingBackend = RenderingBackend.DEFAULT;
 
         // Features are read from the device (only requested features are enabled), so this lists what can be created.
-        const formats: TextureFormat[] = [];
-        if (features.supportsTextureCompressionASTC) {
-            formats.push(...ASTC_TEXTURE_FORMATS);
-        }
-        if (features.supportsTextureCompressionS3TC) {
-            formats.push(TextureFormat.BC1_RGB_UNORM, TextureFormat.BC1_RGB_SRGB,
-                TextureFormat.BC3_RGBA_UNORM, TextureFormat.BC3_RGBA_SRGB);
-        }
-        if (features.supportsTextureCompressionETC2) {
-            formats.push(TextureFormat.ETC2_RGB8_UNORM, TextureFormat.ETC2_RGB8_SRGB,
-                TextureFormat.ETC2_RGBA8_UNORM, TextureFormat.ETC2_RGBA8_SRGB);
-        }
-        if (features.supportsTextureCompressionBC) {
-            formats.push(TextureFormat.BC7_RGBA_UNORM, TextureFormat.BC7_RGBA_SRGB);
-        }
+        const formats = features.supportedTextureFormats
+            .filter(f => TextureUtilities.isCompressedTextureFormat(f));
         this.supportedCompressedTextureFormats = formats;
     }
 

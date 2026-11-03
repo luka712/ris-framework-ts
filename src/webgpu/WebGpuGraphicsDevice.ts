@@ -1,6 +1,6 @@
-import {AGraphicsDevice, type IGraphicsDeviceDescriptor} from "../core/rendering/AGraphicsDevice.ts";
-import type {BlendStateDescriptor} from "../core/rendering/blending/blend-state-descriptor.ts";
-import type {SamplerDescriptor} from "../core/rendering/sampler/sampler-descriptor.ts";
+import { AGraphicsDevice, type IGraphicsDeviceDescriptor } from "../core/rendering/AGraphicsDevice.ts";
+import type { BlendStateDescriptor } from "../core/rendering/blending/blend-state-descriptor.ts";
+import type { SamplerDescriptor } from "../core/rendering/sampler/sampler-descriptor.ts";
 import {
     type IBlendState,
     type IGPUInfo,
@@ -10,16 +10,16 @@ import {
     type ISwapChain,
     type IPrimitiveStateDescriptor,
     RenderPassDescriptor,
-    SwapChainDescriptor,
+    type ISwapChainDescriptor,
     type ICanvasManager,
 } from "../api/index.ts";
-import {WebGpuGraphicsDeviceFeatures} from "./WebGpuGraphicsDeviceFeatures.ts";
-import {WebGPUInfo} from "./WebGpuInfo.ts";
-import {WebGpuSwapChain} from "./swap-chain/WebGpuSwapChain.ts";
-import {WebGpuSampler} from "./sampler/WebGpuSampler.ts";
-import {WebGpuRenderPass} from "./render-pass/WebGpuRenderPass.ts";
-import {WebGpuBlendState} from "./blending/WebGpuBlendState.ts";
-import {WebGpuPrimitiveState} from "./primitive/WebGpuPrimitiveState.ts";
+import { WebGpuGraphicsDeviceFeatures } from "./WebGpuGraphicsDeviceFeatures.ts";
+import { WebGPUInfo } from "./WebGpuInfo.ts";
+import { WebGpuSwapChain } from "./swap-chain/WebGpuSwapChain.ts";
+import { WebGpuSampler } from "./sampler/WebGpuSampler.ts";
+import { WebGpuRenderPass } from "./render-pass/WebGpuRenderPass.ts";
+import { WebGpuBlendState } from "./blending/WebGpuBlendState.ts";
+import { WebGpuPrimitiveState } from "./primitive/WebGpuPrimitiveState.ts";
 import { WebGpuUtilities } from "./utilities/WebGpuUtilities.ts";
 
 /**
@@ -106,24 +106,22 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
     /** @inheritDoc */
     public async initializeAsync(): Promise<void> {
 
-
         this._context = this._canvasManager.canvas.getContext("webgpu") as GPUCanvasContext;
         if (!this._context) {
             throw new Error("WebGPU canvas context is not available.");
         }
 
-
         this._adapter = await WebGpuUtilities.adapter.requestAdapterAsync(this._descriptor.powerPreference);
         this._features = new WebGpuGraphicsDeviceFeatures(this._adapter.features);
 
-        this._device  = await WebGpuUtilities.device.requestDeviceAsync(this._adapter, this._features.deviceRequiredFeatures, {}, "RisFramework WebGPU device");
+        this._device = await WebGpuUtilities.device.requestDeviceAsync(this._adapter, this._features.deviceRequiredFeatures, {}, "RisFramework WebGPU device");
         this._gpuInfo = new WebGPUInfo(this._adapter, this._features);
         this.setupDebugCallback();
-        await super.initializeAsync();  
+        await super.initializeAsync();
     }
 
     /** @inheritDoc */
-    public createSwapChain(_canvas: HTMLCanvasElement, descriptor: SwapChainDescriptor): ISwapChain {
+    public createSwapChain(_canvas: HTMLCanvasElement, descriptor: ISwapChainDescriptor): ISwapChain {
         // The swap chain reads the canvas from the device's canvas manager, which is the same canvas.
         this._swapChain?.dispose();
         this._swapChain = new WebGpuSwapChain(this, descriptor);

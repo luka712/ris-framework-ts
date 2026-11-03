@@ -16,14 +16,21 @@ export class WebGpuContextUtilities {
         context: GPUCanvasContext,
         device: GPUDevice,
         desiredTextureFormat?: TextureFormat,
+        viewFormats?: TextureFormat[],
         alphaMode: GPUCanvasAlphaMode = "opaque") {
 
         const gpuTextureFormat = desiredTextureFormat ? WebGpuConverter.convertTextureFormat(desiredTextureFormat) : navigator.gpu.getPreferredCanvasFormat();
+        
+        let gpuViewFormats = undefined;
+        if(viewFormats){
+            gpuViewFormats = viewFormats.map(x => WebGpuConverter.convertTextureFormat(x));
+        }
 
         const configuration: GPUCanvasConfiguration = {
             device,
             format: gpuTextureFormat,
             alphaMode,
+            viewFormats: gpuViewFormats
         };
         context.configure(configuration);
 

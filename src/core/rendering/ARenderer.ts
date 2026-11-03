@@ -14,7 +14,7 @@ import {
     RenderPassColorAttachment,
     RenderPassDepthStencilAttachment,
     RenderPassDescriptor,
-    SwapChainDescriptor,
+    type ISwapChainDescriptor,
     TextureFormat,
     TextureUsage
 } from "../../api/index.ts";
@@ -167,9 +167,13 @@ export abstract class ARenderer implements ITempRenderer {
         this._graphicsDevice = this.createGraphicsDevice();
         await this._graphicsDevice.initializeAsync();
 
+        const swapchainDescriptor: ISwapChainDescriptor = {
+            desiredColorSpace: this._colorSpace,
+        };
+
         this._swapChain = this._graphicsDevice.createSwapChain(
             this._canvasManager.canvas,
-            new SwapChainDescriptor());
+            swapchainDescriptor);
         // TODO: RESIZE EVENT
 
     }
@@ -195,14 +199,15 @@ export abstract class ARenderer implements ITempRenderer {
 
         // Create a main frame buffer.
         this._mainRenderTarget = this._framework.textureFactory.createEmpty(
-            this.backBufferSize[0], this.backBufferSize[1],
-            Color.transparent(),
+            this.backBufferSize,
+            undefined,
             TextureUsage.TEXTURE_BINDING | TextureUsage.RENDER_ATTACHMENT,
-            this.preferredTextureFormat
+            this.preferredTextureFormat,
+            "Renderer_MainRenderTarget"
         );
 
         this._depthStencilBuffer = this._framework.textureFactory.createEmpty(
-            this.backBufferSize[0], this.backBufferSize[1],
+            this.backBufferSize,
             undefined,
             TextureUsage.RENDER_ATTACHMENT,
             this.preferredDepthStencilFormat);

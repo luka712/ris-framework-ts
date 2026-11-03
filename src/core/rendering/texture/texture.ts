@@ -5,7 +5,7 @@ import {
     TextureUsage,
     TextureViewDescriptor
 } from "../../../api/index.ts";
-import {vec2} from "gl-matrix";
+import { vec2 } from "gl-matrix";
 
 /**
  * The ATexture2D class is an abstract base class that implements the ITexture2D interface. It provides common properties and a constructor for initializing a 2D texture, but it does not implement the actual texture creation and management logic, which must be provided by subclasses that extend this base class.
@@ -14,13 +14,16 @@ export abstract class ATexture2D implements ITexture2D {
 
     private static _nextId: number = 1;
 
+    protected _baseSize: vec2;
+    protected _nativeSize: vec2;
     protected _handle: any;
     protected _state: State = State.CREATED;
-    protected _size = 0;
+    protected _vramSize = 0;
     protected _generateMipMaps: boolean = false;
     protected _mipLevels: number;
     protected _data?: Uint8Array[] | HTMLImageElement[];
     protected _blockSize: vec2;
+    protected _label?: string;
 
     protected _disposedListeners: ((tex: ITexture2D) => void)[] = [];
 
@@ -36,21 +39,22 @@ export abstract class ATexture2D implements ITexture2D {
             throw new Error("Texture format is required.");
         }
 
-        this.id = ATexture2D.generateId();
+        if (!descriptor.width || !descriptor.height || descriptor.width <= 0 || descriptor.height <= 0) {
+            throw new Error("Width or height cannot be undefined or zero.");
+        }
+
+        this.id = ATexture2D._generateId();
         this.textureFormat = descriptor.textureFormat;
         this.textureUsage = descriptor.textureUsage ?? (TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST);
         this.textureViewFormat = descriptor.textureFormat;
-        this.width = descriptor.width ?? 0;
-        this.height = descriptor.height ?? 0;
+        this._baseSize = vec2.fromValues(descriptor.width ?? 0, descriptor.height ?? 0);
+        // By default, the GPU allocation matches the logical size. Backends that pad (e.g. WebGPU compressed) override it.
+        this._nativeSize = vec2.clone(this._baseSize);
         this._data = descriptor.data;
         this._mipLevels = this._data?.length ?? 1;
         this._generateMipMaps = (descriptor.generateMipmaps ?? false) && this._mipLevels <= 1;
-        this.label = descriptor.label ?? null;
+        this._label = descriptor.label;
         this._blockSize = descriptor.blockSize ?? vec2.fromValues(1, 1);
-
-        if (this.width == 0 || this.height == 0) {
-            throw new Error("Width or height cannot be zero.");
-        }
 
         // @ts-ignore
         this.defaultTextureView = null;
@@ -101,8 +105,18 @@ export abstract class ATexture2D implements ITexture2D {
      * Generates a unique ID for each texture instance.
      * @returns A unique ID for the texture instance.
      */
-    private static generateId(): number {
+    private static _generateId(): number {
         return ATexture2D._nextId++;
+    }
+
+    /** Validate state of this texture. */
+    protected _validateState(): void {
+
+        if (this._state == State.INITIALIZED) {
+            throw new Error("Texture is already initialized.");
+        } else if (this._state == State.DISPOSED) {
+            throw new Error("Texture is already disposed.");
+        }
     }
 
     /**
@@ -116,14 +130,18 @@ export abstract class ATexture2D implements ITexture2D {
     }
 
     /** @inheritdoc */
-    public readonly width: number;
+    public get size(): vec2 {
+        return this._baseSize;
+    }
 
     /** @inheritdoc */
-    public readonly height: number;
+    public get nativeSize(): vec2 {
+        return this._nativeSize;
+    }
 
     /** @inheritDoc */
-    public get size(): number {
-        return this._size;
+    public get vramSize(): number {
+        return this._vramSize;
     }
 
     /** @inheritDoc */
@@ -132,7 +150,9 @@ export abstract class ATexture2D implements ITexture2D {
     }
 
     /** @inheritdoc */
-    public readonly label: string | null;
+    public get label(): string | undefined {
+        return this._label;
+    }
 
     /**
      * Creates a texture view for the texture.

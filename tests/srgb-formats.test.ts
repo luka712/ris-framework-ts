@@ -3,7 +3,7 @@ import { VkFormat } from "ris-ktx2";
 import { TextureFormat, TextureUtilities } from "../src/api/index.ts";
 import { WebGlConverter } from "../src/webgl/utilities/WebGlConverter.ts";
 import { WebGpuConverter } from "../src/webgpu/utilities/WebGpuConverter.ts";
-import { WebGLGraphicsDeviceFeatures } from "../src/webgl/WebGLGraphicsDeviceFeatures.ts";
+import { WebGlGraphicsDeviceFeatures } from "../src/webgl/WebGLGraphicsDeviceFeatures.ts";
 import { WebGpuGraphicsDeviceFeatures } from "../src/webgpu/WebGpuGraphicsDeviceFeatures.ts";
 
 const gl = {} as WebGL2RenderingContext;
@@ -70,16 +70,16 @@ describe("compression feature flags", () => {
     }) as unknown as WebGL2RenderingContext;
 
     it("WebGL: BPTC sets BC, S3TC sets S3TC", () => {
-        const bptcOnly = new WebGLGraphicsDeviceFeatures(webgl(["EXT_texture_compression_bptc"]));
+        const bptcOnly = new WebGlGraphicsDeviceFeatures(webgl(["EXT_texture_compression_bptc"]));
         expect(bptcOnly.supportsTextureCompressionBC).toBe(true);
         expect(bptcOnly.supportsTextureCompressionS3TC).toBe(false);
 
-        const s3tcOnly = new WebGLGraphicsDeviceFeatures(webgl(["WEBGL_compressed_texture_s3tc"]));
+        const s3tcOnly = new WebGlGraphicsDeviceFeatures(webgl(["WEBGL_compressed_texture_s3tc"]));
         expect(s3tcOnly.supportsTextureCompressionBC).toBe(false);
         expect(s3tcOnly.supportsTextureCompressionS3TC).toBe(true);
         expect(s3tcOnly.supportsTextureCompressionS3TCSrgb).toBe(false);
 
-        const s3tcSrgb = new WebGLGraphicsDeviceFeatures(webgl(["WEBGL_compressed_texture_s3tc", "WEBGL_compressed_texture_s3tc_srgb"]));
+        const s3tcSrgb = new WebGlGraphicsDeviceFeatures(webgl(["WEBGL_compressed_texture_s3tc", "WEBGL_compressed_texture_s3tc_srgb"]));
         expect(s3tcSrgb.supportsTextureCompressionS3TCSrgb).toBe(true);
     });
 

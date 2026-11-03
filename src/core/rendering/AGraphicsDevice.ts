@@ -7,7 +7,7 @@ import {
     type ISampler,
     type IBlendState,
     type IPrimitiveState,
-    type IGraphicsDevice, SwapChainDescriptor, type RenderPassDescriptor, SamplerFilter, MipMapSamplerFilter,
+    type IGraphicsDevice, type ISwapChainDescriptor, type RenderPassDescriptor, SamplerFilter, MipMapSamplerFilter,
     type ISwapChain, type IRenderPass, type IPrimitiveStateDescriptor
 } from "../../api/index.ts";
 import {PowerPreferenceType} from "../../api/rendering/PowerPreference.ts";
@@ -91,7 +91,7 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     }
 
     /** @inheritdoc */
-    public abstract createSwapChain(canvas: HTMLCanvasElement, swapChainDescriptor: SwapChainDescriptor): ISwapChain;
+    public abstract createSwapChain(canvas: HTMLCanvasElement, swapChainDescriptor: ISwapChainDescriptor): ISwapChain;
 
     /** @inheritdoc */
     public abstract createSampler(descriptor?: SamplerDescriptor): ISampler;

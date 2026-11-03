@@ -111,7 +111,7 @@ export class SpriteBatch implements ISpriteBatch {
     public initialize() {
         this._defaultCamera = this._framework.cameraFactory.createDefaultOrthographicCamera();
         this._currentProjectionViewBuffer = this._defaultCamera.projectionViewBuffer;
-        this._defaultWhiteTexture = this._framework.textureFactory.createEmpty(1, 1, Color.white());
+        this._defaultWhiteTexture = this._framework.textureFactory.createEmpty(vec2.fromValues(1, 1), Color.white());
 
         this._framework.renderer.addOnResizedListener((_, size) => {
             this._defaultCamera.right = size[0]
@@ -179,14 +179,15 @@ export class SpriteBatch implements ISpriteBatch {
             sourceRect = this._tempSourceRect;
             sourceRect.x = 0;
             sourceRect.y = 0;
-            sourceRect.width = texture.width;
-            sourceRect.height = texture.height;
+            sourceRect.width = texture.size[0];
+            sourceRect.height = texture.size[1];
         }
 
-        const u0 = sourceRect.x / texture.width;
-        const v0 = sourceRect.y / texture.height;
-        const u1 = (sourceRect.x + sourceRect.width) / texture.width;
-        const v1 = (sourceRect.y + sourceRect.height) / texture.height;
+        // UVs are relative to the native (GPU) size, so padding of block-compressed textures is not sampled.
+        const u0 = sourceRect.x / texture.nativeSize[0];
+        const v0 = sourceRect.y / texture.nativeSize[1];
+        const u1 = (sourceRect.x + sourceRect.width) / texture.nativeSize[0];
+        const v1 = (sourceRect.y + sourceRect.height) / texture.nativeSize[1];
 
         this._tempPosition[0] = drawRect.x;
         this._tempPosition[1] = drawRect.y;

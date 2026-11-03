@@ -6,7 +6,7 @@ import type { IBlendState } from "./blending/IBlendState.ts";
 import type { IPrimitiveState } from "./primitive/IPrimitiveState.ts";
 import {RenderPassDescriptor} from "./renderpass/RenderPassDescriptor.ts";
 import type { IRenderPass } from "./renderpass/IRenderPass.ts";
-import {SwapChainDescriptor} from "./swapchain/SwapChainDescriptor.ts";
+import type {ISwapChainDescriptor} from "./swapchain/ISwapChainDescriptor.ts";
 import type { ISwapChain } from "./swapchain/ISwapChain.ts";
 import {SamplerDescriptor} from "./sampler/SamplerDescriptor.ts";
 import type {IPrimitiveStateDescriptor} from "./primitive/IPrimitiveStateDescriptor.ts";
@@ -85,7 +85,7 @@ export interface IGraphicsDevice extends IDisposable {
      * @param swapChainDescription The swap chain descriptor.
      * @returns The swap chain instance.
      */
-    createSwapChain(canvas: HTMLCanvasElement, swapChainDescription: SwapChainDescriptor): ISwapChain;
+    createSwapChain(canvas: HTMLCanvasElement, swapChainDescription: ISwapChainDescriptor): ISwapChain;
 
     /**
      * Pushes a debug group with the specified name onto the graphics device's debug stack.

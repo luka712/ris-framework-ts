@@ -50,12 +50,12 @@ export class WebGlTexture2D extends ATexture2D {
 
         if (TextureUtilities.isCompressedTextureFormat(this.textureFormat)) {
             this._glTexture = WebGlUtilities.texture.createCompressedTexture2D(
-                this._gl, vec2.fromValues(this.width, this.height),
+                this._gl, vec2.fromValues(this.size[0], this.size[1]),
                 this._blockSize, this._data as Uint8Array[] | undefined, this.label, this.textureFormat, 0);
         } else {
             this._glTexture = WebGlUtilities.texture.createTexture2D(
                 this._gl,
-                this.width, this.height,
+                this.size[0], this.size[1],
                 this._data,
                 this.textureFormat,
                 this._generateMipMaps,
@@ -67,17 +67,17 @@ export class WebGlTexture2D extends ATexture2D {
         this._state = State.INITIALIZED;
 
 
-        let width = this.width;
-        let height = this.height;
+        let width = this.size[0];
+        let height = this.size[1];
 
         // If we can generate mipmaps, we need to calculate the number of mip levels.
         if(this._generateMipMaps) {
             this._mipLevels = TextureUtilities.mipLevels(width, height);
         }
-        this._size = 0;
+        this._vramSize = 0;
 
         for (let i = 0; i < this.mipLevels; i++) {
-            this._size += TextureUtilities.getVRamSize(this.textureFormat, width, height);
+            this._vramSize += TextureUtilities.getVRamSize(this.textureFormat, width, height);
             // Each mip is at least 1x1 and has whole-pixel dimensions.
             width = Math.max(1, Math.floor(width / 2));
             height = Math.max(1, Math.floor(height / 2));

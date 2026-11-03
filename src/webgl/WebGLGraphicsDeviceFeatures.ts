@@ -1,67 +1,64 @@
-import type {IGraphicsDeviceFeatures} from "../api/index.ts";
+import { AGraphicsDeviceFeatures } from "../core/rendering/AGraphicsDeviceFeatures.ts";
 
 /**
  * The WebGL implementation of the IGraphicsDeviceFeatures interface.
+ * Features are detected from the WebGL2 extensions; enabling an extension happens on `getExtension`.
  */
-export class WebGLGraphicsDeviceFeatures implements IGraphicsDeviceFeatures {
+export class WebGlGraphicsDeviceFeatures extends AGraphicsDeviceFeatures {
+
+    private readonly _webgl: WebGL2RenderingContext;
 
     /**
      * Creates a new instance of WebGLGraphicsDeviceFeatures.
      * @param webgl The WebGL2RenderingContext.
      */
     public constructor(webgl: WebGL2RenderingContext) {
-        this.astcExtension = webgl.getExtension("WEBGL_compressed_texture_astc") as WEBGL_compressed_texture_astc;
-        this.supportsTextureCompressionASTC = !!this.astcExtension;
-
-        this.bptcExtension = webgl.getExtension("EXT_texture_compression_bptc") as EXT_texture_compression_bptc;
-        // BPTC holds BC6H/BC7 (linear and sRGB).
-        this.supportsTextureCompressionBC = !!this.bptcExtension;
-
-        this.etcExtension = webgl.getExtension("WEBGL_compressed_texture_etc") as WEBGL_compressed_texture_etc;
-        this.supportsTextureCompressionETC2 = !!this.etcExtension;
-
-        this.s3tcExtension = webgl.getExtension("WEBGL_compressed_texture_s3tc") as WEBGL_compressed_texture_s3tc;
-        this.supportsTextureCompressionS3TC = !!this.s3tcExtension;
-
-        this.s3tcSrgbExtension = webgl.getExtension("WEBGL_compressed_texture_s3tc_srgb") as WEBGL_compressed_texture_s3tc_srgb;
-        this.supportsTextureCompressionS3TCSrgb = !!this.s3tcSrgbExtension;
-
-        this.pvrtcExtension = webgl.getExtension("WEBGL_compressed_texture_pvrtc") as WEBGL_compressed_texture_pvrtc;
-        this.supportsTextureCompressionPVRTC = !!this.pvrtcExtension;
+        super();
+        this._webgl = webgl;
+        this._initialize();
     }
 
-    /** The WEBGL_compressed_texture_astc extension. */
-    readonly astcExtension?: WEBGL_compressed_texture_astc;
+    /** @inheritDoc */
+    protected _detectFeatures(): void {
+        const webgl = this._webgl;
 
-    /** @inheritdoc */
-    readonly supportsTextureCompressionASTC: boolean;
+        // The ASTC extension includes the sRGB variants of all block sizes.
+        this.astcExtension = webgl.getExtension("WEBGL_compressed_texture_astc") ?? undefined;
+        this._supportsTextureCompressionASTC = !!this.astcExtension;
 
-    /** The EXT_texture_compression_bptc extension. */
-    readonly bptcExtension?: EXT_texture_compression_bptc;
+        // BPTC holds BC6H/BC7 (linear and sRGB).
+        this.bptcExtension = webgl.getExtension("EXT_texture_compression_bptc") ?? undefined;
+        this._supportsTextureCompressionBC = !!this.bptcExtension;
 
-    /** @inheritdoc */
-    readonly supportsTextureCompressionBC: boolean;
+        // The ETC extension includes the sRGB variants.
+        this.etcExtension = webgl.getExtension("WEBGL_compressed_texture_etc") ?? undefined;
+        this._supportsTextureCompressionETC2 = !!this.etcExtension;
 
-    /** The WEBGL_compressed_texture_etc extension. */
-    readonly etcExtension: WEBGL_compressed_texture_etc;
+        this.s3tcExtension = webgl.getExtension("WEBGL_compressed_texture_s3tc") ?? undefined;
+        this._supportsTextureCompressionS3TC = !!this.s3tcExtension;
 
-    /** @inheritdoc */
-    readonly supportsTextureCompressionETC2: boolean;
+        this.s3tcSrgbExtension = webgl.getExtension("WEBGL_compressed_texture_s3tc_srgb") ?? undefined;
+        this._supportsTextureCompressionS3TCSrgb = !!this.s3tcSrgbExtension;
 
-    /** The WEBGL_compressed_texture_pvrtc extension. */
-    readonly pvrtcExtension?: WEBGL_compressed_texture_pvrtc;
+        this.pvrtcExtension = webgl.getExtension("WEBGL_compressed_texture_pvrtc") ?? undefined;
+        this._supportsTextureCompressionPVRTC = !!this.pvrtcExtension;
+    }
 
-    readonly supportsTextureCompressionPVRTC: boolean;
+    /** The WEBGL_compressed_texture_astc extension. Undefined if not supported. */
+    public astcExtension?: WEBGL_compressed_texture_astc;
 
-    /** The WEBGL_compressed_texture_s3tc extension. */
-    readonly s3tcExtension?: WEBGL_compressed_texture_s3tc
+    /** The EXT_texture_compression_bptc extension. Undefined if not supported. */
+    public bptcExtension?: EXT_texture_compression_bptc;
 
-    /** @inheritdoc */
-    readonly supportsTextureCompressionS3TC: boolean;
+    /** The WEBGL_compressed_texture_etc extension. Undefined if not supported. */
+    public etcExtension?: WEBGL_compressed_texture_etc;
 
-    /** The WEBGL_compressed_texture_s3tc_srgb extension. */
-    readonly s3tcSrgbExtension?: WEBGL_compressed_texture_s3tc_srgb;
+    /** The WEBGL_compressed_texture_pvrtc extension. Undefined if not supported. */
+    public pvrtcExtension?: WEBGL_compressed_texture_pvrtc;
 
-    /** @inheritdoc */
-    readonly supportsTextureCompressionS3TCSrgb: boolean;
+    /** The WEBGL_compressed_texture_s3tc extension. Undefined if not supported. */
+    public s3tcExtension?: WEBGL_compressed_texture_s3tc;
+
+    /** The WEBGL_compressed_texture_s3tc_srgb extension. Undefined if not supported. */
+    public s3tcSrgbExtension?: WEBGL_compressed_texture_s3tc_srgb;
 }

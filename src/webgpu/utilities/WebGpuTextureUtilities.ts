@@ -1,79 +1,170 @@
+import { vec2 } from "gl-matrix";
+import { AlignUtilities, TextureFormat, TextureUsage, TextureUtilities } from "../../api/_export.ts";
+import { WebGpuConverter } from "./WebGpuConverter.ts";
 import { AWebGpuLoggingUtilities } from "./WebGpuLogger.ts";
+
+/** The result of texture creation. */
+export interface WebGpuCreateTextureResult {
+    /** The texture. */
+    texture: GPUTexture,
+
+    /** 
+     * The extent of texture. Dimensions of texture do not have to match passed in dimensions,
+     * as texture can be aligned to block size for block compressed formats.
+     */
+    size: GPUExtent3DDict
+}
 
 /** The WebGPU texture utilities. */
 export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
 
     /**
-     * Rounds a size up to whole blocks. WebGPU requires a compressed texture's base size to be a multiple of its block size.
-     * @param width The width.
-     * @param height The height.
-     * @param blockWidth The block width.
-     * @param blockHeight The block height.
-     * @returns The block-aligned [width, height].
-     */
-    public alignSizeToBlock(width: number, height: number, blockWidth: number, blockHeight: number): [number, number] {
-        return [Math.ceil(width / blockWidth) * blockWidth, Math.ceil(height / blockHeight) * blockHeight];
-    }
-
-    /**
-     * Creates a 2D texture.
+     * Creates a 2D texture and, if data is given, uploads it.
      * @param device The device.
-     * @param width The width.
-     * @param height The height.
+     * @param size The size [width, height] in pixels.
      * @param format The texture format.
-     * @param usage The texture usage (`GPUTextureUsage` flags).
+     * @param usage The texture usage, used as-is. Uploading bytes needs `COPY_DST`;
+     * uploading images needs `COPY_DST` and `RENDER_ATTACHMENT`.
+     * @param data The data per mip level, as bytes or images. Level `i` goes to mip level `i`. By default, none (nothing is uploaded).
      * @param mipLevelCount The mip level count. By default, 1.
      * @param sampleCount The sample count. By default, 1. Used for MSAA.
-     * @param label The label.
+     * @param label The label. By default, none.
      * @returns The texture.
      */
     public create(device: GPUDevice,
-        width: number,
-        height: number,
-        format: GPUTextureFormat,
-        usage: GPUTextureUsageFlags,
+        size: vec2,
+        format: TextureFormat,
+        usage: TextureUsage,
+        data?: Uint8Array[] | HTMLImageElement[],
         mipLevelCount: number = 1,
         sampleCount: number = 1,
         label?: string): GPUTexture {
-        return this.withValidation(device, "Texture", label, () => device.createTexture({
+
+        const gpuTextureFormat = WebGpuConverter.convertTextureFormat(format);
+        const gpuTextureUsage = WebGpuConverter.convertTextureUsage(usage);
+
+        const tex = this.withValidation(device, "Texture", label, () => device.createTexture({
             label,
-            size: { width, height, depthOrArrayLayers: 1 },
+            size: { width: size[0], height: size[1], depthOrArrayLayers: 1 },
             mipLevelCount,
             sampleCount,
-            format,
-            usage,
+            format: gpuTextureFormat,
+            usage: gpuTextureUsage,
         }));
+
+        if (data && data.length > 0) {
+            if (typeof HTMLImageElement !== "undefined" && data[0] instanceof HTMLImageElement) {
+                this.writeImagesToTexture(device.queue, tex, data as HTMLImageElement[]);
+            }
+            else {
+                const bytesPerPixel = TextureUtilities.getVRamSize(format, 1, 1);
+                const levels = data as Uint8Array[];
+                for (let level = 0; level < levels.length; level++) {
+                    const width = Math.max(1, size[0] >> level);
+                    const height = Math.max(1, size[1] >> level);
+                    this.writeToTexture(device.queue, tex, vec2.fromValues(width, height), levels[level], bytesPerPixel, level);
+                }
+            }
+        }
+
+        return tex;
+    }
+
+    /**
+     * Creates a block-compressed 2D texture (BC, ETC2, ASTC, ...) and uploads its mip levels.
+     * The texture size is rounded up to whole blocks, as WebGPU requires (e.g. ASTC 10x5 at 768x512 -> 770x515).
+     * @param device The device.
+     * @param size The size of the data [width, height] in pixels.
+     * @param blockSize The block size [width, height] in pixels.
+     * @param format The texture format.
+     * @param usage The texture usage, used as-is. Must include `COPY_DST` when there is data to upload.
+     * @param data The data per mip level. By default, none (nothing is uploaded).
+     * @param mipLevelCount The mip level count. By default, 1.
+     * @param sampleCount The sample count. By default, 1. Used for MSAA.
+     * @param label The label. By default, none.
+     * @returns The texture and its block-aligned size.
+     */
+    public createCompressedTexture(
+        device: GPUDevice,
+        size: vec2,
+        blockSize: vec2,
+        format: TextureFormat,
+        usage: TextureUsage,
+        data?: Uint8Array[],
+        mipLevelCount: number = 1,
+        sampleCount: number = 1,
+        label?: string): WebGpuCreateTextureResult {
+
+        const hasData = !!data && data.length > 0;
+
+        const alignedWidth = AlignUtilities.align(size[0], blockSize[0]);
+        const alignedHeight = AlignUtilities.align(size[1], blockSize[1]);
+
+        const gpuTextureFormat = WebGpuConverter.convertTextureFormat(format);
+        const gpuTextureUsage = WebGpuConverter.convertTextureUsage(usage);
+
+        const extentSize: GPUExtent3DDict = {
+            width: alignedWidth,
+            height: alignedHeight,
+            depthOrArrayLayers: 1
+        };
+
+        const tex = this.withValidation(device, "Texture", label, () => device.createTexture({
+            label,
+            size: extentSize,
+            mipLevelCount,
+            sampleCount,
+            format: gpuTextureFormat,
+            usage: gpuTextureUsage,
+        }));
+
+        if (hasData) {
+            const bytesPerBlock = TextureUtilities.getVRamSize(format, blockSize[0], blockSize[1]);
+
+            // The copies use the logical mip sizes rounded up to whole blocks, which stay within the physical mips.
+            for (let i = 0; i < data!.length; i++) {
+                const mipWidth = Math.max(1, size[0] >> i);
+                const mipHeight = Math.max(1, size[1] >> i);
+
+                this.writeCompressedToTexture(
+                    device.queue, tex,
+                    vec2.fromValues(mipWidth, mipHeight), blockSize,
+                    data![i], bytesPerBlock, i);
+            }
+        }
+
+        return {
+            texture: tex,
+            size: extentSize
+        };
     }
 
     /**
      * Creates a depth texture, usable as a render attachment.
      * @param device The device.
-     * @param width The width.
-     * @param height The height.
-     * @param format The depth format. By default, `depth24plus-stencil8`.
-     * @param label The label.
+     * @param size The size [width, height].
+     * @param format The depth format. By default, `TextureFormat.DEPTH_24_STENCIL_8`.
+     * @param label The label. By default, none.
      * @returns The texture.
      */
-    public createDepthTexture(device: GPUDevice, width: number, height: number,
-        format: GPUTextureFormat = "depth24plus-stencil8", label?: string): GPUTexture {
-        return this.create(device, width, height, format, GPUTextureUsage.RENDER_ATTACHMENT, 1, 1, label);
+    public createDepthTexture(device: GPUDevice, size: vec2,
+        format: TextureFormat = TextureFormat.DEPTH_24_STENCIL_8, label?: string): GPUTexture {
+        return this.create(device, size, format, TextureUsage.RENDER_ATTACHMENT, undefined, 1, 1, label);
     }
 
     /**
      * Writes data to a texture mip level.
      * @param queue The queue.
      * @param texture The texture.
+     * @param size The size of the mip level [width, height] in pixels.
      * @param data The data.
-     * @param width The width of the level.
-     * @param height The height of the level.
      * @param bytesPerPixel The bytes per pixel. By default, 4 (RGBA8).
      * @param mipLevel The mip level. By default, 0.
      */
     public writeToTexture(queue: GPUQueue,
         texture: GPUTexture,
+        size: vec2,
         data: ArrayBufferView,
-        width: number,
-        height: number,
         bytesPerPixel: number = 4,
         mipLevel: number = 0): void {
 
@@ -83,45 +174,42 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
         };
 
         const dataLayout: GPUTexelCopyBufferLayout = {
-            bytesPerRow: width * bytesPerPixel,
-            rowsPerImage: height
+            bytesPerRow: size[0] * bytesPerPixel,
+            rowsPerImage: size[1]
         };
 
-        const size: GPUExtent3D = {
-            width, height
+        const extent: GPUExtent3D = {
+            width: size[0],
+            height: size[1]
         };
 
         queue.writeTexture(
             destination,
             data as ArrayBufferView<ArrayBuffer>,
             dataLayout,
-            size);
+            extent);
     }
 
     /**
      * Writes block-compressed data (BC, ETC2, ASTC, ...) to a texture mip level.
      * @param queue The queue.
      * @param texture The texture.
+     * @param size The size of the mip level [width, height] in pixels.
+     * @param blockSize The block size [width, height] in pixels.
      * @param data The data.
-     * @param width The width of the level in pixels.
-     * @param height The height of the level in pixels.
-     * @param blockWidth The block width in pixels.
-     * @param blockHeight The block height in pixels.
      * @param bytesPerBlock The bytes per block.
      * @param mipLevel The mip level. By default, 0.
      */
     public writeCompressedToTexture(queue: GPUQueue,
         texture: GPUTexture,
+        size: vec2,
+        blockSize: vec2,
         data: ArrayBufferView,
-        width: number,
-        height: number,
-        blockWidth: number,
-        blockHeight: number,
         bytesPerBlock: number,
         mipLevel: number = 0): void {
 
-        const blocksWide = Math.ceil(width / blockWidth);
-        const blocksHigh = Math.ceil(height / blockHeight);
+        const blocksWide = Math.ceil(size[0] / blockSize[0]);
+        const blocksHigh = Math.ceil(size[1] / blockSize[1]);
 
         const destination: GPUTexelCopyTextureInfo = {
             texture,
@@ -133,9 +221,9 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
             rowsPerImage: blocksHigh
         };
 
-        const size: GPUExtent3D = {
-            width: blocksWide * blockWidth,
-            height: blocksHigh * blockHeight
+        const extent: GPUExtent3D = {
+            width: blocksWide * blockSize[0],
+            height: blocksHigh * blockSize[1]
         };
 
         // The copy size must cover whole blocks.
@@ -143,19 +231,33 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
             destination,
             data as ArrayBufferView<ArrayBuffer>,
             dataLayout,
-            size);
+            extent);
     }
 
     /**
-     * Copies an image to a texture. The texture needs COPY_DST and RENDER_ATTACHMENT usage.
+     * Copies the images arranged as mip levels to the texture. Image `i` goes to mip level `i`.
+     * The texture needs `COPY_DST` and `RENDER_ATTACHMENT` usage.
      * @param queue The queue.
      * @param texture The texture.
-     * @param image The image.
-     * @param width The width.
-     * @param height The height.
+     * @param imagesPerMip The image per mip.
      */
-    public writeImageToTexture(queue: GPUQueue, texture: GPUTexture, image: GPUCopyExternalImageSource, width: number, height: number): void {
-        queue.copyExternalImageToTexture({ source: image }, { texture }, { width, height });
+    public writeImagesToTexture(queue: GPUQueue, texture: GPUTexture, imagesPerMip: HTMLImageElement[]): void {
+
+        for (let i = 0; i < imagesPerMip.length; i++) {
+            const image = imagesPerMip[i];
+            const source: GPUCopyExternalImageSourceInfo = {
+                source: image,
+            };
+            const dest: GPUCopyExternalImageDestInfo = {
+                texture,
+                mipLevel: i
+            };
+            const size: GPUExtent3DStrict = {
+                width: image.width,
+                height: image.height
+            }
+            queue.copyExternalImageToTexture(source, dest, size);
+        }
     }
 
     /**

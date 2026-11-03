@@ -8,7 +8,7 @@ import {
     TextureSamplerFilteringPreset,
 } from "../../src/index.ts";
 // Kodak test image kodim23 (parrots), resized to 512×341. See README.md for source and license.
-import parrotsUrl from "./assets/kodim23.ktx2?url";
+import parrotsUrl from "./assets/kodim23_etc1s.ktx2?url";
 import {ColorSpace} from "../../src/api/rendering/enums.ts";
 
 const status = document.querySelector<HTMLParagraphElement>("#status")!;
@@ -28,9 +28,9 @@ runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
     framework.addOnLoadContentListener(async () => {
         try {
             parrots = await framework.content.loadTexture2DAsync(parrotsUrl);
-            drawRect.width = parrots.width;
-            drawRect.height = parrots.height;
-            status.textContent = `Loaded kodim23.ktx2 (${parrots.width}×${parrots.height}).`;
+            drawRect.width = parrots.size[0];
+            drawRect.height = parrots.size[1];
+            status.textContent = `Loaded kodim23_etc1s.ktx2 (${parrots.size[0]}×${parrots.size[1]}).`;
         } catch (error) {
             if (!isCurrent()) {
                 return;

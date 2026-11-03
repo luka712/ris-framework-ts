@@ -23,18 +23,18 @@ export class AlignUtilities {
      */
     public static alignArray(array: ArrayLike<number>, alignment: number): ArrayLike<number> {
         const len = this.align(array.length, alignment);
-        
-        if(len == array.length) {
+
+        if (len == array.length) {
             return array;
         }
-        
+
         const newArray = new Array(len);
-        
+
         // Copy array
         for (let i = 0; i < array.length; i++) {
             newArray[i] = array[i];
         }
-        
+
         return newArray;
     }
 }
