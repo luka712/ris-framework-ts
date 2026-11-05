@@ -3,8 +3,8 @@ import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 // The converter and the context utilities import the whole API; only the texture format conversions are needed here.
 vi.mock("../src/webgpu/utilities/WebGpuConverter", () => ({
     WebGpuConverter: {
-        convertTextureFormat: (f: string) => f === "RGBA_8_UNORM" ? "rgba8unorm" : f === "RGBA_8_UNORM_SRGB" ? "rgba8unorm-srgb" : "r32float",
-        convertGpuTextureFormat: (f: string) => f === "rgba8unorm" ? "RGBA_8_UNORM" : f === "bgra8unorm" ? "BGRA_8_UNORM" : "UNDEFINED",
+        convertTextureFormat: (f: string) => f === "RGBA8_UNORM" ? "rgba8unorm" : f === "RGBA8_UNORM_SRGB" ? "rgba8unorm-srgb" : "r32float",
+        convertGpuTextureFormat: (f: string) => f === "rgba8unorm" ? "RGBA8_UNORM" : f === "bgra8unorm" ? "BGRA_8_UNORM" : "UNDEFINED",
     },
 }));
 vi.mock("../src/api", () => ({TextureFormat: {}}));
@@ -31,8 +31,8 @@ describe("WebGpuContextUtilities", () => {
     });
 
     it("uses the desired format, view formats and alpha mode", () => {
-        const result = utilities.configure(context as unknown as GPUCanvasContext, device, "RGBA_8_UNORM" as any, ["RGBA_8_UNORM_SRGB" as any], "premultiplied");
+        const result = utilities.configure(context as unknown as GPUCanvasContext, device, "RGBA8_UNORM" as any, ["RGBA8_UNORM_SRGB" as any], "premultiplied");
         expect(result.configuration).toEqual({device, format: "rgba8unorm", alphaMode: "premultiplied", viewFormats: ["rgba8unorm-srgb"]});
-        expect(result.textureFormat).toBe("RGBA_8_UNORM");
+        expect(result.textureFormat).toBe("RGBA8_UNORM");
     });
 });

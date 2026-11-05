@@ -174,13 +174,13 @@ export class WebGlConverter {
     public static convertInternalFormat(gl: WebGL2RenderingContext, textureFormat: TextureFormat): number {
         switch (textureFormat) {
             // Same format regardless.
-            case TextureFormat.RGBA_8_UNORM:
+            case TextureFormat.RGBA8_UNORM:
                 return gl.RGBA8;
-            case TextureFormat.RGBA_8_UNORM_SRGB:
+            case TextureFormat.RGBA8_UNORM_SRGB:
                 return gl.SRGB8_ALPHA8;
-            case TextureFormat.DEPTH_32_FLOAT:
+            case TextureFormat.DEPTH32_FLOAT:
                 return gl.DEPTH_COMPONENT32F;
-            case TextureFormat.DEPTH_24_STENCIL_8:
+            case TextureFormat.DEPTH24_PLUS_STENCIL8:
                 return gl.DEPTH24_STENCIL8;
             case TextureFormat.BC3_RGBA_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
@@ -188,88 +188,88 @@ export class WebGlConverter {
                 return WebGlConstants.GL_COMPRESSED_RGBA8_ETC2_EAC;
             case TextureFormat.BC7_RGBA_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGBA_BPTC_UNORM;
-            case TextureFormat.BC7_RGBA_SRGB:
+            case TextureFormat.BC7_RGBA_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM;
-            case TextureFormat.BC3_RGBA_SRGB:
+            case TextureFormat.BC3_RGBA_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
             case TextureFormat.BC1_RGB_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-            case TextureFormat.BC1_RGB_SRGB:
+            case TextureFormat.BC1_RGB_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
-            case TextureFormat.ETC2_RGBA8_SRGB:
+            case TextureFormat.ETC2_RGBA8_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC;
             case TextureFormat.ETC2_RGB8_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGB8_ETC2;
-            case TextureFormat.ETC2_RGB8_SRGB:
+            case TextureFormat.ETC2_RGB8_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB8_ETC2;
 
             // ASTC
-            case TextureFormat.ASTC_4X4_RGBA_UNORM:
+            case TextureFormat.ASTC_4X4_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
-            case TextureFormat.ASTC_4X4_RGBA_SRGB:
+            case TextureFormat.ASTC_4X4_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR;
-            case TextureFormat.ASTC_5X4_RGBA_UNORM:
+            case TextureFormat.ASTC_5X4_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_5x4_KHR;
-            case TextureFormat.ASTC_5X4_RGBA_SRGB:
+            case TextureFormat.ASTC_5X4_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR;
-            case TextureFormat.ASTC_5X5_RGBA_UNORM:
+            case TextureFormat.ASTC_5X5_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_5x5_KHR;
-            case TextureFormat.ASTC_5X5_RGBA_SRGB:
+            case TextureFormat.ASTC_5X5_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR;
-            case TextureFormat.ASTC_6X5_RGBA_UNORM:
+            case TextureFormat.ASTC_6X5_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_6x5_KHR;
-            case TextureFormat.ASTC_6X5_RGBA_SRGB:
+            case TextureFormat.ASTC_6X5_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR;
-            case TextureFormat.ASTC_6X6_RGBA_UNORM:
+            case TextureFormat.ASTC_6X6_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_6x6_KHR;
-            case TextureFormat.ASTC_6X6_RGBA_SRGB:
+            case TextureFormat.ASTC_6X6_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR;
-            case TextureFormat.ASTC_8X5_RGBA_UNORM:
+            case TextureFormat.ASTC_8X5_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_8x5_KHR;
-            case TextureFormat.ASTC_8X5_RGBA_SRGB:
+            case TextureFormat.ASTC_8X5_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR;
-            case TextureFormat.ASTC_8X6_RGBA_UNORM:
+            case TextureFormat.ASTC_8X6_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_8x6_KHR;
-            case TextureFormat.ASTC_8X6_RGBA_SRGB:
+            case TextureFormat.ASTC_8X6_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR;
-            case TextureFormat.ASTC_8X8_RGBA_UNORM:
+            case TextureFormat.ASTC_8X8_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_8x8_KHR;
-            case TextureFormat.ASTC_8X8_RGBA_SRGB:
+            case TextureFormat.ASTC_8X8_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR;
-            case TextureFormat.ASTC_10X5_RGBA_UNORM:
+            case TextureFormat.ASTC_10X5_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_10x5_KHR;
-            case TextureFormat.ASTC_10X5_RGBA_SRGB:
+            case TextureFormat.ASTC_10X5_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR;
-            case TextureFormat.ASTC_10X6_RGBA_UNORM:
+            case TextureFormat.ASTC_10X6_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_10x6_KHR;
-            case TextureFormat.ASTC_10X6_RGBA_SRGB:
+            case TextureFormat.ASTC_10X6_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR;
-            case TextureFormat.ASTC_10X8_RGBA_UNORM:
+            case TextureFormat.ASTC_10X8_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_10x8_KHR;
-            case TextureFormat.ASTC_10X8_RGBA_SRGB:
+            case TextureFormat.ASTC_10X8_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR;
-            case TextureFormat.ASTC_10X10_RGBA_UNORM:
+            case TextureFormat.ASTC_10X10_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_10x10_KHR;
-            case TextureFormat.ASTC_10X10_RGBA_SRGB:
+            case TextureFormat.ASTC_10X10_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR;
-            case TextureFormat.ASTC_12X10_RGBA_UNORM:
+            case TextureFormat.ASTC_12X10_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_12x10_KHR;
-            case TextureFormat.ASTC_12X10_RGBA_SRGB:
+            case TextureFormat.ASTC_12X10_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR;
-            case TextureFormat.ASTC_12X12_RGBA_UNORM:
+            case TextureFormat.ASTC_12X12_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGBA_ASTC_12x12_KHR;
-            case TextureFormat.ASTC_12X12_RGBA_SRGB:
+            case TextureFormat.ASTC_12X12_UNORM_SRGB:
                 return WebGlConstants.GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR;
 
             // PVRTC
-            case TextureFormat.PVRTC_4BPPV1_RGBA:
+            case TextureFormat.PVRTC1_RGBA_4BPP_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG;
-            case TextureFormat.PVRTC_4BPPV1_RGB:
+            case TextureFormat.PVRTC1_RGB_4BPP_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG;
 
-            case TextureFormat.PVRTC_2BPPV1_RGBA:
+            case TextureFormat.PVRTC1_RGBA_2BPP_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG;
-            case TextureFormat.PVRTC_2BPPV1_RGB:
+            case TextureFormat.PVRTC1_RGB_2BPP_UNORM:
                 return WebGlConstants.GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG;
 
             default:
@@ -285,12 +285,12 @@ export class WebGlConverter {
      */
     public static convertToPixelFormat(gl: WebGL2RenderingContext, textureFormat: TextureFormat): number {
         switch (textureFormat) {
-            case TextureFormat.RGBA_8_UNORM:
-            case TextureFormat.RGBA_8_UNORM_SRGB:
+            case TextureFormat.RGBA8_UNORM:
+            case TextureFormat.RGBA8_UNORM_SRGB:
                 return gl.RGBA;
-            case TextureFormat.DEPTH_32_FLOAT:
+            case TextureFormat.DEPTH32_FLOAT:
                 return gl.DEPTH_COMPONENT;
-            case TextureFormat.DEPTH_24_STENCIL_8:
+            case TextureFormat.DEPTH24_PLUS_STENCIL8:
                 return gl.DEPTH_STENCIL;
             default:
                 throw new Error("NotImplementedException");
@@ -305,12 +305,12 @@ export class WebGlConverter {
      */
     public static convertToTextureType(gl: WebGL2RenderingContext, textureFormat: TextureFormat): number {
         switch (textureFormat) {
-            case TextureFormat.RGBA_8_UNORM:
-            case TextureFormat.RGBA_8_UNORM_SRGB:
+            case TextureFormat.RGBA8_UNORM:
+            case TextureFormat.RGBA8_UNORM_SRGB:
                 return gl.UNSIGNED_BYTE;
-            case TextureFormat.DEPTH_32_FLOAT:
+            case TextureFormat.DEPTH32_FLOAT:
                 return gl.FLOAT;
-            case TextureFormat.DEPTH_24_STENCIL_8:
+            case TextureFormat.DEPTH24_PLUS_STENCIL8:
                 return gl.UNSIGNED_INT_24_8;
             default:
                 throw new Error("NotImplementedException");

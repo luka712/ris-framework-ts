@@ -27,7 +27,16 @@ export interface ITextureDescriptor {
      */
     textureFormat?: TextureFormat;
 
-    /** The preferred color space. By default, undefined: KTX2 files follow their own color space, other images use renderer.colorSpace. */
+    /**
+     * The view formats to use for texture view.
+     * In WebGPU view formats define which view formats can be used.
+     * WebGL2 does not support texture views (`supportsTextureView` is false); `viewFormats` other than the texture format are only usable on WebGPU.
+     * The texture format itself is always a valid view format.
+     * By default, undefined (only the texture format).
+     */
+    viewFormats?: TextureFormat[];
+
+    /** The preferred color space. By default, undefined: KTX2 files follow their own color space, other images use the renderer's outputColorSpace (SRGB → sRGB formats, NONE → linear formats). */
     preferredColorSpace?: ColorSpace;
 
     /**

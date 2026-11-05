@@ -37,6 +37,8 @@ export class WebGpuGraphicsDeviceFeatures extends AGraphicsDeviceFeatures {
         this._supportsTextureCompressionASTC = features.has("texture-compression-astc");
         // WebGPU has no PVRTC.
         this._supportsTextureCompressionPVRTC = false;
+        // Native GPUTexture.createView.
+        this._supportsTextureView = true;
 
         if (this._supportsTextureCompressionBC) {
             this.deviceRequiredFeatures.push("texture-compression-bc");
@@ -50,9 +52,9 @@ export class WebGpuGraphicsDeviceFeatures extends AGraphicsDeviceFeatures {
     }
 
     /**
-     * The uncompressed formats. By default, the base formats plus `RED_32_FLOAT`, which only the WebGPU converter maps.
+     * The uncompressed formats. By default, the base formats plus `R32_FLOAT`, which only the WebGPU converter maps.
      */
     protected override _getUncompressedTextureFormats(): TextureFormat[] {
-        return [...super._getUncompressedTextureFormats(), TextureFormat.RED_32_FLOAT];
+        return [...super._getUncompressedTextureFormats(), TextureFormat.R32_FLOAT];
     }
 }

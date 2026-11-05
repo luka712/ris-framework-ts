@@ -10,6 +10,7 @@ import {
 } from "../../../api/index.ts";
 import {AWebGpuRenderPipeline} from "../AWebGpuRenderPipeline.ts";
 import {WebGpuTexture2D} from "../../texture/WebGpuTexture2D.ts";
+import {TextureFormat} from "../../../api/rendering/texture/TextureFormat.ts";
 import type {WebGpuSampler} from "../../sampler/WebGpuSampler.ts";
 import type {WebGpuUniformBuffer} from "../../buffers/WebGpuUniformBuffer.ts";
 import type {WebGpuVertexBuffer} from "../../buffers/WebGpuVertexBuffer.ts";
@@ -138,12 +139,24 @@ export abstract class AWebGpuMeshRenderPipeline extends AWebGpuRenderPipeline {
             layouts.push(layout);
         }
 
+        this._gpuModule = module.gpuShaderModule;
+        this._gpuLayouts = layouts;
+        this._buildGpuPipeline();
+    }
+
+    private _gpuModule: GPUShaderModule | null = null;
+    private _gpuLayouts: GPUBindGroupLayout[] = [];
+    private _colorFormat: TextureFormat | null = null;
+
+    /** Builds the GPU pipeline for the main render target format (always linear RGBA8_UNORM; blit encodes to sRGB). */
+    private _buildGpuPipeline(): void {
         const renderer = this._framework.renderer;
+        this._colorFormat = TextureFormat.RGBA8_UNORM;
         this._createGpuPipeline(
             `${this._shaderId} pipeline`,
-            module.gpuShaderModule,
-            layouts,
-            renderer.preferredTextureFormat,
+            this._gpuModule!,
+            this._gpuLayouts,
+            this._colorFormat,
             renderer.preferredDepthStencilFormat);
     }
 
@@ -197,6 +210,10 @@ export abstract class AWebGpuMeshRenderPipeline extends AWebGpuRenderPipeline {
 
     /** @inheritDoc */
     public render(vertexBuffer: IVertexBuffer, indexBuffer: IIndexBuffer, indicesCount: number = -1, indicesOffset: number = 0): void {
+        // Main render target stays RGBA8_UNORM; rebuild only if somehow out of sync.
+        if (this._gpuPipeline && this._gpuModule && this._colorFormat !== TextureFormat.RGBA8_UNORM) {
+            this._buildGpuPipeline();
+        }
         if (indicesCount == 0 || !this._gpuPipeline) {
             return;
         }

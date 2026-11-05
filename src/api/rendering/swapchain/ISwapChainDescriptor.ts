@@ -1,4 +1,4 @@
-import { ColorSpace } from "../enums.ts";
+import { OutputColorSpace } from "../enums.ts";
 import { SurfacePresentMode } from "./SurfacePresentMode.ts";
 
 /**
@@ -26,8 +26,10 @@ export interface ISwapChainDescriptor {
     desiredPresentationMode?: SurfacePresentMode;
 
     /**
-     * The desired color space.
-     * By default, `ColorSpace.LINEAR`.
+     * The desired output color space.
+     * Currently both swap chains present RGBA8_UNORM and ignore this: sRGB output is handled by the renderer's main render target
+     * (its RGBA8_UNORM_SRGB view, plus the WebGL main render target pipeline's encoding), not by the swap chain.
+     * By default, `OutputColorSpace.NONE`: no color management, values are written to the screen as-is.
      */
-    desiredColorSpace?: ColorSpace;
+    desiredOutputColorSpace?: OutputColorSpace;
 }

@@ -14,7 +14,7 @@ export class WebGlTextureUtilities {
      * @param width The width of the texture.
      * @param height The height of the texture.
      * @param data The texture data. If null, an uninitialized texture will be created.
-     * @param textureFormat The format of the texture. If not specified, RGBA_8_UNORM will be used.
+     * @param textureFormat The format of the texture. If not specified, RGBA8_UNORM will be used.
      * @param useMipMaps True to generate mipmaps for the texture, false otherwise. By default, it is false.
      * @param anisotropy The level of anisotropic filtering to use when sampling the texture. A value of 1 means no anisotropic filtering, while higher values (e.g., 4, 8, 16) indicate increasing levels of anisotropic filtering. By default, it is 1 (no anisotropic filtering).
      * @param label The label for the texture. This can be used for debugging purposes to identify the texture in graphics debuggers.
@@ -24,7 +24,7 @@ export class WebGlTextureUtilities {
         gl: WebGL2RenderingContext,
         width: number, height: number,
         data: Uint8Array[] | HTMLImageElement[] | null = null,
-        textureFormat = TextureFormat.RGBA_8_UNORM,
+        textureFormat = TextureFormat.RGBA8_UNORM,
         useMipMaps = false,
         anisotropy = 1.0,
         label: string | null = null
@@ -94,7 +94,7 @@ export class WebGlTextureUtilities {
      * @param blockSize The block size of a compressed format.
      * @param data The texture data. If null, an uninitialized texture will be created.
      * @param label The label for the texture. This can be used for debugging purposes to identify the texture in graphics debuggers.
-     * @param textureFormat The format of the texture. If not specified, RGBA_8_UNORM will be used.
+     * @param textureFormat The format of the texture. If not specified, RGBA8_UNORM will be used.
      * @param anisotropy The level of anisotropic filtering to use when sampling the texture. A value of 1 means no anisotropic filtering, while higher values (e.g., 4, 8, 16) indicate increasing levels of anisotropic filtering. By default, it is 1 (no anisotropic filtering).
      * @returns The created WebGL texture.
      */
@@ -103,7 +103,7 @@ export class WebGlTextureUtilities {
         dimension: vec2, blockSize: vec2,
         data: Uint8Array[] | null = null,
         label: string | null = null,
-        textureFormat = TextureFormat.RGBA_8_UNORM,
+        textureFormat = TextureFormat.RGBA8_UNORM,
         anisotropy = 1.0,
     ): WebGLTexture {
 
@@ -176,5 +176,60 @@ export class WebGlTextureUtilities {
         }
 
         return texture;
+    }
+
+    /**
+     * Copy the texture contents from source to destination.
+     * @param gl The WebGL2 context.
+     * @param source The source texture.
+     * @param destination The destination texture.
+     * @param dimensions The texture dimensions.
+     */
+    public copyTexture(
+        gl: WebGL2RenderingContext,
+        source: WebGLTexture,
+        destination: WebGLTexture,
+        dimensions: vec2,
+    ): void {
+
+        const width = dimensions[0];
+        const height = dimensions[1];
+
+        const readFramebuffer = gl.createFramebuffer()!;
+        const drawFramebuffer = gl.createFramebuffer()!;
+
+        // Attach source texture.
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, readFramebuffer);
+        gl.framebufferTexture2D(
+            gl.READ_FRAMEBUFFER,
+            gl.COLOR_ATTACHMENT0,
+            gl.TEXTURE_2D,
+            source,
+            0
+        );
+
+        // Attach destination texture.
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, drawFramebuffer);
+        gl.framebufferTexture2D(
+            gl.DRAW_FRAMEBUFFER,
+            gl.COLOR_ATTACHMENT0,
+            gl.TEXTURE_2D,
+            destination,
+            0
+        );
+
+        // Copy.
+        gl.blitFramebuffer(
+            0, 0, width, height,
+            0, 0, width, height,
+            gl.COLOR_BUFFER_BIT,
+            gl.NEAREST
+        );
+
+        // Cleanup.
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+        gl.deleteFramebuffer(readFramebuffer);
+        gl.deleteFramebuffer(drawFramebuffer);
     }
 }

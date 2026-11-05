@@ -5,7 +5,8 @@ import {RenderingBackend} from "./RenderingBackend.ts";
 import {vec2} from "gl-matrix";
 import type {PowerPreferenceType} from "./PowerPreference.ts";
 import type {TextureSamplerFilteringPreset} from "../../core/rendering/enums.ts";
-import type {ColorSpace} from "./enums.ts";
+import type {OutputColorSpace} from "./enums.ts";
+import type {RenderingLimits} from "./rendering-limits.ts";
 
 
 /**
@@ -30,8 +31,11 @@ export interface IRendererConfiguration {
      */
     textureFiltering: TextureSamplerFilteringPreset;
 
-    /** The desired texture color space. */
-    textureColorSpace: ColorSpace;
+    /**
+     * The output color space. By default, {@link OutputColorSpace.NONE}: no color management, values are written to the screen as-is.
+     * Use {@link OutputColorSpace.SRGB} to encode linear shader output to sRGB once at present. Material shaders never convert gamma in either mode.
+     */
+    outputColorSpace: OutputColorSpace;
 }
 
 /**
@@ -46,20 +50,16 @@ export interface IRenderer {
     readonly graphicsDevice: IGraphicsDevice;
 
     /**
-     * The preferred texture format, derived from the current {@link IRenderer.colorSpace}.
-     * Textures that do not specify a texture format are created with it:
-     * - {@link TextureFormat.RGBA_8_UNORM_SRGB} when the color space is {@link ColorSpace.SRGB} (the default).
-     * - {@link TextureFormat.RGBA_8_UNORM} when the color space is {@link ColorSpace.LINEAR}.
+     * The preferred texture format, derived from the current {@link IRenderer.outputColorSpace}.
+     * Used for the main render target and for images that specify neither a texture format nor a color space:
+     * - {@link TextureFormat.RGBA8_UNORM_SRGB} when the output color space is {@link OutputColorSpace.SRGB}.
+     * - {@link TextureFormat.RGBA8_UNORM} when the output color space is {@link OutputColorSpace.NONE} (the default), so it is fully pass-through.
+     * KTX2 files follow their own color space instead.
      */
     readonly preferredTextureFormat: TextureFormat;
 
-    /**
-     * The color space. Defaults to the framework configuration's `textureColorSpace`.
-     * Can be switched at runtime, e.g. `framework.renderer.colorSpace = ColorSpace.SRGB`.
-     * Changing it affects textures created afterwards and the main render target's output conversion;
-     * already-created textures are not converted.
-     */
-    colorSpace: ColorSpace;
+    /** The output color space: how the final image is encoded for the screen. */
+    outputColorSpace: OutputColorSpace;
 
     /**
      * The preferred depth stencil format.
@@ -71,6 +71,11 @@ export interface IRenderer {
      * Framebuffer will be cleared with this color at the beginning of the frame.
      */
     clearColor: Color;
+
+    /**
+     * The rendering limits of the renderer.
+     */
+    limits: RenderingLimits | null;
 
     /**
      * The renderer type.

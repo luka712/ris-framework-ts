@@ -1,5 +1,5 @@
-import mainRenderTargetFlipYVS from "../../../shaders/glsl/main_render_target_flip_y_vs.glsl?raw";
-import mainRenderTargetFlipYFS from "../../../shaders/glsl/main_render_target_flip_y_fs.glsl?raw";
+import mainRenderTargetVS from "../../../shaders/glsl/main_render_target_vs.glsl?raw";
+import mainRenderTargetFS from "../../../shaders/glsl/main_render_target_fs.glsl?raw";
 import spriteVS from "../../../shaders/glsl/sprite_vs.glsl?raw";
 import spriteFS from "../../../shaders/glsl/sprite_fs.glsl?raw";
 import inspectTextureMipsVS from "../../../shaders/glsl/inspect_texture_mips_vs.glsl?raw";
@@ -24,9 +24,9 @@ import forwardBlinnPhongFS from "../../../shaders/glsl/forward_blinn_phong_mater
 
 export const ShaderModuleContent : {[id: string]: any} = {
 
-    "main_render_target_flip_y": {
-        "vertex": mainRenderTargetFlipYVS,
-        "fragment": mainRenderTargetFlipYFS,
+    "main_render_target": {
+        "vertex": mainRenderTargetVS,
+        "fragment": mainRenderTargetFS,
         "reflection": {}
     },
 

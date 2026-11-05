@@ -42,6 +42,9 @@ export class WebGlGraphicsDeviceFeatures extends AGraphicsDeviceFeatures {
 
         this.pvrtcExtension = webgl.getExtension("WEBGL_compressed_texture_pvrtc") ?? undefined;
         this._supportsTextureCompressionPVRTC = !!this.pvrtcExtension;
+
+        // WebGL2 has no texture views; textures are used directly.
+        this._supportsTextureView = false;
     }
 
     /** The WEBGL_compressed_texture_astc extension. Undefined if not supported. */

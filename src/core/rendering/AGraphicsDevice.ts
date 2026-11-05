@@ -8,7 +8,8 @@ import {
     type IBlendState,
     type IPrimitiveState,
     type IGraphicsDevice, type ISwapChainDescriptor, type RenderPassDescriptor, SamplerFilter, MipMapSamplerFilter,
-    type ISwapChain, type IRenderPass, type IPrimitiveStateDescriptor
+    type ISwapChain, type IRenderPass, type IPrimitiveStateDescriptor,
+    type RenderingBackend
 } from "../../api/index.ts";
 import {PowerPreferenceType} from "../../api/rendering/PowerPreference.ts";
 
@@ -49,6 +50,9 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     protected constructor(descriptor: IGraphicsDeviceDescriptor) {
         this._descriptor = descriptor;
     }
+
+    /** @inheritdoc */
+    abstract readonly api: RenderingBackend;
 
     /** @inheritdoc */
     abstract readonly features : IGraphicsDeviceFeatures;

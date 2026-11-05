@@ -3,10 +3,9 @@ import {
     State,
     TextureUsage,
     TextureUtilities,
-    type ITextureView,
-    TextureViewDescriptor,
-    TextureViewDimension,
+    type ITextureView2D,
     type ITextureDescriptor,
+    type TextureFormat,
 } from "../../api/index.ts";
 import { ATexture2D } from "../../core/rendering/texture/texture.ts";
 import type { WebGpuGraphicsDevice } from "../WebGpuGraphicsDevice.ts";
@@ -26,7 +25,6 @@ export class WebGpuTexture2D extends ATexture2D {
 
     private readonly _graphicsDevice: WebGpuGraphicsDevice;
     private _gpuTexture: GPUTexture | null = null;
-    private _gpuDefaultView: GPUTextureView | null = null;
 
     /**
      * The constructor.
@@ -34,8 +32,9 @@ export class WebGpuTexture2D extends ATexture2D {
      * @param descriptor The texture descriptor.
      */
     public constructor(framework: IFramework, descriptor: ITextureDescriptor) {
-        super(descriptor);
-        this._graphicsDevice = framework.renderer.graphicsDevice as WebGpuGraphicsDevice;
+        const graphicsDevice = framework.renderer.graphicsDevice as WebGpuGraphicsDevice;
+        super(graphicsDevice, descriptor);
+        this._graphicsDevice = graphicsDevice;
 
         if (!this._label) {
             this._label = `WebGpuTexture2D ${this.id}`;
@@ -50,12 +49,12 @@ export class WebGpuTexture2D extends ATexture2D {
         return this._gpuTexture;
     }
 
-    /** The default WebGPU view of the whole texture. */
+    /** The default WebGPU view of the whole texture, in the texture's own format. Same as `defaultTextureView.nativeObject`. */
     public get gpuDefaultView(): GPUTextureView {
-        if (!this._gpuDefaultView) {
+        if (!this._gpuTexture) {
             throw new Error("WebGpuTexture2D: the texture is not initialized or is disposed.");
         }
-        return this._gpuDefaultView;
+        return (this.defaultTextureView as WebGpuTextureView).gpuTextureView;
     }
 
     /** @inheritDoc */
@@ -87,7 +86,8 @@ export class WebGpuTexture2D extends ATexture2D {
                 data as Uint8Array[] | undefined,
                 this._mipLevels,
                 1,
-                this.label);
+                this.label,
+                this.viewFormats);
 
             this._gpuTexture = result.texture;
             this._nativeSize = vec2.fromValues(result.size.width, result.size.height!);
@@ -100,13 +100,10 @@ export class WebGpuTexture2D extends ATexture2D {
                 this.textureUsage,
                 data,
                 this._mipLevels, 1,
-                this.label);
+                this.label,
+                this.viewFormats);
         }
 
-        this._gpuDefaultView = WebGpuUtilities.textureView.create(this._gpuTexture, { label: `${this.label} default view` });
-        // ATexture2D declares the default view readonly and sets it to null; fill it in here.
-        (this as { defaultTextureView: ITextureView }).defaultTextureView =
-            new WebGpuTextureView(this._gpuDefaultView, this.textureFormat);
         this._handle = this._gpuTexture;
 
         this._state = State.INITIALIZED;
@@ -121,15 +118,16 @@ export class WebGpuTexture2D extends ATexture2D {
         }
     }
 
-    /** @inheritDoc */
-    public createView(descriptor?: TextureViewDescriptor): ITextureView {
-        descriptor = descriptor ?? new TextureViewDescriptor();
-        if (descriptor.dimension !== TextureViewDimension.DIMENSION_2D) {
-            throw new Error("Only 2D texture views are implemented for WebGPU.");
-        }
+    /**
+     * Creates a native 2D view with `GPUTexture.createView`. The format is legal because the texture was created
+     * with `GPUTextureDescriptor.viewFormats` set to {@link viewFormats} (e.g. RGBA8_UNORM with an RGBA8_UNORM_SRGB view).
+     * @inheritDoc
+     */
+    protected _createTextureView(textureFormat: TextureFormat): ITextureView2D {
+        const label = textureFormat == this.textureFormat ? `${this.label} default view` : `${this.label} ${textureFormat} view`;
         const view = WebGpuUtilities.textureView.create2D(
-            this.gpuTexture, WebGpuConverter.convertTextureFormat(descriptor.textureFormat), descriptor.label);
-        return new WebGpuTextureView(view, descriptor.textureFormat, descriptor.dimension);
+            this.gpuTexture, WebGpuConverter.convertTextureFormat(textureFormat), label);
+        return new WebGpuTextureView(view, textureFormat, undefined, label);
     }
 
     /** @inheritDoc */
@@ -137,10 +135,9 @@ export class WebGpuTexture2D extends ATexture2D {
         if (this._state == State.DISPOSING || this._state == State.DISPOSED) {
             return;
         }
+        this._disposeTextureViews();
         WebGpuUtilities.texture.dispose(this._gpuTexture);
         this._gpuTexture = null;
-        this._gpuDefaultView = null;
-        this.defaultTextureView?.dispose();
         this._state = State.DISPOSED;
 
         for (const listener of this._disposedListeners.slice()) {

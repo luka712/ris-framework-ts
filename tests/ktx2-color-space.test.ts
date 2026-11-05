@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { KtxDFTransfer, VkFormat, type IKtx2Texture } from "ris-ktx2";
-import { ColorSpace, TextureFormat } from "../src/api/index.ts";
+import { ColorSpace, OutputColorSpace, TextureFormat } from "../src/api/index.ts";
 import { ATextureFactory } from "../src/api/rendering/texture/ATextureFactory.ts";
 import type { ITextureDescriptor } from "../src/api/rendering/texture/ITextureDescriptor.ts";
 import type { ITexture2D } from "../src/api/rendering/texture/ITexture2D.ts";
@@ -13,9 +13,9 @@ class TestFactory extends ATextureFactory {
     }
 }
 
-function createFactory(rendererColorSpace = ColorSpace.LINEAR, bc = true) {
+function createFactory(rendererColorSpace = OutputColorSpace.NONE, bc = true) {
     const framework = {
-        renderer: { colorSpace: rendererColorSpace },
+        renderer: { outputColorSpace: rendererColorSpace },
         graphicsDevice: {
             features: {
                 supportsTextureCompressionBC: bc,
@@ -42,29 +42,29 @@ function ktx(oetf: KtxDFTransfer, vkFormat: VkFormat, needsTranscoding: boolean)
 
 describe("createFromKtx2 follows the file's color space", () => {
     it("transcoded: sRGB-flagged file gives an sRGB format, linear-flagged a linear one", () => {
-        const f = createFactory(ColorSpace.LINEAR);
+        const f = createFactory(OutputColorSpace.NONE);
         f.createFromKtx2(ktx(KtxDFTransfer.SRGB, VkFormat.UNDEFINED, true));
-        expect(f.last!.textureFormat).toBe(TextureFormat.BC7_RGBA_SRGB);
+        expect(f.last!.textureFormat).toBe(TextureFormat.BC7_RGBA_UNORM_SRGB);
 
-        const g = createFactory(ColorSpace.SRGB);
+        const g = createFactory(OutputColorSpace.SRGB);
         g.createFromKtx2(ktx(KtxDFTransfer.LINEAR, VkFormat.UNDEFINED, true));
         expect(g.last!.textureFormat).toBe(TextureFormat.BC7_RGBA_UNORM);
     });
 
     it("non-transcoded: the DFD transfer function picks the variant", () => {
-        const f = createFactory(ColorSpace.LINEAR);
+        const f = createFactory(OutputColorSpace.NONE);
         f.createFromKtx2(ktx(KtxDFTransfer.SRGB, VkFormat.BC7_UNORM_BLOCK, false));
-        expect(f.last!.textureFormat).toBe(TextureFormat.BC7_RGBA_SRGB);
+        expect(f.last!.textureFormat).toBe(TextureFormat.BC7_RGBA_UNORM_SRGB);
 
-        const g = createFactory(ColorSpace.SRGB);
+        const g = createFactory(OutputColorSpace.SRGB);
         g.createFromKtx2(ktx(KtxDFTransfer.LINEAR, VkFormat.BC7_SRGB_BLOCK, false));
         expect(g.last!.textureFormat).toBe(TextureFormat.BC7_RGBA_UNORM);
     });
 
     it("non-transcoded with unspecified transfer keeps the file's vkFormat", () => {
-        const f = createFactory(ColorSpace.LINEAR);
+        const f = createFactory(OutputColorSpace.NONE);
         f.createFromKtx2(ktx(KtxDFTransfer.UNSPECIFIED, VkFormat.BC7_SRGB_BLOCK, false));
-        expect(f.last!.textureFormat).toBe(TextureFormat.BC7_RGBA_SRGB);
+        expect(f.last!.textureFormat).toBe(TextureFormat.BC7_RGBA_UNORM_SRGB);
     });
 
     it("an explicit color space overrides the file", () => {
@@ -73,7 +73,7 @@ describe("createFromKtx2 follows the file's color space", () => {
         expect(f.last!.textureFormat).toBe(TextureFormat.BC7_RGBA_UNORM);
 
         f.createFromKtx2(ktx(KtxDFTransfer.LINEAR, VkFormat.BC7_UNORM_BLOCK, false), TextureFormat.UNDEFINED, ColorSpace.SRGB);
-        expect(f.last!.textureFormat).toBe(TextureFormat.BC7_RGBA_SRGB);
+        expect(f.last!.textureFormat).toBe(TextureFormat.BC7_RGBA_UNORM_SRGB);
     });
 
     it("throws when the final format is unsupported", () => {

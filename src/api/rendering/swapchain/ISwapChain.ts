@@ -1,19 +1,11 @@
-import {TextureFormat} from "../texture/TextureFormat.ts";
 import type { IDisposable } from "../../core/IDisposable.ts";
 import {vec2} from "gl-matrix";
 
-/**
- * The interface for a swap chain, which is used to present the rendered image to the screen.
- */
+/** The interface for a swap chain, which is used to present the rendered image to the screen. */
 export interface ISwapChain extends IDisposable {
 
-    /**
-     * The size of the back buffer.
-     */
+    /** The size of the back buffer. */
     readonly backBufferSize: vec2;
-
-    /** The texture format of the back buffer. */
-    readonly textureFormat: TextureFormat;
 
     /**
      * Sets the back buffer size.

@@ -10,7 +10,7 @@ export class WebGlFrameBufferUtilities {
 
 
     /**
-     * Creates a framebuffer and attaches the provided texture(s) as color attachments. 
+     * Creates a framebuffer and attaches the provided texture(s) as color attachments.
      * This method is useful for setting up a framebuffer for rendering to one or more textures.
      * @param gl The WebGL2 rendering context.
      * @param textureIds The texture(s) to be attached as color attachments.
@@ -39,19 +39,11 @@ export class WebGlFrameBufferUtilities {
         for (let i = 0; i < textureIdsArray.length; i++) {
             const textureId = textureIdsArray[i];
 
-            if(textureId == null) {
+            if (textureId == null) {
                 throw new Error("Cannot bind texture to the frame buffer. Texture id not specified");
             }
 
-            // Bind the texture to the framebuffer, so we can render to it.
-            gl.bindTexture(gl.TEXTURE_2D, textureId);
-
-            // Connect the texture to the framebuffer.
-            gl.framebufferTexture2D(gl.FRAMEBUFFER,
-                gl.COLOR_ATTACHMENT0 + i,
-                gl.TEXTURE_2D,
-                textureId,
-                0);
+            this.setColorAttachment(gl, framebuffer, i, textureId);
         }
 
         // Check if the framebuffer is complete.
@@ -61,6 +53,22 @@ export class WebGlFrameBufferUtilities {
         }
 
         return framebuffer;
+    }
+
+    /** TODO */
+    public setColorAttachment(gl: WebGL2RenderingContext, framebuffer: WebGLFramebuffer, index: number, texture: WebGLTexture): void {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+
+
+        // Bind the texture to the framebuffer, so we can render to it.
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+
+        // Connect the texture to the framebuffer.
+        gl.framebufferTexture2D(gl.FRAMEBUFFER,
+            gl.COLOR_ATTACHMENT0 + index,
+            gl.TEXTURE_2D,
+            texture,
+            0);
     }
 
     /**
@@ -73,9 +81,9 @@ export class WebGlFrameBufferUtilities {
      * @return The created framebuffer.
      */
     public createWithRenderBufferAsDepthBuffer(gl: WebGL2RenderingContext,
-        textureAttachment0: WebGLTexture,
-        depthAttachmentType: GLenum,
-        depthStencilRenderBuffer: WebGLRenderbuffer, label: string | null | undefined): WebGLFramebuffer {
+                                               textureAttachment0: WebGLTexture,
+                                               depthAttachmentType: GLenum,
+                                               depthStencilRenderBuffer: WebGLRenderbuffer, label: string | null | undefined): WebGLFramebuffer {
 
         if (depthAttachmentType != gl.DEPTH_ATTACHMENT
             && depthAttachmentType != gl.DEPTH_STENCIL_ATTACHMENT
@@ -128,10 +136,10 @@ export class WebGlFrameBufferUtilities {
      * @returns The created framebuffer.
      */
     public createWithRenderTextureAsDepthBuffer(gl: WebGL2RenderingContext,
-        textureAttachment0: WebGLTexture,
-        depthAttachmentType: GLenum,
-        depthStencilTexture: WebGLTexture,
-        label?: string): WebGLFramebuffer {
+                                                textureAttachment0: WebGLTexture,
+                                                depthAttachmentType: GLenum,
+                                                depthStencilTexture: WebGLTexture,
+                                                label?: string): WebGLFramebuffer {
         if (depthAttachmentType != gl.DEPTH_ATTACHMENT
             && depthAttachmentType != gl.DEPTH_STENCIL_ATTACHMENT
             && depthAttachmentType != gl.STENCIL_ATTACHMENT) {
@@ -189,10 +197,10 @@ export class WebGlFrameBufferUtilities {
 
         var depthStencilAttachmentType = null;
         switch (format) {
-            case TextureFormat.DEPTH_32_FLOAT:
+            case TextureFormat.DEPTH32_FLOAT:
                 depthStencilAttachmentType = gl.DEPTH_ATTACHMENT;
                 break;
-            case TextureFormat.DEPTH_24_STENCIL_8:
+            case TextureFormat.DEPTH24_PLUS_STENCIL8:
                 depthStencilAttachmentType = gl.DEPTH_STENCIL_ATTACHMENT;
                 break;
             default:
@@ -223,10 +231,10 @@ export class WebGlFrameBufferUtilities {
         textureFormat: TextureFormat): void {
         var depthStencilAttachmentType = null;
         switch (textureFormat) {
-            case TextureFormat.DEPTH_32_FLOAT:
+            case TextureFormat.DEPTH32_FLOAT:
                 depthStencilAttachmentType = gl.DEPTH_ATTACHMENT;
                 break;
-            case TextureFormat.DEPTH_24_STENCIL_8:
+            case TextureFormat.DEPTH24_PLUS_STENCIL8:
                 depthStencilAttachmentType = gl.DEPTH_STENCIL_ATTACHMENT;
                 break;
             default:

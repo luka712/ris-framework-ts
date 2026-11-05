@@ -33,6 +33,9 @@ export abstract class AGraphicsDeviceFeatures implements IGraphicsDeviceFeatures
     /** Whether PVRTC 1 is supported. By default, false. */
     protected _supportsTextureCompressionPVRTC = false;
 
+    /** Whether texture views are supported. By default, false. Backends set this in {@link _detectFeatures}. */
+    protected _supportsTextureView = false;
+
     /**
      * Detects the features and sets the protected `_supports*` flags. Called from {@link _initialize}.
      */
@@ -40,14 +43,14 @@ export abstract class AGraphicsDeviceFeatures implements IGraphicsDeviceFeatures
 
     /**
      * The uncompressed formats this backend supports.
-     * By default, `RGBA_8_UNORM`, `RGBA_8_UNORM_SRGB`, `DEPTH_24_STENCIL_8` and `DEPTH_32_FLOAT`.
+     * By default, `RGBA8_UNORM`, `RGBA8_UNORM_SRGB`, `DEPTH24_PLUS_STENCIL8` and `DEPTH32_FLOAT`.
      */
     protected _getUncompressedTextureFormats(): TextureFormat[] {
         return [
-            TextureFormat.RGBA_8_UNORM,
-            TextureFormat.RGBA_8_UNORM_SRGB,
-            TextureFormat.DEPTH_24_STENCIL_8,
-            TextureFormat.DEPTH_32_FLOAT,
+            TextureFormat.RGBA8_UNORM,
+            TextureFormat.RGBA8_UNORM_SRGB,
+            TextureFormat.DEPTH24_PLUS_STENCIL8,
+            TextureFormat.DEPTH32_FLOAT,
         ];
     }
 
@@ -66,27 +69,27 @@ export abstract class AGraphicsDeviceFeatures implements IGraphicsDeviceFeatures
             formats.add(TextureFormat.BC3_RGBA_UNORM);
         }
         if (this._supportsTextureCompressionS3TCSrgb) {
-            formats.add(TextureFormat.BC1_RGB_SRGB);
-            formats.add(TextureFormat.BC3_RGBA_SRGB);
+            formats.add(TextureFormat.BC1_RGB_UNORM_SRGB);
+            formats.add(TextureFormat.BC3_RGBA_UNORM_SRGB);
         }
         if (this._supportsTextureCompressionBC) {
             formats.add(TextureFormat.BC7_RGBA_UNORM);
-            formats.add(TextureFormat.BC7_RGBA_SRGB);
+            formats.add(TextureFormat.BC7_RGBA_UNORM_SRGB);
         }
         if (this._supportsTextureCompressionETC2) {
             formats.add(TextureFormat.ETC2_RGB8_UNORM);
-            formats.add(TextureFormat.ETC2_RGB8_SRGB);
+            formats.add(TextureFormat.ETC2_RGB8_UNORM_SRGB);
             formats.add(TextureFormat.ETC2_RGBA8_UNORM);
-            formats.add(TextureFormat.ETC2_RGBA8_SRGB);
+            formats.add(TextureFormat.ETC2_RGBA8_UNORM_SRGB);
         }
         if (this._supportsTextureCompressionASTC) {
             ASTC_TEXTURE_FORMATS.forEach(f => formats.add(f));
         }
         if (this._supportsTextureCompressionPVRTC) {
-            formats.add(TextureFormat.PVRTC_4BPPV1_RGBA);
-            formats.add(TextureFormat.PVRTC_4BPPV1_RGB);
-            formats.add(TextureFormat.PVRTC_2BPPV1_RGBA);
-            formats.add(TextureFormat.PVRTC_2BPPV1_RGB);
+            formats.add(TextureFormat.PVRTC1_RGBA_4BPP_UNORM);
+            formats.add(TextureFormat.PVRTC1_RGB_4BPP_UNORM);
+            formats.add(TextureFormat.PVRTC1_RGBA_2BPP_UNORM);
+            formats.add(TextureFormat.PVRTC1_RGB_2BPP_UNORM);
         }
     }
 
@@ -118,6 +121,11 @@ export abstract class AGraphicsDeviceFeatures implements IGraphicsDeviceFeatures
     /** @inheritDoc */
     public get supportsTextureCompressionPVRTC(): boolean {
         return this._supportsTextureCompressionPVRTC;
+    }
+
+    /** @inheritDoc */
+    public get supportsTextureView(): boolean {
+        return this._supportsTextureView;
     }
 
     /** @inheritDoc */

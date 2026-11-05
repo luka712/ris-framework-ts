@@ -1,5 +1,5 @@
 
-import type { ITextureView } from "../texture/ITextureView.ts";
+import type { ITextureView2D } from "../texture/ITextureView2D.ts";
 import {LoadAction} from "./LoadAction.ts";
 import type { ITexture2D } from "../texture/ITexture2D.ts";
 import {StoreAction} from "./StoreAction.ts";
@@ -26,7 +26,7 @@ export class RenderPassDepthStencilAttachment {
     /**
      * The view into depth/stencil render target.
      */
-    public view?: ITextureView;
+    public view?: ITextureView2D;
 
     /**
      * The texture used as depth/stencil render target.

@@ -97,7 +97,7 @@ export class ContentManager implements IContentManager {
 
         // The descriptor's color space overrides the renderer's; an explicit format overrides both.
         let format = textureDescriptor?.preferredColorSpace
-            ? (textureDescriptor.preferredColorSpace == ColorSpace.SRGB ? TextureFormat.RGBA_8_UNORM_SRGB : TextureFormat.RGBA_8_UNORM)
+            ? (textureDescriptor.preferredColorSpace == ColorSpace.SRGB ? TextureFormat.RGBA8_UNORM_SRGB : TextureFormat.RGBA8_UNORM)
             : this._framework.renderer.preferredTextureFormat;
 
         if (textureDescriptor?.textureFormat && textureDescriptor.textureFormat != TextureFormat.UNDEFINED) {
@@ -122,7 +122,7 @@ export class ContentManager implements IContentManager {
     public loadTexture2DFromPixels(width: number, height: number, pixels: ArrayBuffer): ITexture2D {
         const view = new Uint8Array(pixels);
         // Raw pixels keep the old linear default.
-        return this._framework.textureFactory.create(width, height, view, 4, undefined, undefined, TextureFormat.RGBA_8_UNORM);
+        return this._framework.textureFactory.create(width, height, view, 4, undefined, undefined, TextureFormat.RGBA8_UNORM);
     }
 
     /** @inheritDoc */

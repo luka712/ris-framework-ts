@@ -12,16 +12,16 @@ describe("sRGB compressed formats", () => {
     it("maps formats to WebGL internal formats", () => {
         const expected: [TextureFormat, number][] = [
             [TextureFormat.BC7_RGBA_UNORM, 0x8E8C],
-            [TextureFormat.BC7_RGBA_SRGB, 0x8E8D],
+            [TextureFormat.BC7_RGBA_UNORM_SRGB, 0x8E8D],
             [TextureFormat.BC3_RGBA_UNORM, 0x83F3],
-            [TextureFormat.BC3_RGBA_SRGB, 0x8C4F],
+            [TextureFormat.BC3_RGBA_UNORM_SRGB, 0x8C4F],
             [TextureFormat.BC1_RGB_UNORM, 0x83F0],
-            [TextureFormat.BC1_RGB_SRGB, 0x8C4C],
+            [TextureFormat.BC1_RGB_UNORM_SRGB, 0x8C4C],
             [TextureFormat.ETC2_RGBA8_UNORM, 0x9278],
-            [TextureFormat.ETC2_RGBA8_SRGB, 0x9279],
+            [TextureFormat.ETC2_RGBA8_UNORM_SRGB, 0x9279],
             [TextureFormat.ETC2_RGB8_UNORM, 0x9274],
-            [TextureFormat.ETC2_RGB8_SRGB, 0x9275],
-            [TextureFormat.ASTC_4X4_RGBA_SRGB, 0x93D0],
+            [TextureFormat.ETC2_RGB8_UNORM_SRGB, 0x9275],
+            [TextureFormat.ASTC_4X4_UNORM_SRGB, 0x93D0],
         ];
         for (const [format, glFormat] of expected) {
             expect(WebGlConverter.convertInternalFormat(gl, format)).toBe(glFormat);
@@ -29,26 +29,26 @@ describe("sRGB compressed formats", () => {
     });
 
     it("maps formats to WebGPU formats", () => {
-        expect(WebGpuConverter.convertTextureFormat(TextureFormat.BC7_RGBA_SRGB)).toBe("bc7-rgba-unorm-srgb");
+        expect(WebGpuConverter.convertTextureFormat(TextureFormat.BC7_RGBA_UNORM_SRGB)).toBe("bc7-rgba-unorm-srgb");
         expect(WebGpuConverter.convertTextureFormat(TextureFormat.BC3_RGBA_UNORM)).toBe("bc3-rgba-unorm");
-        expect(WebGpuConverter.convertTextureFormat(TextureFormat.BC3_RGBA_SRGB)).toBe("bc3-rgba-unorm-srgb");
-        expect(WebGpuConverter.convertTextureFormat(TextureFormat.ETC2_RGBA8_SRGB)).toBe("etc2-rgba8unorm-srgb");
+        expect(WebGpuConverter.convertTextureFormat(TextureFormat.BC3_RGBA_UNORM_SRGB)).toBe("bc3-rgba-unorm-srgb");
+        expect(WebGpuConverter.convertTextureFormat(TextureFormat.ETC2_RGBA8_UNORM_SRGB)).toBe("etc2-rgba8unorm-srgb");
         expect(WebGpuConverter.convertTextureFormat(TextureFormat.ETC2_RGB8_UNORM)).toBe("etc2-rgb8unorm");
-        expect(WebGpuConverter.convertTextureFormat(TextureFormat.ASTC_4X4_RGBA_UNORM)).toBe("astc-4x4-unorm");
-        expect(WebGpuConverter.convertTextureFormat(TextureFormat.ASTC_12X12_RGBA_SRGB)).toBe("astc-12x12-unorm-srgb");
-        expect(WebGpuConverter.convertTextureFormat(TextureFormat.ASTC_10X5_RGBA_SRGB)).toBe("astc-10x5-unorm-srgb");
+        expect(WebGpuConverter.convertTextureFormat(TextureFormat.ASTC_4X4_UNORM)).toBe("astc-4x4-unorm");
+        expect(WebGpuConverter.convertTextureFormat(TextureFormat.ASTC_12X12_UNORM_SRGB)).toBe("astc-12x12-unorm-srgb");
+        expect(WebGpuConverter.convertTextureFormat(TextureFormat.ASTC_10X5_UNORM_SRGB)).toBe("astc-10x5-unorm-srgb");
     });
 
     it("converts sRGB vkFormats to sRGB texture formats", () => {
         const expected: [VkFormat, TextureFormat][] = [
             [VkFormat.BC7_UNORM_BLOCK, TextureFormat.BC7_RGBA_UNORM],
-            [VkFormat.BC7_SRGB_BLOCK, TextureFormat.BC7_RGBA_SRGB],
-            [VkFormat.BC3_SRGB_BLOCK, TextureFormat.BC3_RGBA_SRGB],
-            [VkFormat.BC1_RGB_SRGB_BLOCK, TextureFormat.BC1_RGB_SRGB],
-            [VkFormat.ETC2_R8G8B8A8_SRGB_BLOCK, TextureFormat.ETC2_RGBA8_SRGB],
+            [VkFormat.BC7_SRGB_BLOCK, TextureFormat.BC7_RGBA_UNORM_SRGB],
+            [VkFormat.BC3_SRGB_BLOCK, TextureFormat.BC3_RGBA_UNORM_SRGB],
+            [VkFormat.BC1_RGB_SRGB_BLOCK, TextureFormat.BC1_RGB_UNORM_SRGB],
+            [VkFormat.ETC2_R8G8B8A8_SRGB_BLOCK, TextureFormat.ETC2_RGBA8_UNORM_SRGB],
             [VkFormat.ETC2_R8G8B8_UNORM_BLOCK, TextureFormat.ETC2_RGB8_UNORM],
-            [VkFormat.ETC2_R8G8B8_SRGB_BLOCK, TextureFormat.ETC2_RGB8_SRGB],
-            [VkFormat.ASTC_4X4_SRGB_BLOCK, TextureFormat.ASTC_4X4_RGBA_SRGB],
+            [VkFormat.ETC2_R8G8B8_SRGB_BLOCK, TextureFormat.ETC2_RGB8_UNORM_SRGB],
+            [VkFormat.ASTC_4X4_SRGB_BLOCK, TextureFormat.ASTC_4X4_UNORM_SRGB],
         ];
         for (const [vk, format] of expected) {
             expect(TextureUtilities.convertVkFormatToTextureFormat(vk)).toBe(format);
@@ -56,11 +56,11 @@ describe("sRGB compressed formats", () => {
     });
 
     it("finds sRGB/linear variants and block sizes", () => {
-        expect(TextureUtilities.convertToSrgbVariant(TextureFormat.BC7_RGBA_UNORM)).toBe(TextureFormat.BC7_RGBA_SRGB);
-        expect(TextureUtilities.convertToSrgbVariant(TextureFormat.PVRTC_4BPPV1_RGBA)).toBe(TextureFormat.PVRTC_4BPPV1_RGBA);
-        expect(TextureUtilities.convertToLinearVariant(TextureFormat.BC3_RGBA_SRGB)).toBe(TextureFormat.BC3_RGBA_UNORM);
-        expect(TextureUtilities.isSrgbFormat(TextureFormat.ETC2_RGB8_SRGB)).toBe(true);
-        expect(TextureUtilities.isCompressedTextureFormat(TextureFormat.BC7_RGBA_SRGB)).toBe(true);
+        expect(TextureUtilities.convertToSrgbVariant(TextureFormat.BC7_RGBA_UNORM)).toBe(TextureFormat.BC7_RGBA_UNORM_SRGB);
+        expect(TextureUtilities.convertToSrgbVariant(TextureFormat.PVRTC1_RGBA_4BPP_UNORM)).toBe(TextureFormat.PVRTC1_RGBA_4BPP_UNORM);
+        expect(TextureUtilities.convertToLinearVariant(TextureFormat.BC3_RGBA_UNORM_SRGB)).toBe(TextureFormat.BC3_RGBA_UNORM);
+        expect(TextureUtilities.isSrgbFormat(TextureFormat.ETC2_RGB8_UNORM_SRGB)).toBe(true);
+        expect(TextureUtilities.isCompressedTextureFormat(TextureFormat.BC7_RGBA_UNORM_SRGB)).toBe(true);
     });
 });
 

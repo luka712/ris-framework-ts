@@ -11,7 +11,7 @@ function createFramework() {
         popErrorScope: vi.fn(() => Promise.resolve(null)),
         queue: {writeTexture: vi.fn(), copyExternalImageToTexture: vi.fn()},
     };
-    const framework = {renderer: {graphicsDevice: {device}}} as any;
+    const framework = {renderer: {graphicsDevice: {device, api: "WEB_GPU", features: {supportsTextureView: true}}}} as any;
     return {framework, device, createTexture};
 }
 
@@ -23,7 +23,7 @@ describe("WebGpuTexture2D native size", () => {
         const {framework, createTexture} = createFramework();
         const texture = new WebGpuTexture2D(framework, {
             width: 768, height: 512,
-            textureFormat: TextureFormat.ASTC_10X5_RGBA_UNORM,
+            textureFormat: TextureFormat.ASTC_10X5_UNORM,
             blockSize: vec2.fromValues(10, 5),
             data: [new Uint8Array(77 * 103 * 16)],
         });
@@ -39,7 +39,7 @@ describe("WebGpuTexture2D native size", () => {
         const {framework} = createFramework();
         const texture = new WebGpuTexture2D(framework, {
             width: 3, height: 2,
-            textureFormat: TextureFormat.RGBA_8_UNORM,
+            textureFormat: TextureFormat.RGBA8_UNORM,
             data: [new Uint8Array(3 * 2 * 4)],
         });
         texture.initialize();

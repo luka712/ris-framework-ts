@@ -107,17 +107,17 @@ const png = await framework.content.loadTexture2DAsync("/assets/test.png");
 const ktx = await framework.content.loadTexture2DAsync("/assets/kodim23.ktx2");
 
 // Optional descriptor: every field is optional, missing ones get defaults.
-const desc: ITextureDescriptor = { generateMipmaps: true, textureFormat: TextureFormat.RGBA_8_UNORM };
+const desc: ITextureDescriptor = { generateMipmaps: true, textureFormat: TextureFormat.RGBA8_UNORM };
 const cat = await framework.content.loadTexture2DAsync("/assets/cat.jpg", desc);
 ```
 
-Textures without a format use `RGBA_8_UNORM` when the colour space is `LINEAR` (the default) and `RGBA_8_UNORM_SRGB` when it is `SRGB`.
+Textures without a format or colour space use `RGBA8_UNORM` when the renderer's `outputColorSpace` is `NONE` (the default: no colour management, values written to the screen as-is) and `RGBA8_UNORM_SRGB` when it is `SRGB` (linear shader output encoded to sRGB once at present). Material shaders never convert gamma in either mode.
 
 Paths ending in `.ktx2` are loaded through `ris-ktx2`.
 
 - **Basis Universal files** are transcoded to the best format the GPU supports, in this order: BC7, ASTC 4×4, BC3, ETC2, PVRTC, and RGBA8 as a last resort.
 - **Other KTX2 files** are uploaded in their stored format.
-- **sRGB:** sRGB files load as sRGB formats (`BC7_RGBA_SRGB`, `BC3_RGBA_SRGB`, `BC1_RGB_SRGB`, `ETC2_RGBA8_SRGB`, `ETC2_RGB8_SRGB`, `ASTC_*_RGBA_SRGB`, `RGBA_8_UNORM_SRGB`), so the GPU decodes them to linear.
+- **sRGB:** sRGB files load as sRGB formats (`BC7_RGBA_UNORM_SRGB`, `BC3_RGBA_UNORM_SRGB`, `BC1_RGB_UNORM_SRGB`, `ETC2_RGBA8_UNORM_SRGB`, `ETC2_RGB8_UNORM_SRGB`, `ASTC_*_RGBA_SRGB`, `RGBA8_UNORM_SRGB`), so the GPU decodes them to linear.
 - **sRGB fallback:** if `WEBGL_compressed_texture_s3tc_srgb` is missing, sRGB BC1 and BC3 textures fall back to linear with a warning.
 
 `framework.graphicsDevice.features` reports compression support: `supportsTextureCompressionBC` (BPTC/BC7), `supportsTextureCompressionS3TC`, `supportsTextureCompressionS3TCSrgb`, `supportsTextureCompressionETC2`, `supportsTextureCompressionASTC` and `supportsTextureCompressionPVRTC`.

@@ -1,8 +1,7 @@
-import type { ITextureView } from "./ITextureView.ts";
+import type { ITextureView2D } from "./ITextureView2D.ts";
 import type { IContent } from "../../content/IContent.ts";
 import {TextureUsage} from "./TextureUsage.ts";
 import {State} from "../../data/State.ts";
-import {TextureViewDescriptor} from "./TextureViewDescriptor.ts";
 import {TextureFormat} from "./TextureFormat.ts";
 import type {vec2} from "gl-matrix";
 
@@ -12,28 +11,23 @@ import type {vec2} from "gl-matrix";
 export interface ITexture2D extends IContent {
 
     /**
-     * The default texture view.
-     * It is created with default parameters and can be used when no specific view is needed.
+     * The default texture view, i.e. the view in the texture's own {@link textureFormat}.
+     * Same as `getTextureView(textureFormat)`. Only available once the texture is initialized.
+     * On WebGL2 (`supportsTextureView` is false) this throws — use the texture directly.
      */
-    readonly defaultTextureView: ITextureView;
+    readonly defaultTextureView: ITextureView2D;
 
-    /**
-     * The texture usage.
-     */
+    /** The texture usage. */
     readonly textureUsage: TextureUsage;
 
-    /**
-     * The texture format.
-     */
+    /** The texture format. */
     readonly textureFormat: TextureFormat;
 
     /**
-     * The texture view format.
-     * In most cases it will be the same as the texture format, but in some cases it can be different.
-     *
-     * Case where it might differ is if texture is used as depth texture and shader binding.
+     * The available texture view formats for this texture. Always contains {@link textureFormat}, followed by
+     * the descriptor's `viewFormats`. By default, only {@link textureFormat}.
      */
-    readonly textureViewFormat: TextureFormat;
+    readonly viewFormats: TextureFormat[];
 
     /**
      * The id of the texture.
@@ -90,11 +84,14 @@ export interface ITexture2D extends IContent {
     removeOnDisposedListener(event: (obj: ITexture2D) => void): void;
 
     /**
-     * Creates the texture view with the specified description.
-     * @param descriptor - The texture view descriptor.
+     * Gets the texture view for the specified view format. The view is created on first request and cached,
+     * so repeated calls return the same view. Views are disposed together with the texture.
+     * In WebGPU this is a native view (`GPUTexture.createView`), so all views share the same storage.
+     * WebGL2 does not support texture views (`supportsTextureView` is false); requesting a view throws.
+     * @param textureFormat The view format. Must be one of {@link viewFormats}, otherwise an error is thrown.
      * @returns The texture view.
      */
-    createView(descriptor?: TextureViewDescriptor): ITextureView;
+    getTextureView(textureFormat: TextureFormat): ITextureView2D;
 
     /**
      * Initializes the texture.

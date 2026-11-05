@@ -59,28 +59,28 @@ export abstract class ATextureFactory implements ITextureFactory {
                 // BC7 needs BPTC (supportsTextureCompressionBC), BC3 needs S3TC.
                 if (gpuFeatures.supportsTextureCompressionBC) {
                     transcodeFormat = KtxTranscodeFormat.BC7_RGBA;
-                    textureFormat = preferSrgb ? TextureFormat.BC7_RGBA_SRGB : TextureFormat.BC7_RGBA_UNORM;
+                    textureFormat = preferSrgb ? TextureFormat.BC7_RGBA_UNORM_SRGB : TextureFormat.BC7_RGBA_UNORM;
                 }
                 else if (gpuFeatures.supportsTextureCompressionASTC) {
                     transcodeFormat = KtxTranscodeFormat.ASTC_4X4_RGBA;
-                    textureFormat = preferSrgb ? TextureFormat.ASTC_4X4_RGBA_SRGB : TextureFormat.ASTC_4X4_RGBA_UNORM;
+                    textureFormat = preferSrgb ? TextureFormat.ASTC_4X4_UNORM_SRGB : TextureFormat.ASTC_4X4_UNORM;
                 }
                 else if (gpuFeatures.supportsTextureCompressionS3TC) {
                     transcodeFormat = KtxTranscodeFormat.BC3_RGBA;
-                    textureFormat = preferSrgb ? TextureFormat.BC3_RGBA_SRGB : TextureFormat.BC3_RGBA_UNORM;
+                    textureFormat = preferSrgb ? TextureFormat.BC3_RGBA_UNORM_SRGB : TextureFormat.BC3_RGBA_UNORM;
                 }
                 else if (gpuFeatures.supportsTextureCompressionETC2) {
                     transcodeFormat = KtxTranscodeFormat.ETC2_RGBA;
-                    textureFormat = preferSrgb ? TextureFormat.ETC2_RGBA8_SRGB : TextureFormat.ETC2_RGBA8_UNORM;
+                    textureFormat = preferSrgb ? TextureFormat.ETC2_RGBA8_UNORM_SRGB : TextureFormat.ETC2_RGBA8_UNORM;
                 }
                 else if (gpuFeatures.supportsTextureCompressionPVRTC) {
                     transcodeFormat = KtxTranscodeFormat.PVRTC1_4_RGBA;
                     // Does not have SRGB equivalent.
-                    textureFormat = TextureFormat.PVRTC_4BPPV1_RGBA;
+                    textureFormat = TextureFormat.PVRTC1_RGBA_4BPP_UNORM;
                 }
                 else {
                     transcodeFormat = KtxTranscodeFormat.RGBA32;
-                    textureFormat = preferSrgb ? TextureFormat.RGBA_8_UNORM_SRGB : TextureFormat.RGBA_8_UNORM;
+                    textureFormat = preferSrgb ? TextureFormat.RGBA8_UNORM_SRGB : TextureFormat.RGBA8_UNORM;
                 }
             }
             else {
@@ -192,7 +192,8 @@ export abstract class ATextureFactory implements ITextureFactory {
         textureUsage = TextureUsage.COPY_DST | TextureUsage.TEXTURE_BINDING,
         textureFormat = TextureFormat.UNDEFINED,
         label: string | null = null,
-        useMipmap = false): ITexture2D {
+        useMipmap = false,
+        viewFormats?: TextureFormat[]): ITexture2D {
 
         const width = size[0];
         const height = size[1];
@@ -212,6 +213,7 @@ export abstract class ATextureFactory implements ITextureFactory {
             textureFormat,
             label: label ?? undefined,
             generateMipmaps: useMipmap,
+            viewFormats,
         };
 
         // Fast path: avoid generating & uploading a big CPU-side buffer when not needed.
@@ -230,6 +232,7 @@ export abstract class ATextureFactory implements ITextureFactory {
             bytes[i + 3] = color.a * 255;
         }
 
-        return this.create(width, height, bytes, 4, label, textureUsage, textureFormat, useMipmap);
+        desc.data = [bytes];
+        return this._createAndInitializeTexture(desc);
     }
 }

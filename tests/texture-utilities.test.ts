@@ -5,7 +5,7 @@ import { TextureFormat, TextureUtilities } from "../src/api/index.ts";
 describe("TextureUtilities", () => {
     it("recognizes the compressed texture formats", () => {
         const compressed = [
-            TextureFormat.ASTC_4X4_RGBA_UNORM,
+            TextureFormat.ASTC_4X4_UNORM,
             TextureFormat.BC3_RGBA_UNORM,
             TextureFormat.BC7_RGBA_UNORM,
             TextureFormat.ETC2_RGBA8_UNORM,
@@ -17,11 +17,11 @@ describe("TextureUtilities", () => {
 
         const uncompressed = [
             TextureFormat.UNDEFINED,
-            TextureFormat.RGBA_8_UNORM,
-            TextureFormat.RGBA_8_UNORM_SRGB,
-            TextureFormat.DEPTH_24_STENCIL_8,
-            TextureFormat.DEPTH_32_FLOAT,
-            TextureFormat.RED_32_FLOAT,
+            TextureFormat.RGBA8_UNORM,
+            TextureFormat.RGBA8_UNORM_SRGB,
+            TextureFormat.DEPTH24_PLUS_STENCIL8,
+            TextureFormat.DEPTH32_FLOAT,
+            TextureFormat.R32_FLOAT,
         ];
 
         for (const format of uncompressed) {
@@ -40,36 +40,36 @@ describe("TextureUtilities", () => {
     });
 
     it("sizes uncompressed and block-compressed textures in bytes", () => {
-        expect(TextureUtilities.getVRamSize(TextureFormat.RGBA_8_UNORM, 2, 2)).toBe(16);
-        expect(TextureUtilities.getVRamSize(TextureFormat.RGBA_8_UNORM_SRGB, 64, 32)).toBe(8192);
-        expect(TextureUtilities.getVRamSize(TextureFormat.DEPTH_24_STENCIL_8, 1, 1)).toBe(4);
+        expect(TextureUtilities.getVRamSize(TextureFormat.RGBA8_UNORM, 2, 2)).toBe(16);
+        expect(TextureUtilities.getVRamSize(TextureFormat.RGBA8_UNORM_SRGB, 64, 32)).toBe(8192);
+        expect(TextureUtilities.getVRamSize(TextureFormat.DEPTH24_PLUS_STENCIL8, 1, 1)).toBe(4);
         expect(TextureUtilities.getVRamSize(TextureFormat.BC7_RGBA_UNORM, 4, 4)).toBe(16);
         expect(TextureUtilities.getVRamSize(TextureFormat.BC7_RGBA_UNORM, 5, 5)).toBe(64);
         expect(TextureUtilities.getVRamSize(TextureFormat.BC3_RGBA_UNORM, 5, 3)).toBe(32);
-        expect(TextureUtilities.getVRamSize(TextureFormat.ASTC_4X4_RGBA_UNORM, 1, 1)).toBe(16);
+        expect(TextureUtilities.getVRamSize(TextureFormat.ASTC_4X4_UNORM, 1, 1)).toBe(16);
         expect(TextureUtilities.getVRamSize(TextureFormat.ETC2_RGBA8_UNORM, 8, 4)).toBe(32);
     });
 
     it("throws when a texture format has no Vulkan layout", () => {
         expect(() => TextureUtilities.getVRamSize(TextureFormat.UNDEFINED, 1, 1))
             .toThrow(`Not implemented: ${TextureFormat.UNDEFINED}`);
-        expect(() => TextureUtilities.getVRamSize(TextureFormat.DEPTH_32_FLOAT, 4, 4))
-            .toThrow(`Not implemented: ${TextureFormat.DEPTH_32_FLOAT}`);
-        expect(() => TextureUtilities.getVRamSize(TextureFormat.RED_32_FLOAT, 4, 4))
-            .toThrow(`Not implemented: ${TextureFormat.RED_32_FLOAT}`);
+        expect(() => TextureUtilities.getVRamSize(TextureFormat.DEPTH32_FLOAT, 4, 4))
+            .toThrow(`Not implemented: ${TextureFormat.DEPTH32_FLOAT}`);
+        expect(() => TextureUtilities.getVRamSize(TextureFormat.R32_FLOAT, 4, 4))
+            .toThrow(`Not implemented: ${TextureFormat.R32_FLOAT}`);
     });
 
     it("maps the supported Vulkan formats onto texture formats", () => {
         expect(TextureUtilities.convertVkFormatToTextureFormat(VkFormat.R8G8B8A8_UNORM))
-            .toBe(TextureFormat.RGBA_8_UNORM);
+            .toBe(TextureFormat.RGBA8_UNORM);
         expect(TextureUtilities.convertVkFormatToTextureFormat(VkFormat.R8G8B8A8_SRGB))
-            .toBe(TextureFormat.RGBA_8_UNORM_SRGB);
+            .toBe(TextureFormat.RGBA8_UNORM_SRGB);
         expect(TextureUtilities.convertVkFormatToTextureFormat(VkFormat.BC7_UNORM_BLOCK))
             .toBe(TextureFormat.BC7_RGBA_UNORM);
         expect(TextureUtilities.convertVkFormatToTextureFormat(VkFormat.BC3_UNORM_BLOCK))
             .toBe(TextureFormat.BC3_RGBA_UNORM);
         expect(TextureUtilities.convertVkFormatToTextureFormat(VkFormat.ASTC_4X4_UNORM_BLOCK))
-            .toBe(TextureFormat.ASTC_4X4_RGBA_UNORM);
+            .toBe(TextureFormat.ASTC_4X4_UNORM);
         expect(TextureUtilities.convertVkFormatToTextureFormat(VkFormat.ETC2_R8G8B8A8_UNORM_BLOCK))
             .toBe(TextureFormat.ETC2_RGBA8_UNORM);
 
@@ -82,9 +82,9 @@ describe("TextureUtilities", () => {
     });
 
     it("maps texture formats onto KTX transcode targets", () => {
-        expect(TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.RGBA_8_UNORM))
+        expect(TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.RGBA8_UNORM))
             .toBe(KtxTranscodeFormat.RGBA32);
-        expect(TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.ASTC_4X4_RGBA_UNORM))
+        expect(TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.ASTC_4X4_UNORM))
             .toBe(KtxTranscodeFormat.ASTC_4X4_RGBA);
         expect(TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.BC3_RGBA_UNORM))
             .toBe(KtxTranscodeFormat.BC3_RGBA);
@@ -93,10 +93,10 @@ describe("TextureUtilities", () => {
         expect(TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.ETC2_RGBA8_UNORM))
             .toBe(KtxTranscodeFormat.ETC2_RGBA);
 
-        expect(() => TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.RED_32_FLOAT))
-            .toThrow(`Not implemented: ${TextureFormat.RED_32_FLOAT}`);
-        expect(() => TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.DEPTH_24_STENCIL_8))
-            .toThrow(`Not implemented: ${TextureFormat.DEPTH_24_STENCIL_8}`);
+        expect(() => TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.R32_FLOAT))
+            .toThrow(`Not implemented: ${TextureFormat.R32_FLOAT}`);
+        expect(() => TextureUtilities.convertTextureFormatToKtxTranscodeFormat(TextureFormat.DEPTH24_PLUS_STENCIL8))
+            .toThrow(`Not implemented: ${TextureFormat.DEPTH24_PLUS_STENCIL8}`);
     });
 
     it("maps KTX transcode targets onto unsigned normalized Vulkan formats", () => {
@@ -126,8 +126,8 @@ describe("TextureUtilities", () => {
         }
 
         const shared = [
-            TextureFormat.RGBA_8_UNORM,
-            TextureFormat.ASTC_4X4_RGBA_UNORM,
+            TextureFormat.RGBA8_UNORM,
+            TextureFormat.ASTC_4X4_UNORM,
             TextureFormat.BC3_RGBA_UNORM,
             TextureFormat.BC7_RGBA_UNORM,
             TextureFormat.ETC2_RGBA8_UNORM,

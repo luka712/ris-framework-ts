@@ -51,97 +51,97 @@ export class WebGpuConverter {
     /** Converts a texture format. Throws for formats the WebGPU backend does not support yet. */
     public static convertTextureFormat(format: TextureFormat): GPUTextureFormat {
         switch (format) {
-            case TextureFormat.RGBA_8_UNORM:
+            case TextureFormat.RGBA8_UNORM:
                 return "rgba8unorm";
-            case TextureFormat.RGBA_8_UNORM_SRGB:
+            case TextureFormat.RGBA8_UNORM_SRGB:
                 return "rgba8unorm-srgb";
-            case TextureFormat.DEPTH_24_STENCIL_8:
+            case TextureFormat.DEPTH24_PLUS_STENCIL8:
                 return "depth24plus-stencil8";
-            case TextureFormat.DEPTH_32_FLOAT:
+            case TextureFormat.DEPTH32_FLOAT:
                 return "depth32float";
-            case TextureFormat.RED_32_FLOAT:
+            case TextureFormat.R32_FLOAT:
                 return "r32float";
 
             // BC (texture-compression-bc). WebGPU has no BC1 RGB, the RGBA variant decodes the same blocks.
             case TextureFormat.BC1_RGB_UNORM:
                 return "bc1-rgba-unorm";
-            case TextureFormat.BC1_RGB_SRGB:
+            case TextureFormat.BC1_RGB_UNORM_SRGB:
                 return "bc1-rgba-unorm-srgb";
             case TextureFormat.BC3_RGBA_UNORM:
                 return "bc3-rgba-unorm";
-            case TextureFormat.BC3_RGBA_SRGB:
+            case TextureFormat.BC3_RGBA_UNORM_SRGB:
                 return "bc3-rgba-unorm-srgb";
             case TextureFormat.BC7_RGBA_UNORM:
                 return "bc7-rgba-unorm";
-            case TextureFormat.BC7_RGBA_SRGB:
+            case TextureFormat.BC7_RGBA_UNORM_SRGB:
                 return "bc7-rgba-unorm-srgb";
 
             // ETC2 (texture-compression-etc2)
             case TextureFormat.ETC2_RGB8_UNORM:
                 return "etc2-rgb8unorm";
-            case TextureFormat.ETC2_RGB8_SRGB:
+            case TextureFormat.ETC2_RGB8_UNORM_SRGB:
                 return "etc2-rgb8unorm-srgb";
             case TextureFormat.ETC2_RGBA8_UNORM:
                 return "etc2-rgba8unorm";
-            case TextureFormat.ETC2_RGBA8_SRGB:
+            case TextureFormat.ETC2_RGBA8_UNORM_SRGB:
                 return "etc2-rgba8unorm-srgb";
 
             // ASTC (texture-compression-astc)
-            case TextureFormat.ASTC_4X4_RGBA_UNORM:
+            case TextureFormat.ASTC_4X4_UNORM:
                 return "astc-4x4-unorm";
-            case TextureFormat.ASTC_4X4_RGBA_SRGB:
+            case TextureFormat.ASTC_4X4_UNORM_SRGB:
                 return "astc-4x4-unorm-srgb";
-            case TextureFormat.ASTC_5X4_RGBA_UNORM:
+            case TextureFormat.ASTC_5X4_UNORM:
                 return "astc-5x4-unorm";
-            case TextureFormat.ASTC_5X4_RGBA_SRGB:
+            case TextureFormat.ASTC_5X4_UNORM_SRGB:
                 return "astc-5x4-unorm-srgb";
-            case TextureFormat.ASTC_5X5_RGBA_UNORM:
+            case TextureFormat.ASTC_5X5_UNORM:
                 return "astc-5x5-unorm";
-            case TextureFormat.ASTC_5X5_RGBA_SRGB:
+            case TextureFormat.ASTC_5X5_UNORM_SRGB:
                 return "astc-5x5-unorm-srgb";
-            case TextureFormat.ASTC_6X5_RGBA_UNORM:
+            case TextureFormat.ASTC_6X5_UNORM:
                 return "astc-6x5-unorm";
-            case TextureFormat.ASTC_6X5_RGBA_SRGB:
+            case TextureFormat.ASTC_6X5_UNORM_SRGB:
                 return "astc-6x5-unorm-srgb";
-            case TextureFormat.ASTC_6X6_RGBA_UNORM:
+            case TextureFormat.ASTC_6X6_UNORM:
                 return "astc-6x6-unorm";
-            case TextureFormat.ASTC_6X6_RGBA_SRGB:
+            case TextureFormat.ASTC_6X6_UNORM_SRGB:
                 return "astc-6x6-unorm-srgb";
-            case TextureFormat.ASTC_8X5_RGBA_UNORM:
+            case TextureFormat.ASTC_8X5_UNORM:
                 return "astc-8x5-unorm";
-            case TextureFormat.ASTC_8X5_RGBA_SRGB:
+            case TextureFormat.ASTC_8X5_UNORM_SRGB:
                 return "astc-8x5-unorm-srgb";
-            case TextureFormat.ASTC_8X6_RGBA_UNORM:
+            case TextureFormat.ASTC_8X6_UNORM:
                 return "astc-8x6-unorm";
-            case TextureFormat.ASTC_8X6_RGBA_SRGB:
+            case TextureFormat.ASTC_8X6_UNORM_SRGB:
                 return "astc-8x6-unorm-srgb";
-            case TextureFormat.ASTC_8X8_RGBA_UNORM:
+            case TextureFormat.ASTC_8X8_UNORM:
                 return "astc-8x8-unorm";
-            case TextureFormat.ASTC_8X8_RGBA_SRGB:
+            case TextureFormat.ASTC_8X8_UNORM_SRGB:
                 return "astc-8x8-unorm-srgb";
-            case TextureFormat.ASTC_10X5_RGBA_UNORM:
+            case TextureFormat.ASTC_10X5_UNORM:
                 return "astc-10x5-unorm";
-            case TextureFormat.ASTC_10X5_RGBA_SRGB:
+            case TextureFormat.ASTC_10X5_UNORM_SRGB:
                 return "astc-10x5-unorm-srgb";
-            case TextureFormat.ASTC_10X6_RGBA_UNORM:
+            case TextureFormat.ASTC_10X6_UNORM:
                 return "astc-10x6-unorm";
-            case TextureFormat.ASTC_10X6_RGBA_SRGB:
+            case TextureFormat.ASTC_10X6_UNORM_SRGB:
                 return "astc-10x6-unorm-srgb";
-            case TextureFormat.ASTC_10X8_RGBA_UNORM:
+            case TextureFormat.ASTC_10X8_UNORM:
                 return "astc-10x8-unorm";
-            case TextureFormat.ASTC_10X8_RGBA_SRGB:
+            case TextureFormat.ASTC_10X8_UNORM_SRGB:
                 return "astc-10x8-unorm-srgb";
-            case TextureFormat.ASTC_10X10_RGBA_UNORM:
+            case TextureFormat.ASTC_10X10_UNORM:
                 return "astc-10x10-unorm";
-            case TextureFormat.ASTC_10X10_RGBA_SRGB:
+            case TextureFormat.ASTC_10X10_UNORM_SRGB:
                 return "astc-10x10-unorm-srgb";
-            case TextureFormat.ASTC_12X10_RGBA_UNORM:
+            case TextureFormat.ASTC_12X10_UNORM:
                 return "astc-12x10-unorm";
-            case TextureFormat.ASTC_12X10_RGBA_SRGB:
+            case TextureFormat.ASTC_12X10_UNORM_SRGB:
                 return "astc-12x10-unorm-srgb";
-            case TextureFormat.ASTC_12X12_RGBA_UNORM:
+            case TextureFormat.ASTC_12X12_UNORM:
                 return "astc-12x12-unorm";
-            case TextureFormat.ASTC_12X12_RGBA_SRGB:
+            case TextureFormat.ASTC_12X12_UNORM_SRGB:
                 return "astc-12x12-unorm-srgb";
             default:
                 throw new Error(`Texture format ${format} is not implemented for WebGPU.`);
@@ -155,15 +155,15 @@ export class WebGpuConverter {
     public static convertGpuTextureFormat(format: GPUTextureFormat): TextureFormat {
         switch (format) {
             case "rgba8unorm":
-                return TextureFormat.RGBA_8_UNORM;
+                return TextureFormat.RGBA8_UNORM;
             case "rgba8unorm-srgb":
-                return TextureFormat.RGBA_8_UNORM_SRGB;
+                return TextureFormat.RGBA8_UNORM_SRGB;
             case "depth24plus-stencil8":
-                return TextureFormat.DEPTH_24_STENCIL_8;
+                return TextureFormat.DEPTH24_PLUS_STENCIL8;
             case "depth32float":
-                return TextureFormat.DEPTH_32_FLOAT;
+                return TextureFormat.DEPTH32_FLOAT;
             case "r32float":
-                return TextureFormat.RED_32_FLOAT;
+                return TextureFormat.R32_FLOAT;
             default:
                 return TextureFormat.UNDEFINED;
         }
@@ -171,12 +171,12 @@ export class WebGpuConverter {
 
     /** Whether the format has a stencil aspect. */
     public static hasStencil(format: TextureFormat): boolean {
-        return format === TextureFormat.DEPTH_24_STENCIL_8;
+        return format === TextureFormat.DEPTH24_PLUS_STENCIL8;
     }
 
     /** Whether the format is a depth (or depth-stencil) format. */
     public static isDepthFormat(format: TextureFormat): boolean {
-        return format === TextureFormat.DEPTH_24_STENCIL_8 || format === TextureFormat.DEPTH_32_FLOAT;
+        return format === TextureFormat.DEPTH24_PLUS_STENCIL8 || format === TextureFormat.DEPTH32_FLOAT;
     }
 
     /** Converts a load action. WebGPU has no "don't care", so `UNDEFINED` clears. */

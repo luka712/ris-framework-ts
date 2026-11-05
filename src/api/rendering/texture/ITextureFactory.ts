@@ -18,13 +18,18 @@ export interface ITextureFactory {
      * @param textureUsage Texture usage. By default, `TextureUsage.COPY_DST | TextureUsage.TEXTURE_BINDING`.
      * @param textureFormat Texture format. By default, `TextureFormat.UNDEFINED`, which uses the renderer's preferred texture format.
      * @param label The label. By default, none.
+     * @param useMipmap Whether mipmaps are generated. By default, false.
+     * @param viewFormats Extra formats the texture can be viewed as with {@link ITexture2D.getTextureView}
+     * (e.g. RGBA8_UNORM_SRGB for an RGBA8_UNORM render target). By default, none (only the texture format).
      */
     createEmpty(
         size: vec2,
         defaultColor?: Color,
         textureUsage?: TextureUsage,
         textureFormat?: TextureFormat,
-        label?: string): ITexture2D;
+        label?: string,
+        useMipmap?: boolean,
+        viewFormats?: TextureFormat[]): ITexture2D;
 
     /**
      * Creates a texture from image data.
@@ -35,8 +40,8 @@ export interface ITextureFactory {
      * @param label - The label.
      * @param usage - Texture usage. By default, it is COPY_DST | TEXTURE_BINDING.
      * @param textureFormat - The texture format. By default (or when UNDEFINED), the renderer's current
-     * {@link IRenderer.preferredTextureFormat} is used, so it follows {@link IRenderer.colorSpace}.
-     * Pass {@link TextureFormat.RGBA_8_UNORM} explicitly for raw data that must stay linear.
+     * {@link IRenderer.preferredTextureFormat} is used, so it follows {@link IRenderer.outputColorSpace}.
+     * Pass {@link TextureFormat.RGBA8_UNORM} explicitly for raw data that must stay linear.
      * @param generateMipMaps - Indicates if texture should generate mipmap levels.
      * @returns The texture.
      */

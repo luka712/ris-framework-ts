@@ -17,7 +17,8 @@ import {
     type ICanvasManager,
     type IPrimitiveStateDescriptor,
     RenderPassDescriptor,
-    type ISwapChainDescriptor
+    type ISwapChainDescriptor,
+    RenderingBackend
 } from "../api/index.ts";
 
 /**
@@ -26,6 +27,8 @@ import {
  */
 export class WebGlGraphicsDevice extends AGraphicsDevice {
 
+    /** @inheritdoc */
+    public readonly api = RenderingBackend.WEB_GL;
 
     public setupDebugCallback(): void {
         throw new Error("Method not implemented.");

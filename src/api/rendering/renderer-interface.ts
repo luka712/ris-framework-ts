@@ -12,11 +12,6 @@ import type {TextureFormat} from "../index.ts";
 export interface ITempRenderer extends IRenderer {
 
     /**
-     * The rendering limits of the renderer.
-     */
-    limits: RenderingLimits | null;
-
-    /**
      * The preferred texture format for the renderer.
      * @returns The preferred texture format for the renderer.
      */
@@ -39,7 +34,6 @@ export interface ITempRenderer extends IRenderer {
      * overriding the <code>backBufferSize</code> property.
      */
     backBufferMatchesSwapChain: boolean;
-
 
     /**
      * Performs any additional initialization steps after the main initialization is complete.

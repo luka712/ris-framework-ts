@@ -40,10 +40,10 @@ function createFramework(name: string) {
     config.canvas = canvas;
     const framework = new Framework(config);
     const context = fakeGl(name);
-    const graphicsDevice = { gl: context.gl, dispose: vi.fn() };
+    const graphicsDevice = { gl: context.gl, dispose: vi.fn(), api: "WEB_GL", features: { supportsTextureView: false } };
     // Stand in for renderer.initialize(), which needs a real canvas.
     Object.defineProperty(framework.renderer, "graphicsDevice", { get: () => graphicsDevice, configurable: true });
-    Object.defineProperty(framework.renderer, "preferredTextureFormat", { get: () => TextureFormat.RGBA_8_UNORM, configurable: true });
+    Object.defineProperty(framework.renderer, "preferredTextureFormat", { get: () => TextureFormat.RGBA8_UNORM, configurable: true });
     return { framework, graphicsDevice, ...context };
 }
 

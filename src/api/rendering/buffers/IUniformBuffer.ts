@@ -17,5 +17,4 @@ export interface IUniformBuffer extends IBuffer  {
      * @param length - The number of floats to write. If 0 or less, everything after the offset is written.
      */
     update(data: Float32Array, offset?: number, length?: number): void;
-
 }

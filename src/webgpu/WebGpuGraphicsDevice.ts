@@ -12,6 +12,7 @@ import {
     RenderPassDescriptor,
     type ISwapChainDescriptor,
     type ICanvasManager,
+    RenderingBackend,
 } from "../api/index.ts";
 import { WebGpuGraphicsDeviceFeatures } from "./WebGpuGraphicsDeviceFeatures.ts";
 import { WebGPUInfo } from "./WebGpuInfo.ts";
@@ -28,6 +29,9 @@ import { WebGpuUtilities } from "./utilities/WebGpuUtilities.ts";
  * @internal
  */
 export class WebGpuGraphicsDevice extends AGraphicsDevice {
+
+    /** @inheritdoc */
+    public readonly api = RenderingBackend.WEB_GPU;
 
     private readonly _canvasManager: ICanvasManager;
     private _context: GPUCanvasContext = null!;

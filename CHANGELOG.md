@@ -37,7 +37,7 @@ Compared with 0.2.0.
 ### Fixed
 
 - `ColorSpace` was not exported from the package entry.
-- An explicit `textureFormat` was ignored when loading KTX2 textures.
+- An explicit `viewFormat` was ignored when loading KTX2 textures.
 - `content.loadTexture2DAsync` ignored the descriptor's label and usage.
 - ASTC textures were uploaded with the wrong size.
 - `OrbitCamera` zoom now checks the real eye-to-target distance against the near and far planes.

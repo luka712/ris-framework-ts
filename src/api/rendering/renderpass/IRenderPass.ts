@@ -1,18 +1,22 @@
-import type { IDisposable } from "../../core/IDisposable.ts";
+import type {IDisposable} from "../../core/IDisposable.ts";
+import type {RenderPassColorAttachment} from "./RenderPassColorAttachment.ts";
 
 /**
  * The render pass interface.
  */
 export interface IRenderPass extends IDisposable {
 
-/**
- * Begins the render pass. This will set up the necessary state and resources for the render pass to be executed.
- */
-  beginPass(): void;
+  /**
+   * Sets the color attachments at specified index.
+   * @param index The index.
+   * @param value The color attachment.
+   */
+    setColorAttachment(index: number, value: RenderPassColorAttachment): void;
 
-/**
- * Ends the render pass. This will finalize the render pass and submit the recorded commands for execution.
- */
-  endPass(): void;
+    /** Begins the render pass. This will set up the necessary state and resources for the render pass to be executed. */
+    beginPass(): void;
+
+    /** Ends the render pass. This will finalize the render pass and submit the recorded commands for execution. */
+    endPass(): void;
 
 }

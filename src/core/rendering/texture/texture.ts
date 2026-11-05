@@ -1,18 +1,26 @@
 import {
-    type ITexture2D, type ITextureDescriptor, type ITextureView,
+    type IGraphicsDevice,
+    type ITexture2D, type ITextureDescriptor, type ITextureView2D,
     State,
     type TextureFormat,
     TextureUsage,
-    TextureViewDescriptor
-} from "../../../api/index.ts";
+} from "../../../api";
 import { vec2 } from "gl-matrix";
 
 /**
- * The ATexture2D class is an abstract base class that implements the ITexture2D interface. It provides common properties and a constructor for initializing a 2D texture, but it does not implement the actual texture creation and management logic, which must be provided by subclasses that extend this base class.
+ * Abstract base for {@link ITexture2D}. Holds size, format, usage, view-format list and a per-format view cache.
+ * Backends that support views (WebGPU: `supportsTextureView`) create them in {@link _createTextureView};
+ * WebGL2 rejects `viewFormats` in the constructor and throws from {@link _createTextureView} / {@link getTextureView}.
  */
 export abstract class ATexture2D implements ITexture2D {
 
     private static _nextId: number = 1;
+
+    /**
+     * The created texture views, cached by view format. Views are created on first request by {@link getTextureView}.
+     * @protected
+     */
+    protected readonly _textureViews: Map<TextureFormat, ITextureView2D> = new Map();
 
     protected _baseSize: vec2;
     protected _nativeSize: vec2;
@@ -29,11 +37,21 @@ export abstract class ATexture2D implements ITexture2D {
 
     /**
      * The constructor for the ATexture2D class.
-     * @param descriptor - The texture descriptor.
+     * @param graphicsDevice The graphics device. Used to reject `viewFormats` when {@link IGraphicsDeviceFeatures.supportsTextureView} is false.
+     * @param descriptor The texture descriptor.
      */
     protected constructor(
+        graphicsDevice: IGraphicsDevice,
         descriptor: ITextureDescriptor,
     ) {
+
+        // Extra view formats need native texture views (WebGPU). WebGL2 has supportsTextureView === false.
+        if (descriptor.viewFormats && descriptor.viewFormats.length > 0 && !graphicsDevice.features.supportsTextureView) {
+            throw new Error(
+                `Texture view formats are not supported by ${graphicsDevice.api} ` +
+                `(graphicsDevice.features.supportsTextureView is false). Omit ITextureDescriptor.viewFormats and use the texture directly.`
+            );
+        }
 
         if (!descriptor.textureFormat) {
             throw new Error("Texture format is required.");
@@ -46,7 +64,6 @@ export abstract class ATexture2D implements ITexture2D {
         this.id = ATexture2D._generateId();
         this.textureFormat = descriptor.textureFormat;
         this.textureUsage = descriptor.textureUsage ?? (TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST);
-        this.textureViewFormat = descriptor.textureFormat;
         this._baseSize = vec2.fromValues(descriptor.width ?? 0, descriptor.height ?? 0);
         // By default, the GPU allocation matches the logical size. Backends that pad (e.g. WebGPU compressed) override it.
         this._nativeSize = vec2.clone(this._baseSize);
@@ -56,9 +73,16 @@ export abstract class ATexture2D implements ITexture2D {
         this._label = descriptor.label;
         this._blockSize = descriptor.blockSize ?? vec2.fromValues(1, 1);
 
-        // @ts-ignore
-        this.defaultTextureView = null;
-
+        // TEXTURE VIEW. The texture's own format is always a valid view format.
+        this.viewFormats = [this.textureFormat];
+        if(descriptor.viewFormats) {
+            for(const viewFormat of descriptor.viewFormats) {
+                if(!this.viewFormats.includes(viewFormat)) {
+                    this.viewFormats.push(viewFormat);
+                }
+            }
+        }
+        // Views need the native texture, so they are created lazily (after initialize) by getTextureView.
     }
 
     /** @inheritDoc */
@@ -80,13 +104,15 @@ export abstract class ATexture2D implements ITexture2D {
     public readonly id: number;
 
     /** @inheritDoc */
-    public readonly defaultTextureView: ITextureView;
+    public get defaultTextureView(): ITextureView2D {
+        return this.getTextureView(this.textureFormat);
+    }
 
     /** @inheritDoc */
     public readonly textureUsage: TextureUsage;
 
     /** @inheritDoc */
-    public readonly textureViewFormat: TextureFormat;
+    public readonly viewFormats: TextureFormat[];
 
     /** @inheritDoc */
     public readonly textureFormat: TextureFormat;
@@ -154,12 +180,44 @@ export abstract class ATexture2D implements ITexture2D {
         return this._label;
     }
 
+
+    /** @inheritDoc */
+    public getTextureView(textureFormat: TextureFormat): ITextureView2D {
+
+        if (!this.viewFormats.includes(textureFormat)) {
+            throw new Error(`Texture '${this.label ?? this.id}': view format ${textureFormat} is not in viewFormats [${this.viewFormats.join(", ")}]. ` +
+                `Add it to ITextureDescriptor.viewFormats when creating the texture.`);
+        }
+
+        if (this._state != State.INITIALIZED) {
+            throw new Error(`Texture '${this.label ?? this.id}': a texture view can only be created for an initialized texture.`);
+        }
+
+        let view = this._textureViews.get(textureFormat);
+        if (!view) {
+            view = this._createTextureView(textureFormat);
+            this._textureViews.set(textureFormat, view);
+        }
+        return view;
+    }
+
     /**
-     * Creates a texture view for the texture.
-     * @param descriptor The descriptor for the texture view.
-     * @returns The created texture view, which can be used for sampling the texture in shaders.
+     * Creates a native texture view. Called once per view format by {@link getTextureView}, which caches the result.
+     * @param textureFormat The view format. Always one of {@link viewFormats}.
+     * @protected
      */
-    public abstract createView(descriptor?: TextureViewDescriptor): ITextureView;
+    protected abstract _createTextureView(textureFormat: TextureFormat): ITextureView2D;
+
+    /**
+     * Disposes all created texture views and clears the cache. Backends call this from dispose(), before releasing the native texture.
+     * @protected
+     */
+    protected _disposeTextureViews(): void {
+        for (const view of this._textureViews.values()) {
+            view.dispose();
+        }
+        this._textureViews.clear();
+    }
 
     /** @inheritDoc */
     public abstract dispose(): void;

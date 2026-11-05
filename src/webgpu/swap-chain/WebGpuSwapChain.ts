@@ -1,6 +1,6 @@
 import {WebGpuConverter} from "../utilities/WebGpuConverter.ts";
 import { vec2 } from "gl-matrix";
-import { ColorSpace, type ISwapChain, type ISwapChainDescriptor, TextureFormat } from "../../api";
+import { type ISwapChain, type ISwapChainDescriptor, TextureFormat } from "../../api";
 import type { WebGpuGraphicsDevice } from "../WebGpuGraphicsDevice.ts";
 import { WebGpuUtilities } from "../utilities/WebGpuUtilities.ts";
 
@@ -8,7 +8,11 @@ import { WebGpuUtilities } from "../utilities/WebGpuUtilities.ts";
  * The WebGPU swap chain, backed by the canvas' `webgpu` context.
  *
  * The canvas is configured as `rgba8unorm` instead of `navigator.gpu.getPreferredCanvasFormat()` (often `bgra8unorm`),
- * because the framework's {@link TextureFormat} has no BGRA format and the main render target uses the swap chain format.
+ * because the framework's {@link TextureFormat} has no BGRA format.
+ *
+ * The swap chain is always linear (RGBA8_UNORM), whatever the output color space: with sRGB output the renderer draws into the
+ * main render target through its RGBA8_UNORM_SRGB view (the hardware encodes on write), and the main render target pipeline
+ * copies the already encoded bytes through the RGBA8_UNORM view. Encoding here as well would encode twice.
  * @internal
  */
 export class WebGpuSwapChain implements ISwapChain {
@@ -18,12 +22,11 @@ export class WebGpuSwapChain implements ISwapChain {
     private _device: GPUDevice;
     private readonly _backBufferSize: vec2;
     private _currentView: GPUTextureView | null = null;
-    private readonly _desiredColorSpace: ColorSpace;
 
     /**
      * The constructor.
      * @param graphicsDevice The graphics device.
-     * @param _descriptor The swap chain descriptor. WebGPU canvases always present with FIFO.
+     * @param _descriptor The swap chain descriptor. WebGPU canvases always present with FIFO, and the output color space is handled by the main render target view.
      */
     public constructor(graphicsDevice: WebGpuGraphicsDevice, _descriptor: ISwapChainDescriptor) {
         this._graphicsDevice = graphicsDevice;
@@ -31,26 +34,22 @@ export class WebGpuSwapChain implements ISwapChain {
         this._context = graphicsDevice.context;
         this._device = graphicsDevice.device;
         this._backBufferSize = vec2.fromValues(canvas.width, canvas.height);
-        this._desiredColorSpace = _descriptor?.desiredColorSpace ?? ColorSpace.LINEAR;
         this._configure();
     }
 
     private _configure(): void {
 
-        const viewFormats = [this._desiredColorSpace == ColorSpace.LINEAR ? TextureFormat.RGBA_8_UNORM : TextureFormat.RGBA_8_UNORM_SRGB];
-
         WebGpuUtilities.context.configure(
             this._context,
             this._device,
-            TextureFormat.RGBA_8_UNORM,
-            viewFormats,
+            TextureFormat.RGBA8_UNORM,
+            [TextureFormat.RGBA8_UNORM],
             this._graphicsDevice.alpha ? "premultiplied" : "opaque");
     }
 
-    /** @inheritDoc */
+    /** The format of the canvas texture views. Always {@link TextureFormat.RGBA8_UNORM} (see the class comment). */
     public get textureFormat(): TextureFormat {
-        // The canvas is configured as RGBA_8_UNORM; with SRGB the views are created as RGBA_8_UNORM_SRGB so the hardware encodes on write.
-        return this._desiredColorSpace == ColorSpace.LINEAR ? TextureFormat.RGBA_8_UNORM : TextureFormat.RGBA_8_UNORM_SRGB;
+        return TextureFormat.RGBA8_UNORM;
     }
 
     /** @inheritDoc */

@@ -3,22 +3,23 @@ import type {vec2} from "gl-matrix";
 import type {RenderingLimits} from "../../api/rendering/rendering-limits.ts";
 import {
     Color,
+    type ICanvasManager,
     type IFramework,
     type IGraphicsDevice,
-    type IMainRenderTargetRenderPipeline, type IRendererConfiguration,
+    type IMainRenderTargetRenderPipeline,
+    type IRendererConfiguration,
     type IRenderPass,
     type ISwapChain,
+    type ISwapChainDescriptor,
     type ITexture2D,
-    type ICanvasManager,
+    OutputColorSpace,
     RenderingBackend,
     RenderPassColorAttachment,
     RenderPassDepthStencilAttachment,
     RenderPassDescriptor,
-    type ISwapChainDescriptor,
     TextureFormat,
     TextureUsage
-} from "../../api/index.ts";
-import {ColorSpace} from "../../api/rendering/enums.ts";
+} from "../../api";
 
 export abstract class ARenderer implements ITempRenderer {
 
@@ -31,12 +32,12 @@ export abstract class ARenderer implements ITempRenderer {
 
     private readonly _canvasManager: ICanvasManager;
     private _graphicsDevice: IGraphicsDevice = null!;
-    private _preferredDepthStencilFormat: TextureFormat = TextureFormat.DEPTH_24_STENCIL_8;
+    private _preferredDepthStencilFormat: TextureFormat = TextureFormat.DEPTH24_PLUS_STENCIL8;
     private readonly _currentBackBufferSize: vec2 = [0, 0];
     private _swapChainRequiresResize: boolean = false;
     private _mainRenderPassDirty = true;
     private _clearColor: Color = Color.lightPink();
-    private _colorSpace: ColorSpace;
+    protected _outputColorSpace: OutputColorSpace;
 
     protected _mainRenderTargetRequiresResize: boolean = false;
     protected _swapChain: ISwapChain = null!;
@@ -70,24 +71,30 @@ export abstract class ARenderer implements ITempRenderer {
 
     /** @inheritdoc */
     public get preferredTextureFormat(): TextureFormat {
-        return this._colorSpace == ColorSpace.SRGB ? TextureFormat.RGBA_8_UNORM_SRGB : TextureFormat.RGBA_8_UNORM;
+        return this._outputColorSpace == OutputColorSpace.SRGB ? TextureFormat.RGBA8_UNORM_SRGB : TextureFormat.RGBA8_UNORM;
     }
 
     /** @inheritDoc */
-    public get colorSpace(): ColorSpace {
-        return this._colorSpace;
+    public get outputColorSpace(): OutputColorSpace {
+        return this._outputColorSpace;
     }
 
-    /** @inheritDoc */
-    public set colorSpace(colorSpace: ColorSpace) {
-        if (colorSpace == this._colorSpace) {
+    /**
+     * Switches the output color space without recreating the main render target.
+     * The main render target stays {@link TextureFormat.RGBA8_UNORM} (linear); the blit pipeline encodes to sRGB in the
+     * shader when this is {@link OutputColorSpace.SRGB} (see {@link IMainRenderTargetRenderPipeline.outputColorSpace}).
+     * {@link preferredTextureFormat} still follows this value for content loading.
+     * @inheritDoc
+     */
+    public set outputColorSpace(colorSpace: OutputColorSpace) {
+        if (colorSpace == this._outputColorSpace) {
             return;
         }
-        this._colorSpace = colorSpace;
+        this._outputColorSpace = colorSpace;
+
+        // Before afterInitialize there is nothing to switch yet; _setupMainRenderPass uses the new value.
         if (this._mainRenderTargetPipeline) {
-            this._mainRenderTargetPipeline.colorSpace = colorSpace;
-            // The main render target's format follows the color space, so recreate it on the next frame.
-            this._mainRenderTargetRequiresResize = true;
+            this._mainRenderTargetPipeline.outputColorSpace = colorSpace;
         }
     }
 
@@ -130,7 +137,7 @@ export abstract class ARenderer implements ITempRenderer {
         this._canvasManager = framework.canvasManager;
         this._currentBackBufferSize[0] = this._canvasManager.canvas.width;
         this._currentBackBufferSize[1] = this._canvasManager.canvas.height;
-        this._colorSpace = configuration.textureColorSpace;
+        this._outputColorSpace = configuration.outputColorSpace;
     }
 
      backend: RenderingBackend = RenderingBackend.WEB_GL;
@@ -168,7 +175,7 @@ export abstract class ARenderer implements ITempRenderer {
         await this._graphicsDevice.initializeAsync();
 
         const swapchainDescriptor: ISwapChainDescriptor = {
-            desiredColorSpace: this._colorSpace,
+            desiredOutputColorSpace: this._outputColorSpace,
         };
 
         this._swapChain = this._graphicsDevice.createSwapChain(
@@ -197,13 +204,15 @@ export abstract class ARenderer implements ITempRenderer {
         this._depthStencilBuffer?.dispose();
         this._mainRenderTarget?.dispose();
 
-        // Create a main frame buffer.
+        // Main frame buffer stays linear (RGBA8_UNORM). Encoding to sRGB (when outputColorSpace is SRGB) is done in
+        // the blit shader on both backends, so the canvas / swap chain never needs an sRGB view for output.
         this._mainRenderTarget = this._framework.textureFactory.createEmpty(
             this.backBufferSize,
             undefined,
             TextureUsage.TEXTURE_BINDING | TextureUsage.RENDER_ATTACHMENT,
-            this.preferredTextureFormat,
-            "Renderer_MainRenderTarget"
+            TextureFormat.RGBA8_UNORM,
+            "Renderer_MainRenderTarget",
+            false,
         );
 
         this._depthStencilBuffer = this._framework.textureFactory.createEmpty(
@@ -216,19 +225,31 @@ export abstract class ARenderer implements ITempRenderer {
         this._mainRenderTargetPipeline = this._framework
             .renderPipelineFactory
             .createMainFrameBufferPipeline(this._mainRenderTarget);
-        this._mainRenderTargetPipeline.colorSpace = this._colorSpace;
+        this._mainRenderTargetPipeline.outputColorSpace = this._outputColorSpace;
 
         this._createMainRenderPass();
         this._mainRenderTargetRequiresResize = false;
     }
 
+    /**
+     * The main render pass color attachment for the linear main render target.
+     * When {@link IGraphicsDeviceFeatures.supportsTextureView} is true (WebGPU), the default linear view is set;
+     * on WebGL2 textures are attached directly (views are not supported).
+     */
+    private _createMainColorAttachment(): RenderPassColorAttachment {
+        const colorAttachment = new RenderPassColorAttachment();
+        colorAttachment.texture = this._mainRenderTarget;
+        if (this._graphicsDevice.features.supportsTextureView) {
+            colorAttachment.view = this._mainRenderTarget.defaultTextureView;
+        }
+        colorAttachment.clearColor = this._clearColor;
+        return colorAttachment;
+    }
+
     private _createMainRenderPass(): void {
         this._mainRenderTargetRenderPass?.dispose();
         const renderPassDesc = new RenderPassDescriptor();
-        const colorAttachment = new RenderPassColorAttachment();
-        colorAttachment.texture = this._mainRenderTarget;
-        colorAttachment.clearColor = this._clearColor;
-        renderPassDesc.colorAttachments = [colorAttachment];
+        renderPassDesc.colorAttachments = [this._createMainColorAttachment()];
         renderPassDesc.depthStencilAttachment = new RenderPassDepthStencilAttachment();
         renderPassDesc.depthStencilAttachment.texture = this._depthStencilBuffer;
         this._mainRenderTargetRenderPass = this._graphicsDevice.createRenderPass(renderPassDesc);

@@ -1,11 +1,21 @@
 // Draws the main render target texture to the screen. (WebGPU)
-// Hand-maintained, mirrors slang/main_frame_buffer.slang.
+// Hand-maintained.
 //
-// Bind groups (WebGPUMainFrameBufferRenderPipeline):
-//   group 0: binding 0 = texture, binding 1 = sampler (fragment)
+// Bind groups (WebGpuMainRenderTargetRenderPipeline):
+//   group 0: binding 0 = texture, binding 1 = sampler, binding 2 = FragmentDataBuffer (fragment)
 
 @group(0) @binding(0) var diffuseTexture : texture_2d<f32>;
 @group(0) @binding(1) var diffuseSampler : sampler;
+
+// std140 / 16 bytes: flipY, colorConversion, gamma, padding.
+struct FragmentData {
+    flipY : f32,
+    colorConversion : f32,
+    gamma : f32,
+    _pad : f32,
+};
+
+@group(0) @binding(2) var<uniform> u_fragmentData : FragmentData;
 
 struct VertexInput
 {
@@ -19,6 +29,11 @@ struct VertexOutput
     @location(0) texCoord : vec2<f32>,
 };
 
+fn linearToGamma(c : vec3<f32>, gamma : f32) -> vec3<f32>
+{
+    return pow(max(c, vec3<f32>(0.0)), vec3<f32>(1.0 / gamma));
+}
+
 @vertex
 fn main_vs(input : VertexInput) -> VertexOutput
 {
@@ -31,5 +46,13 @@ fn main_vs(input : VertexInput) -> VertexOutput
 @fragment
 fn main_fs(input : VertexOutput) -> @location(0) vec4<f32>
 {
-    return textureSample(diffuseTexture, diffuseSampler, input.texCoord);
+    var uv = input.texCoord;
+    if (u_fragmentData.flipY > 0.5) {
+        uv = vec2<f32>(uv.x, 1.0 - uv.y);
+    }
+    let color = textureSample(diffuseTexture, diffuseSampler, uv);
+    if (u_fragmentData.colorConversion > 0.5) {
+        return vec4<f32>(linearToGamma(color.rgb, u_fragmentData.gamma), color.a);
+    }
+    return color;
 }

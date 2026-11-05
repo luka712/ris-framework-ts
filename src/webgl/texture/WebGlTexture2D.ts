@@ -1,21 +1,24 @@
 import {WebGlUtilities} from "../utilities/WebGlUtilities.ts";
 import {
     type IFramework, State,
-    type ITextureView,
-    type TextureViewDescriptor, TextureUtilities,
-    type ITextureDescriptor,
-} from "../../api/index.ts";
+    type ITextureView2D,
+    TextureUtilities,
+    type ITextureDescriptor, TextureFormat,
+} from "../../api";
 import type {WebGlGraphicsDevice} from "../WebGlGraphicsDevice.ts";
 import {ATexture2D} from "../../core/rendering/texture/texture.ts";
 import {vec2} from "gl-matrix";
 
 /**
- * The WebGL implementation of ITexture2D.
+ * WebGL2 texture.
+ *
+ * WebGL2 does not support texture views ({@link IGraphicsDeviceFeatures.supportsTextureView} is false).
+ * Use the texture directly (e.g. {@link glTexture} / render-pass `texture`). Calling {@link getTextureView} throws.
  */
 export class WebGlTexture2D extends ATexture2D {
 
     private readonly _graphicsDevice: WebGlGraphicsDevice;
-    private readonly _gl: WebGL2RenderingContext;
+
     private _glTexture: WebGLTexture | null = null;
 
     /**
@@ -24,13 +27,20 @@ export class WebGlTexture2D extends ATexture2D {
      * @param textureDescriptor The texture descriptor.
      */
     constructor(
-        private readonly _framework: IFramework,
+        framework: IFramework,
         textureDescriptor: ITextureDescriptor
     ) {
-        super(textureDescriptor);
-        this._graphicsDevice = this._framework.renderer.graphicsDevice as WebGlGraphicsDevice;
-        this._gl = this._graphicsDevice.gl!;
+        const graphicsDevice = framework.renderer.graphicsDevice as WebGlGraphicsDevice;
+        super(graphicsDevice, textureDescriptor);
+        this._graphicsDevice = graphicsDevice;
+        this.gl = this._graphicsDevice.gl!;
     }
+
+    /**
+     * The @{link WebGL2RenderingContext}
+     * @internal
+     */
+    public readonly gl: WebGL2RenderingContext;
 
     /**
      * Gets the underlying WebGL texture.
@@ -50,11 +60,11 @@ export class WebGlTexture2D extends ATexture2D {
 
         if (TextureUtilities.isCompressedTextureFormat(this.textureFormat)) {
             this._glTexture = WebGlUtilities.texture.createCompressedTexture2D(
-                this._gl, vec2.fromValues(this.size[0], this.size[1]),
+                this.gl, vec2.fromValues(this.size[0], this.size[1]),
                 this._blockSize, this._data as Uint8Array[] | undefined, this.label, this.textureFormat, 0);
         } else {
             this._glTexture = WebGlUtilities.texture.createTexture2D(
-                this._gl,
+                this.gl,
                 this.size[0], this.size[1],
                 this._data,
                 this.textureFormat,
@@ -84,9 +94,15 @@ export class WebGlTexture2D extends ATexture2D {
         }
     }
 
-    /** @inheritdoc */
-    public createView(_descriptor?: TextureViewDescriptor): ITextureView {
-        throw new Error("Method not implemented.");
+    /**
+     * WebGL2 does not support texture views. Always throws.
+     * @inheritdoc
+     */
+    protected _createTextureView(_textureFormat: TextureFormat): ITextureView2D {
+        throw new Error(
+            `WebGL2 does not support texture views (graphicsDevice.features.supportsTextureView is false). ` +
+            `Use the texture directly (RenderPassColorAttachment.texture / WebGlTexture2D.glTexture).`
+        );
     }
 
 
@@ -97,7 +113,8 @@ export class WebGlTexture2D extends ATexture2D {
             return;
         }
 
-        this._gl.deleteTexture(this._glTexture);
+        this._disposeTextureViews();
+        this.gl.deleteTexture(this._glTexture);
         this._glTexture = null;
         this._state = State.DISPOSED;
 

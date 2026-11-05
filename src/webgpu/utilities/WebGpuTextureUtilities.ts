@@ -29,6 +29,8 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
      * @param mipLevelCount The mip level count. By default, 1.
      * @param sampleCount The sample count. By default, 1. Used for MSAA.
      * @param label The label. By default, none.
+     * @param viewFormats The formats views of this texture may use (`GPUTextureDescriptor.viewFormats`), e.g. the sRGB
+     * variant of a linear format. In WebGPU they may only differ from `format` in sRGB-ness. By default, none (only `format`).
      * @returns The texture.
      */
     public create(device: GPUDevice,
@@ -38,7 +40,8 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
         data?: Uint8Array[] | HTMLImageElement[],
         mipLevelCount: number = 1,
         sampleCount: number = 1,
-        label?: string): GPUTexture {
+        label?: string,
+        viewFormats?: TextureFormat[]): GPUTexture {
 
         const gpuTextureFormat = WebGpuConverter.convertTextureFormat(format);
         const gpuTextureUsage = WebGpuConverter.convertTextureUsage(usage);
@@ -50,6 +53,7 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
             sampleCount,
             format: gpuTextureFormat,
             usage: gpuTextureUsage,
+            viewFormats: this._convertViewFormats(format, viewFormats),
         }));
 
         if (data && data.length > 0) {
@@ -82,6 +86,8 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
      * @param mipLevelCount The mip level count. By default, 1.
      * @param sampleCount The sample count. By default, 1. Used for MSAA.
      * @param label The label. By default, none.
+     * @param viewFormats The formats views of this texture may use (`GPUTextureDescriptor.viewFormats`).
+     * In WebGPU they may only differ from `format` in sRGB-ness. By default, none (only `format`).
      * @returns The texture and its block-aligned size.
      */
     public createCompressedTexture(
@@ -93,7 +99,8 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
         data?: Uint8Array[],
         mipLevelCount: number = 1,
         sampleCount: number = 1,
-        label?: string): WebGpuCreateTextureResult {
+        label?: string,
+        viewFormats?: TextureFormat[]): WebGpuCreateTextureResult {
 
         const hasData = !!data && data.length > 0;
 
@@ -116,6 +123,7 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
             sampleCount,
             format: gpuTextureFormat,
             usage: gpuTextureUsage,
+            viewFormats: this._convertViewFormats(format, viewFormats),
         }));
 
         if (hasData) {
@@ -143,12 +151,12 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
      * Creates a depth texture, usable as a render attachment.
      * @param device The device.
      * @param size The size [width, height].
-     * @param format The depth format. By default, `TextureFormat.DEPTH_24_STENCIL_8`.
+     * @param format The depth format. By default, `TextureFormat.DEPTH24_PLUS_STENCIL8`.
      * @param label The label. By default, none.
      * @returns The texture.
      */
     public createDepthTexture(device: GPUDevice, size: vec2,
-        format: TextureFormat = TextureFormat.DEPTH_24_STENCIL_8, label?: string): GPUTexture {
+        format: TextureFormat = TextureFormat.DEPTH24_PLUS_STENCIL8, label?: string): GPUTexture {
         return this.create(device, size, format, TextureUsage.RENDER_ATTACHMENT, undefined, 1, 1, label);
     }
 
@@ -267,4 +275,14 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
     public dispose(texture: GPUTexture | null | undefined): void {
         texture?.destroy();
     }
+
+    /**
+     * Converts the extra view formats to `GPUTextureDescriptor.viewFormats`, skipping the texture's own format
+     * (always allowed). Returns undefined when there is no other view format.
+     */
+    private _convertViewFormats(format: TextureFormat, viewFormats?: TextureFormat[]): GPUTextureFormat[] | undefined {
+        const other = (viewFormats ?? []).filter(f => f != format);
+        return other.length > 0 ? other.map(f => WebGpuConverter.convertTextureFormat(f)) : undefined;
+    }
+
 }

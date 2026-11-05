@@ -23,7 +23,7 @@ import type { IDisposable } from "./core/IDisposable.ts";
 import type {vec2} from "gl-matrix";
 import type {TextureSamplerFilteringPreset} from "../core/rendering/enums.ts";
 import type {PowerPreferenceType} from "./rendering/PowerPreference.ts";
-import type {ColorSpace} from "./rendering/enums.ts";
+import type {OutputColorSpace} from "./rendering/enums.ts";
 
 
 /**
@@ -41,8 +41,11 @@ export class IFrameworkConfiguration {
     /** The texture filtering to configure */
     textureFiltering?: TextureSamplerFilteringPreset;
 
-    /** The texture color space to use by default. By default, it is {@link ColorSpace.LINEAR}. */
-     textureColorSpace?: ColorSpace;
+    /**
+     * The renderer's output color space. By default, {@link OutputColorSpace.NONE}: no color management, values are written to the screen as-is.
+     * Use {@link OutputColorSpace.SRGB} to encode linear shader output to sRGB once at present. Material shaders never convert gamma in either mode.
+     */
+    outputColorSpace?: OutputColorSpace;
 
      /**
      * The HTMLCanvasElement to use for rendering.

@@ -10,11 +10,15 @@ import type {ISwapChainDescriptor} from "./swapchain/ISwapChainDescriptor.ts";
 import type { ISwapChain } from "./swapchain/ISwapChain.ts";
 import {SamplerDescriptor} from "./sampler/SamplerDescriptor.ts";
 import type {IPrimitiveStateDescriptor} from "./primitive/IPrimitiveStateDescriptor.ts";
+import type {RenderingBackend} from "./RenderingBackend.ts";
 
 /**
  * The interface for a graphics device.
  */
 export interface IGraphicsDevice extends IDisposable {
+
+    /** The api used. */
+    readonly api: RenderingBackend;
 
     /**
      * The info about the GPU.
