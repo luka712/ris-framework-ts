@@ -1,10 +1,10 @@
 import type {WebGlGraphicsDevice} from "../WebGlGraphicsDevice.ts";
 import {WebGlUtilities} from "../utilities/WebGlUtilities.ts";
 import {type IFramework, type IShaderModule, ShaderStage} from "../../api";
-import {GlslShaderModuleContent} from "../../api/content/GlslShaderModuleContent.ts";
+import {GlslShaderModuleContent, type InternalShader} from "../../api/content/ShaderModuleContent.ts";
 
 
-const MODULE_IMPORT_KEYWORD = "#import";
+const MODULE_INCLUDE_KEYWORD = "#include";
 
 /**
  * The WebGL shader module.
@@ -13,8 +13,11 @@ export class WebGlShaderModule implements IShaderModule {
 
     private readonly _graphicsDevice: WebGlGraphicsDevice;
     private readonly _gl: WebGL2RenderingContext;
-    private readonly _modules: { [id: string]: WebGlInternalShader } = {};
-    private readonly _moduleRegex = /^\s*#import\s+"([^"]+)"\s*;?\s*$/gm;
+    private readonly _modules: { [id: string]: InternalShader } = {};
+    private readonly _moduleRegex = new RegExp(
+        `^\\s*${MODULE_INCLUDE_KEYWORD}\\s+"([^"]+)"\\s*;?\\s*$`,
+        "gm",
+    );
     private _program?: WebGLProgram;
 
     /**
@@ -30,30 +33,10 @@ export class WebGlShaderModule implements IShaderModule {
     }
 
     /** @inheritDoc */
-    public stages: ShaderStage[] = [];
+    public stages: ShaderStage[] = [ShaderStage.VERTEX, ShaderStage.FRAGMENT];
 
     /** @inheritDoc */
     public nativeHandle?: any;
-
-    /**
-     * Tries to framework shader.
-     * These shaders are part of framework.
-     * @param id The id of internal shader.
-     */
-    private _tryResolveFrameworkShader(id: string): WebGlInternalShader | null {
-        if (GlslShaderModuleContent[id]) {
-
-            this.stages = [ShaderStage.VERTEX, ShaderStage.FRAGMENT];
-
-            return {
-                vertex: GlslShaderModuleContent[id]["vertex"],
-                fragment: GlslShaderModuleContent[id]["fragment"],
-                reflection: GlslShaderModuleContent[id]["reflection"],
-            }
-        }
-
-        return null;
-    }
 
     /**
      * The program of this shader module
@@ -72,13 +55,19 @@ export class WebGlShaderModule implements IShaderModule {
         let module = this._modules[path];
 
         if (module) {
+            if (module.shader === undefined) {
+                throw new Error(`Module "${path}" not found.`);
+            }
             return module.shader;
         }
 
         for (const id in GlslShaderModuleContent) {
             module = GlslShaderModuleContent[id];
-            module[path] = module;
+            (module as unknown as Record<string, InternalShader>)[path] = module;
             if (module.path === path) {
+                if (module.shader === undefined) {
+                    throw new Error(`Module "${path}" not found.`);
+                }
                 return module.shader;
             }
         }
@@ -105,20 +94,21 @@ export class WebGlShaderModule implements IShaderModule {
 
     private _loadShaders(shaderFilePath: string, keyValueDictionary?: { [id: string]: number }): WebGLProgram {
 
-        const internalShader = this._tryResolveFrameworkShader(shaderFilePath);
+        const internalShader = GlslShaderModuleContent[shaderFilePath];
 
         let vertexShaderSource = "";
         let fragmentShaderSource = "";
         if (internalShader) {
-            vertexShaderSource = internalShader.vertex;
-            fragmentShaderSource = internalShader.fragment;
-
-            if (!vertexShaderSource) {
+            const vertexSource = internalShader.vertex;
+            const fragmentSource = internalShader.fragment;
+            if (!vertexSource) {
                 throw new Error(`Vertex shader source is missing for ${shaderFilePath}.`);
             }
-            if (!fragmentShaderSource) {
+            if (!fragmentSource) {
                 throw new Error(`Fragment shader source is missing for ${shaderFilePath}.d`)
             }
+            vertexShaderSource = vertexSource;
+            fragmentShaderSource = fragmentSource;
 
             vertexShaderSource = this._injectModules(vertexShaderSource);
             fragmentShaderSource = this._injectModules(fragmentShaderSource);

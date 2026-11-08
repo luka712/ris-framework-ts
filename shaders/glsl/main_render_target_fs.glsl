@@ -1,7 +1,7 @@
 #version 300 es
 precision mediump float;
 
-#import "modules/color_conversion.glsl"
+#include "modules/color_conversion.glsl"
 
 in vec2 v_texCoord;
 out vec4 outColor;
