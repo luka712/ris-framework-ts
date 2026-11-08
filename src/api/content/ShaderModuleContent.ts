@@ -8,6 +8,7 @@ import unlitMaterialVS from "../../../shaders/glsl/unlit_material_vs.glsl?raw";
 import unlitMaterialFS from "../../../shaders/glsl/unlit_material_fs.glsl?raw";
 import forwardBlinnPhongVS from "../../../shaders/glsl/forward_blinn_phong_material_vs.glsl?raw";
 import forwardBlinnPhongFS from "../../../shaders/glsl/forward_blinn_phong_material_fs.glsl?raw";
+import colorConversion from "../../../shaders/glsl/modules/color_conversion.glsl?raw";
 
 
 /**
@@ -22,7 +23,16 @@ import forwardBlinnPhongFS from "../../../shaders/glsl/forward_blinn_phong_mater
  */
 
 
-export const ShaderModuleContent : {[id: string]: any} = {
+interface InternalShader {
+    path?: string;
+    vertex?: string;
+    fragment?: string;
+    shader?: string;
+    reflection?: any; // This will be type in the future.
+}
+
+
+export const ShaderModuleContent : {[id: string]: InternalShader} = {
 
     "main_render_target": {
         "vertex": mainRenderTargetVS,
@@ -52,5 +62,11 @@ export const ShaderModuleContent : {[id: string]: any} = {
         "vertex": forwardBlinnPhongVS,
         "fragment": forwardBlinnPhongFS,
         "reflection": {}
+    },
+
+    color_conversion: {
+        path: "modules/color_conversion.glsl",
+        shader: colorConversion,
+        reflection: {}
     }
 }
