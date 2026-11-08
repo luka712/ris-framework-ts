@@ -1,7 +1,7 @@
 import type {WebGlGraphicsDevice} from "../WebGlGraphicsDevice.ts";
 import {WebGlUtilities} from "../utilities/WebGlUtilities.ts";
 import {type IFramework, type IShaderModule, ShaderStage} from "../../api";
-import {ShaderModuleContent} from "../../api/content/ShaderModuleContent.ts";
+import {GlslShaderModuleContent} from "../../api/content/GlslShaderModuleContent.ts";
 
 
 const MODULE_IMPORT_KEYWORD = "#import";
@@ -41,14 +41,14 @@ export class WebGlShaderModule implements IShaderModule {
      * @param id The id of internal shader.
      */
     private _tryResolveFrameworkShader(id: string): WebGlInternalShader | null {
-        if (ShaderModuleContent[id]) {
+        if (GlslShaderModuleContent[id]) {
 
             this.stages = [ShaderStage.VERTEX, ShaderStage.FRAGMENT];
 
             return {
-                vertex: ShaderModuleContent[id]["vertex"],
-                fragment: ShaderModuleContent[id]["fragment"],
-                reflection: ShaderModuleContent[id]["reflection"],
+                vertex: GlslShaderModuleContent[id]["vertex"],
+                fragment: GlslShaderModuleContent[id]["fragment"],
+                reflection: GlslShaderModuleContent[id]["reflection"],
             }
         }
 
@@ -75,8 +75,8 @@ export class WebGlShaderModule implements IShaderModule {
             return module.shader;
         }
 
-        for (const id in ShaderModuleContent) {
-            module = ShaderModuleContent[id];
+        for (const id in GlslShaderModuleContent) {
+            module = GlslShaderModuleContent[id];
             module[path] = module;
             if (module.path === path) {
                 return module.shader;
@@ -94,7 +94,6 @@ export class WebGlShaderModule implements IShaderModule {
     private _injectModules(shaderSource: string): string {
 
         let match : RegExpExecArray | null = null;
-        debugger;
         while ((match = this._moduleRegex.exec(shaderSource)) !== null) {
             const modulePath = match[1];
             const module = this._loadModule(modulePath);

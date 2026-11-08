@@ -32,7 +32,7 @@ interface InternalShader {
 }
 
 
-export const ShaderModuleContent : {[id: string]: InternalShader} = {
+export const GlslShaderModuleContent : {[id: string]: InternalShader} = {
 
     "main_render_target": {
         "vertex": mainRenderTargetVS,
