@@ -1,18 +1,18 @@
-import mainFrameBuffer from "../../../shaders/wgsl/main_frame_buffer.wgsl?raw";
-import unlitMaterial from "../../../shaders/wgsl/unlit_material.wgsl?raw";
-import forwardBlinnPhongMaterial from "../../../shaders/wgsl/forward_blinn_phong_material.wgsl?raw";
-import sprite from "../../../shaders/wgsl/sprite.wgsl?raw";
-import inspectTextureMips from "../../../shaders/wgsl/inspect_texture_mips.wgsl?raw";
+import {WgslShaderModuleContent} from "../../api/content/WgslShaderModuleContent.ts";
 
 /**
- * The framework's built-in WGSL shaders, keyed by the same ids the WebGL backend uses where one exists.
- * Every shader has `main_vs` and `main_fs` entry points.
+ * Built-in WGSL program sources keyed by shader id.
+ * Filled from {@link WgslShaderModuleContent}: an entry is included only when `path` is absent and `shader` is present.
+ * Shared modules such as `color_conversion` are omitted. Values are the raw shader text, `#import` lines included,
+ * before {@link WebGpuShaderModule} expands them. There is no further default entry.
  * @internal
  */
-export const WgslShaderContent: { [id: string]: string } = {
-    "main_frame_buffer": mainFrameBuffer,
-    "unlit_material": unlitMaterial,
-    "forward_blinn_phong_material": forwardBlinnPhongMaterial,
-    "sprite": sprite,
-    "inspect_texture_mips": inspectTextureMips,
-};
+export const WgslShaderContent: {[id: string]: string} = {};
+
+for (const id in WgslShaderModuleContent) {
+    const entry = WgslShaderModuleContent[id];
+    const shader = entry.shader;
+    if (entry.path == undefined && shader != undefined) {
+        WgslShaderContent[id] = shader;
+    }
+}
