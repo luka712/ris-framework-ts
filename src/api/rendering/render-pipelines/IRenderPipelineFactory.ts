@@ -2,7 +2,7 @@ import type { ITexture2D } from "../texture/ITexture2D.ts";
 import type { IMainRenderTargetRenderPipeline } from "./IMainRenderTargetRenderPipeline.ts";
 import type { IUniformBuffer } from "../buffers/IUniformBuffer.ts";
 import type { ISpriteRenderPipeline } from "./ISpriteRenderPipeline.ts";
-import type { IInspectTextureMipsRenderPipeline } from "./IInspectTextureMipsRenderPipeline.ts";
+import type { IInspectTextureMipsRenderPipeline } from "./inspect/IInspectTextureMipsRenderPipeline.ts";
 import type { IUnlitRenderPipeline } from "./IUnlitRenderPipeline.ts";
 import type { IPrimitiveState } from "../primitive/IPrimitiveState.ts";
 import type { IForwardBlinnPhongRenderPipeline } from "./IForwardBlinnPhongRenderPipeline.ts";

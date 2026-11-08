@@ -6,7 +6,7 @@ in vec2 v_texCoords;
 
 layout(location = 0) out vec4 o_outputColor;
 
-layout(std140) uniform TextureConstantsBuffer {
+layout(std140) uniform FragmentDataBuffer {
     float mipLevel;
 };
 

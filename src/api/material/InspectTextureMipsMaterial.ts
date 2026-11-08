@@ -1,6 +1,6 @@
 import type {IRenderableMesh} from "../meshes/IRenderableMesh.ts";
 import type { ITexture2D } from "../rendering/texture/ITexture2D.ts";
-import type { IInspectTextureMipsRenderPipeline } from "../rendering/render-pipelines/IInspectTextureMipsRenderPipeline.ts";
+import type { IInspectTextureMipsRenderPipeline } from "../rendering/render-pipelines/inspect/IInspectTextureMipsRenderPipeline.ts";
 import type { ISampler } from "../rendering/sampler/ISampler.ts";
 import {mat4} from "gl-matrix";
 import {GeometryFormat} from "../geometry/GeometryFormat.ts";

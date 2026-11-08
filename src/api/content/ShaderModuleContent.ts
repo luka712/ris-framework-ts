@@ -2,8 +2,8 @@ import mainRenderTargetVS from "../../../shaders/glsl/main_render_target_vs.glsl
 import mainRenderTargetFS from "../../../shaders/glsl/main_render_target_fs.glsl?raw";
 import spriteVS from "../../../shaders/glsl/sprite_vs.glsl?raw";
 import spriteFS from "../../../shaders/glsl/sprite_fs.glsl?raw";
-import inspectTextureMipsVS from "../../../shaders/glsl/inspect_texture_mips_vs.glsl?raw";
-import inspectTextureMipsFS from "../../../shaders/glsl/inspect_texture_mips_fs.glsl?raw";
+import inspectTextureMipsVS from "../../../shaders/glsl/inspect/inspect_texture_mips_vs.glsl?raw";
+import inspectTextureMipsFS from "../../../shaders/glsl/inspect/inspect_texture_mips_fs.glsl?raw";
 import unlitMaterialVS from "../../../shaders/glsl/unlit_material_vs.glsl?raw";
 import unlitMaterialFS from "../../../shaders/glsl/unlit_material_fs.glsl?raw";
 import forwardBlinnPhongVS from "../../../shaders/glsl/forward_blinn_phong_material_vs.glsl?raw";
@@ -81,7 +81,7 @@ import mainFrameBuffer from "../../../shaders/wgsl/main_frame_buffer.wgsl?raw";
 import unlitMaterial from "../../../shaders/wgsl/unlit_material.wgsl?raw";
 import forwardBlinnPhongMaterial from "../../../shaders/wgsl/forward_blinn_phong_material.wgsl?raw";
 import sprite from "../../../shaders/wgsl/sprite.wgsl?raw";
-import inspectTextureMips from "../../../shaders/wgsl/inspect_texture_mips.wgsl?raw";
+import inspectTextureMips from "../../../shaders/wgsl/inspect/inspect_texture_mips.wgsl?raw";
 import colorConversionWgsl from "../../../shaders/wgsl/modules/color_conversion.wgsl?raw";
 
 /**

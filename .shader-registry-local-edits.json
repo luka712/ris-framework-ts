@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "61d0a79fb232aa651e2f58b68bc7ebf3e5ae4627",
+  "apply": "UTF-8. For each edit in order, old must occur exactly once and sha256(old) must equal oldSha256. Replace that occurrence with new. Stop if the count is not 1.",
+  "notUserMachine": true,
+  "vmProof": "Applied to a reconstructed 61d0a79 tree plus the described consolidation. Not the Mac checkout.",
+  "doNotEdit": [
+    "shaders/wgsl/main_frame_buffer.wgsl",
+    "shaders/wgsl/modules/",
+    "src/api/content/GlslShaderModuleContent.ts",
+    "src/webgpu/shader/WgslShaderContent.ts"
+  ],
+  "assumptions": [
+    "ShaderModuleContent.ts contains the 61d0a79 GlslShaderModuleContent.ts InternalShader block unchanged.",
+    "The WGSL object contains the three broken keys exactly: forward_blinn_phong_material\": forwardBlinnPhongMaterial, / sprite\": sprite, / inspect_texture_mips\": inspectTextureMips,",
+    "export const WgslShaderContent: { [id: string]: InternalShader } = { occurs once.",
+    "WebGlShaderModule.ts matches 61d0a79 except the import already reads ../../api/content/ShaderModuleContent.ts and ends with a semicolon.",
+    "WebGpuShaderModule.ts matches 61d0a79."
+  ],
+  "behaviorNotes": [
+    "WebGPU uses entry.shader. Missing id or absent shader still throws WGSL shader '<id>' is not implemented for WebGPU.",
+    "WebGL still writes the module onto the registry entry at the import path. The write is cast so InternalShader typechecks. An entry whose shader is absent throws Module \"<path>\" not found. instead of returning undefined.",
+    "No #import loader was added. Local main_frame_buffer.wgsl and shaders/wgsl/modules/ were not read."
+  ],
+  "edits": [
+    {
+      "id": "export-internal-shader",
+      "path": "src/api/content/ShaderModuleContent.ts",
+      "old": "interface InternalShader {\n    path?: string;\n    vertex?: string;\n    fragment?: string;\n    shader?: string;\n    reflection?: any; // This will be type in the future.\n}",
+      "new": "/**\n * One GLSL or WGSL registry entry.\n * `path` is set only for an importable module. By default, absent, and the entry is a program.\n * `vertex` and `fragment` are WebGL sources. By default, absent. WGSL programs use `shader` instead.\n * `shader` is a WGSL program or a module body. By default, absent.\n * `reflection` is reserved. By default, absent. Built-in GLSL entries set `{}`.\n */\nexport interface InternalShader {\n    /** Import path, for example `modules/color_conversion.glsl`. By default, absent. */\n    path?: string;\n    /** WebGL vertex source. By default, absent. */\n    vertex?: string;\n    /** WebGL fragment source. By default, absent. */\n    fragment?: string;\n    /** WGSL source, or a module body included by `path`. By default, absent. */\n    shader?: string;\n    /** Reserved for reflection. By default, absent. */\n    reflection?: any; // This will be type in the future.\n}",
+      "oldSha256": "bc410b3aa12397418bd5555e27d0f418b3178dcea5d6c16e49d9e04d0540c416",
+      "newSha256": "0f19868065e19d9c3aa7e27c744ee446fe7720a438a61b722aaf483ff79ddfde"
+    },
+    {
+      "id": "document-wgsl-registry",
+      "path": "src/api/content/ShaderModuleContent.ts",
+      "old": "export const WgslShaderContent: { [id: string]: InternalShader } = {",
+      "new": "/**\n * Built-in WGSL programs keyed by shader id.\n * `shader` is the WGSL source. By default, `path`, `vertex`, and `fragment` are absent on these entries.\n */\nexport const WgslShaderContent: { [id: string]: InternalShader } = {",
+      "oldSha256": "6845f7299b8b60a1489cbc27c2574e375a13c55f76d8fd02513bae0f188d3dbc",
+      "newSha256": "680bc3e65bd5c256643acba5b9cdfe6fa0ff2d874ef1cda3508f23aabc2a27b4"
+    },
+    {
+      "id": "fix-forward-blinn-phong-key",
+      "path": "src/api/content/ShaderModuleContent.ts",
+      "old": "forward_blinn_phong_material\": forwardBlinnPhongMaterial,",
+      "new": "\"forward_blinn_phong_material\": { shader: forwardBlinnPhongMaterial },",
+      "oldSha256": "fbb8685f1a31e9ee4d787f1cf8ac79032163f1767b0c811441585349c49124f8",
+      "newSha256": "5c09599b101642ebcf43dbe3f4e86f880e3519f1b4f60fff57dc188f100382d2"
+    },
+    {
+      "id": "fix-sprite-key",
+      "path": "src/api/content/ShaderModuleContent.ts",
+      "old": "sprite\": sprite,",
+      "new": "\"sprite\": { shader: sprite },",
+      "oldSha256": "c14704a717a90100945a15439a09e5b55f7b26d1f2686f78bc938f99e3c5f3ef",
+      "newSha256": "24eb059220bb58b22f171a086767360e86572b65d18766042b583f4e4d81dd6a"
+    },
+    {
+      "id": "fix-inspect-key",
+      "path": "src/api/content/ShaderModuleContent.ts",
+      "old": "inspect_texture_mips\": inspectTextureMips,",
+      "new": "\"inspect_texture_mips\": { shader: inspectTextureMips },",
+      "oldSha256": "37ceeb22a319335e8d82b5e85f724eb7dfd11b9474d6d517061a86016ea94631",
+      "newSha256": "2325506356373ac0d8cf1ed1a275c1782197ced79c598967d8285d0065f568d7"
+    },
+    {
+      "id": "webgl-import-internal-shader",
+      "path": "src/webgl/shader/WebGlShaderModule.ts",
+      "old": "import {GlslShaderModuleContent} from \"../../api/content/ShaderModuleContent.ts\";",
+      "new": "import {GlslShaderModuleContent, type InternalShader} from \"../../api/content/ShaderModuleContent.ts\";",
+      "oldSha256": "6ac85b2fa01ab191268b7a76d47b972e84411a5797286722b8fa0533c74bbdc0",
+      "newSha256": "a100bf0ffd6c31ed2aecfb2da579e0f3059b0533cff4e70c6ca6ef6cbf11bba1"
+    },
+    {
+      "id": "webgl-modules-field-type",
+      "path": "src/webgl/shader/WebGlShaderModule.ts",
+      "old": "    private readonly _modules: { [id: string]: WebGlInternalShader } = {};",
+      "new": "    private readonly _modules: { [id: string]: InternalShader } = {};",
+      "oldSha256": "1de386830cc1ed01e79b89f7e35498d9359dd87813fcc92389630a17babf989f",
+      "newSha256": "c98ad7b688112bcdcae287d3d7a38e588372d981ee992bd8a2878074b88b39e0"
+    },
+    {
+      "id": "webgl-resolve-return-type",
+      "path": "src/webgl/shader/WebGlShaderModule.ts",
+      "old": "    /**\n     * Tries to framework shader.\n     * These shaders are part of framework.\n     * @param id The id of internal shader.\n     */\n    private _tryResolveFrameworkShader(id: string): WebGlInternalShader | null {",
+      "new": "    /**\n     * Tries to framework shader.\n     * These shaders are part of framework.\n     * @param id The id of internal shader.\n     * @returns The registry entry. Null when `id` is absent.\n     */\n    private _tryResolveFrameworkShader(id: string): InternalShader | null {",
+      "oldSha256": "96bc67c570c80563981fb3a4526832d0cfc493a52df82e0b115055230070decd",
+      "newSha256": "d7864da6ffd5cb7b2dc34d3461eac0bee658b95a1102d9242ec99dff6ffe256b"
+    },
+    {
+      "id": "webgl-load-module-types",
+      "path": "src/webgl/shader/WebGlShaderModule.ts",
+      "old": "        if (module) {\n            return module.shader;\n        }\n\n        for (const id in GlslShaderModuleContent) {\n            module = GlslShaderModuleContent[id];\n            module[path] = module;\n            if (module.path === path) {\n                return module.shader;\n            }\n        }",
+      "new": "        if (module) {\n            if (module.shader === undefined) {\n                throw new Error(`Module \"${path}\" not found.`);\n            }\n            return module.shader;\n        }\n\n        for (const id in GlslShaderModuleContent) {\n            module = GlslShaderModuleContent[id];\n            (module as unknown as Record<string, InternalShader>)[path] = module;\n            if (module.path === path) {\n                if (module.shader === undefined) {\n                    throw new Error(`Module \"${path}\" not found.`);\n                }\n                return module.shader;\n            }\n        }",
+      "oldSha256": "652bd383f88c0602f0c8ccd3037363bd8cc07f870f88910ed811f988642ddcce",
+      "newSha256": "94046050b773d59cc63438103e359b99093c45d85d3913e1100f703024fad237"
+    },
+    {
+      "id": "webgl-assign-stage-sources",
+      "path": "src/webgl/shader/WebGlShaderModule.ts",
+      "old": "            vertexShaderSource = internalShader.vertex;\n            fragmentShaderSource = internalShader.fragment;\n\n            if (!vertexShaderSource) {\n                throw new Error(`Vertex shader source is missing for ${shaderFilePath}.`);\n            }\n            if (!fragmentShaderSource) {\n                throw new Error(`Fragment shader source is missing for ${shaderFilePath}.d`)\n            }",
+      "new": "            const vertexSource = internalShader.vertex;\n            const fragmentSource = internalShader.fragment;\n            if (!vertexSource) {\n                throw new Error(`Vertex shader source is missing for ${shaderFilePath}.`);\n            }\n            if (!fragmentSource) {\n                throw new Error(`Fragment shader source is missing for ${shaderFilePath}.d`)\n            }\n            vertexShaderSource = vertexSource;\n            fragmentShaderSource = fragmentSource;",
+      "oldSha256": "892516651fc8d72a84b7492d5cea7cd459a8d1fc470a8d99728c22c349a8e791",
+      "newSha256": "1928b8aaa9bec6c2c457528ce7dfbeedb6244ccf5ecd59c13162476e147d1341"
+    },
+    {
+      "id": "webgpu-import-registry",
+      "path": "src/webgpu/shader/WebGpuShaderModule.ts",
+      "old": "import {WgslShaderContent} from \"./WgslShaderContent.ts\";",
+      "new": "import {WgslShaderContent} from \"../../api/content/ShaderModuleContent.ts\";",
+      "oldSha256": "ad94a56af4be305a5717c2abb7b94dba34491959dcad944e9716ff319f6eb634",
+      "newSha256": "bc26d62702c410781ddb1d5eae79c6f49b65d933c33bf0ace7665de99f2a6e57"
+    },
+    {
+      "id": "webgpu-read-entry-shader",
+      "path": "src/webgpu/shader/WebGpuShaderModule.ts",
+      "old": "     * @param keyValueDictionary Optional `##KEY##` replacements, like the WebGL loader.\n     */\n    public constructor(framework: IFramework, id: string, keyValueDictionary?: { [id: string]: number }) {\n        let code = WgslShaderContent[id];\n        if (code === undefined) {",
+      "new": "     * @param keyValueDictionary Optional `##KEY##` replacements, like the WebGL loader. By default, omitted, so no token is replaced. A key that is absent has no default number and its `##KEY##` text stays.\n     */\n    public constructor(framework: IFramework, id: string, keyValueDictionary?: { [id: string]: number }) {\n        let code = WgslShaderContent[id]?.shader;\n        if (code === undefined) {",
+      "oldSha256": "2b3bac2c71a60f4e86360cf8a6af14c9edd26f601bf20ba86a59228fe75cbf37",
+      "newSha256": "d1850f3781cd3e7038bcf2f623977494f976d285ae0ebe2d7d9d8e4a56494e10"
+    }
+  ]
+}
