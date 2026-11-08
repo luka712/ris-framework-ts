@@ -4,6 +4,7 @@
 // Bind groups (WebGpuMainRenderTargetRenderPipeline):
 //   group 0: binding 0 = texture, binding 1 = sampler, binding 2 = FragmentDataBuffer (fragment)
 
+// Full-line import, optional indent and semicolon. WebGpuShaderModule includes each path once.
 #import "modules/color_conversion.wgsl"
 
 @group(0) @binding(0) var diffuseTexture : texture_2d<f32>;
