@@ -4,6 +4,8 @@
 // Bind groups (WebGpuMainRenderTargetRenderPipeline):
 //   group 0: binding 0 = texture, binding 1 = sampler, binding 2 = FragmentDataBuffer (fragment)
 
+#import "modules/color_conversion.wgsl"
+
 @group(0) @binding(0) var diffuseTexture : texture_2d<f32>;
 @group(0) @binding(1) var diffuseSampler : sampler;
 
@@ -28,11 +30,6 @@ struct VertexOutput
     @builtin(position) position : vec4<f32>,
     @location(0) texCoord : vec2<f32>,
 };
-
-fn linearToGamma(c : vec3<f32>, gamma : f32) -> vec3<f32>
-{
-    return pow(max(c, vec3<f32>(0.0)), vec3<f32>(1.0 / gamma));
-}
 
 @vertex
 fn main_vs(input : VertexInput) -> VertexOutput
