@@ -30,20 +30,24 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
     /** @inheritdoc */
     public readonly api = RenderingBackend.WEB_GL;
 
+    /** Not implemented for WebGL2; always throws. */
     public setupDebugCallback(): void {
-        throw new Error("Method not implemented.");
+        throw new Error("WebGlGraphicsDevice.setupDebugCallback: Not implemented for WebGL2.");
     }
 
+    /** Not implemented for WebGL2; always throws. */
     public frameEnd(): void {
-        throw new Error("Method not implemented.");
+        throw new Error("WebGlGraphicsDevice.frameEnd: Not implemented for WebGL2.");
     }
 
+    /** Not implemented for WebGL2; always throws. */
     public pushDebugGroup(_groupName: string): void {
-        throw new Error("Method not implemented.");
+        throw new Error("WebGlGraphicsDevice.pushDebugGroup: Not implemented for WebGL2.");
     }
 
+    /** Not implemented for WebGL2; always throws. */
     public popDebugGroup(): void {
-        throw new Error("Method not implemented.");
+        throw new Error("WebGlGraphicsDevice.popDebugGroup: Not implemented for WebGL2.");
     }
 
     private readonly _canvasManager: ICanvasManager;
@@ -98,7 +102,7 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
 
         // If not supported, throw an error.
         if (!this._gl) {
-            throw new Error("WebGL not supported.");
+            throw new Error("WebGlGraphicsDevice.initializeAsync: WebGL2 is not supported (canvas.getContext(\"webgl2\") returned null).");
         }
 
         this._features = new WebGlGraphicsDeviceFeatures(this._gl);

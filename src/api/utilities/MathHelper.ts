@@ -38,7 +38,7 @@ export class MathHelper {
      */
     public pitchToPolar(pitch: number): number {
         void pitch;
-        throw new Error('Not implemented');
+        throw new Error("MathHelper.pitchToPolar: Not implemented.");
     }
 
     /**
@@ -52,7 +52,7 @@ export class MathHelper {
      */
     public yawToAzimuth(yaw: number): number {
         void yaw;
-        throw new Error('Not implemented');
+        throw new Error("MathHelper.yawToAzimuth: Not implemented.");
     }
 
     /**
@@ -64,7 +64,7 @@ export class MathHelper {
      */
     public polarToPitch(polar: number): number {
         void polar;
-        throw new Error('Not implemented');
+        throw new Error("MathHelper.polarToPitch: Not implemented.");
     }
 
     /**
@@ -78,7 +78,7 @@ export class MathHelper {
      */
     public azimuthToYaw(azimuth: number): number {
         void azimuth;
-        throw new Error('Not implemented');
+        throw new Error("MathHelper.azimuthToYaw: Not implemented.");
     }
 
     /**
@@ -89,7 +89,7 @@ export class MathHelper {
      */
     public smoothStep(x: number): number {
         void x;
-        throw new Error('Not implemented');
+        throw new Error("MathHelper.smoothStep: Not implemented.");
     }
 
     /**
@@ -114,7 +114,7 @@ export class MathHelper {
     public alignBytes(value: number, alignment: number): number {
         void value;
         void alignment;
-        throw new Error('Not implemented');
+        throw new Error("MathHelper.alignBytes: Not implemented.");
     }
 
     /**
@@ -144,7 +144,7 @@ export class MathHelper {
     public max(a: number, b: number): number {
         void a;
         void b;
-        throw new Error('Not implemented');
+        throw new Error("MathHelper.max: Not implemented.");
     }
 
     /**
@@ -156,7 +156,7 @@ export class MathHelper {
     public min(a: number, b: number): number {
         void a;
         void b;
-        throw new Error('Not implemented');
+        throw new Error("MathHelper.min: Not implemented.");
     }
 
     /**
@@ -172,7 +172,7 @@ export class MathHelper {
         void r1;
         void p2;
         void r2;
-        throw new Error('Not implemented');
+        throw new Error("MathHelper.circleIntersectsCircle: Not implemented.");
     }
 
     /**
@@ -184,7 +184,7 @@ export class MathHelper {
     public dot(v1: vec2, v2: vec2): number {
         void v1;
         void v2;
-        throw new Error('Not implemented');
+        throw new Error("MathHelper.dot: Not implemented.");
     }
 
     /**
@@ -196,7 +196,7 @@ export class MathHelper {
     public reflect(v: vec2, n: vec2): vec2 {
         void v;
         void n;
-        throw new Error('Not implemented');
+        throw new Error("MathHelper.reflect: Not implemented.");
     }
 
     /**
@@ -206,7 +206,7 @@ export class MathHelper {
      */
     public angleToVector(angle: number): vec2 {
         void angle;
-        throw new Error('Not implemented');
+        throw new Error("MathHelper.angleToVector: Not implemented.");
     }
 
     /**
@@ -215,7 +215,7 @@ export class MathHelper {
      * @returns The random value.
      */
     public randomBinomial(): number {
-        throw new Error('Not implemented');
+        throw new Error("MathHelper.randomBinomial: Not implemented.");
     }
 
     /**
@@ -225,7 +225,7 @@ export class MathHelper {
      */
     public vector2DFromAngle(angle: number): vec2 {
         void angle;
-        throw new Error('Not implemented');
+        throw new Error("MathHelper.vector2DFromAngle: Not implemented.");
     }
 
     /**
@@ -237,7 +237,7 @@ export class MathHelper {
     public pow(baseValue: number, exponent: number): number {
         void baseValue;
         void exponent;
-        throw new Error('Not implemented');
+        throw new Error("MathHelper.pow: Not implemented.");
     }
 
     /**
@@ -251,6 +251,6 @@ export class MathHelper {
         void point;
         void center;
         void angle;
-        throw new Error('Not implemented');
+        throw new Error("MathHelper.rotatePoint: Not implemented.");
     }
 }

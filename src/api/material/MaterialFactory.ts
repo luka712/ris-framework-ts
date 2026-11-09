@@ -1,4 +1,5 @@
 import {InspectTextureMipsMaterial} from "./InspectTextureMipsMaterial.ts";
+import {InspectTextureArrayMaterial} from "./InspectTextureArrayMaterial.ts";
 import type { IFramework } from "../IFramework.ts";
 import type { IMaterialFactory } from "./IMaterialFactory.ts";
 import {SpriteMaterial, type SpriteMaterialDescriptor} from "./SpriteMaterial.ts";
@@ -21,6 +22,11 @@ export class MaterialFactory implements IMaterialFactory {
     /** @inheritDoc */
     public createInspectTextureMipsMaterial(): InspectTextureMipsMaterial {
         return new InspectTextureMipsMaterial(this._framework);
+    }
+
+    /** @inheritDoc */
+    public createInspectTextureArrayMaterial(): InspectTextureArrayMaterial {
+        return new InspectTextureArrayMaterial(this._framework);
     }
 
     /** @inheritDoc */

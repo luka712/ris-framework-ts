@@ -146,4 +146,11 @@ describe("TextureUtilities", () => {
         expect(() => TextureUtilities.convertKtxTranscodeFormatToVkFormat(KtxTranscodeFormat.NO_SELECTION))
             .toThrow(`Not implemented: ${KtxTranscodeFormat.NO_SELECTION}`);
     });
+
+    it("counts mip levels per layer, not the layer count", () => {
+        const layerA = [new Uint8Array(4), new Uint8Array(4)];
+        const layerB = [new Uint8Array(4)];
+        expect(TextureUtilities.maxMipLevels([layerA, layerB])).toBe(2);
+        expect(TextureUtilities.maxMipLevels()).toBe(1);
+    });
 });

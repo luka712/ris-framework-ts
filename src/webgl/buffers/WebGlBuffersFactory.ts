@@ -10,6 +10,7 @@ import {
 } from "../../api/index.ts";
 import {WebGlUniformBuffer} from "./WebGlUniformBuffer.ts";
 
+/** The WebGL implementation of {@link IBufferFactory}. Every created buffer is already initialized. */
 export class WebGlBuffersFactory implements IBufferFactory {
 
     /**

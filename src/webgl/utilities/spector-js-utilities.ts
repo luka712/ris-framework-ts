@@ -1,3 +1,4 @@
+/** Helpers for labelling WebGL objects in the Spector.js debugger. */
 export class SpectorJSUtilities {
 
     /**

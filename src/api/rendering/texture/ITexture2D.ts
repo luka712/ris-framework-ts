@@ -48,25 +48,17 @@ export interface ITexture2D extends IContent {
     readonly textureState: State;
 
     /**
-     * The approximate size of this texture in VRAM, in bytes, computed from the native size.
+     * The approximate size of this texture in VRAM, in bytes, computed from {@link size}.
      * Note that it is a rough approximation, as the real size depends on the driver implementation.
      */
     readonly vramSize: number;
 
     /**
-     * The logical size of the texture [width, height] in pixels, as described by the texture data
-     * (e.g. 768x512 for a 768x512 KTX2 image). Use this for sprite sizes, UVs and layout.
+     * The size of the texture [width, height] in pixels, from the descriptor's `width` and `height`
+     * (both are required and must be greater than zero). Use this for sprite sizes, UVs and layout.
      * Do not modify the returned vector.
      */
     readonly size: vec2;
-
-    /**
-     * The native size of the texture [width, height] in pixels, i.e. the size actually allocated on the GPU.
-     * For block-compressed formats on backends that require it (WebGPU), this is the logical size rounded up
-     * to whole blocks (e.g. ASTC 10x5 at 768x512 -> 770x515). Otherwise, it is equal to `size`.
-     * Do not modify the returned vector.
-     */
-    readonly nativeSize: vec2;
 
     /**
      * The number of mipmap levels.
@@ -74,12 +66,14 @@ export interface ITexture2D extends IContent {
     readonly mipLevels: number;
 
     /**
-     * The event that is raised when the texture is disposed.
+     * Adds a listener that is called when the texture is disposed.
+     * @param event The listener. Receives the disposed texture.
      */
     addOnDisposedListener(event: (obj: ITexture2D) => void): void;
 
     /**
-     * The event that is raised when the texture is disposed.
+     * Removes a listener added with {@link addOnDisposedListener}. Does nothing if it was not added.
+     * @param event The listener to remove.
      */
     removeOnDisposedListener(event: (obj: ITexture2D) => void): void;
 
@@ -94,7 +88,8 @@ export interface ITexture2D extends IContent {
     getTextureView(textureFormat: TextureFormat): ITextureView2D;
 
     /**
-     * Initializes the texture.
+     * Initializes the texture: creates the native texture and uploads the data. Factories call it for you.
+     * @throws Error when the texture is already initialized or disposed.
      */
     initialize(): void;
 

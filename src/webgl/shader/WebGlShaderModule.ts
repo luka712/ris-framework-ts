@@ -7,13 +7,15 @@ import {GlslShaderModuleContent, type InternalShader} from "../../api/content/Sh
 const MODULE_INCLUDE_KEYWORD = "#include";
 
 /**
- * The WebGL shader module.
+ * The WebGL shader module: a linked GLSL program built from a {@link GlslShaderModuleContent} entry.
+ * Expands full-line `#include "path"` lines, then replaces `##KEY##` tokens.
  */
 export class WebGlShaderModule implements IShaderModule {
 
     private readonly _graphicsDevice: WebGlGraphicsDevice;
     private readonly _gl: WebGL2RenderingContext;
-    private readonly _modules: { [id: string]: InternalShader } = {};
+    /** Resolved include paths, cached on this instance. By default, empty. The shared registry is not modified. */
+    private readonly _modules: { [path: string]: InternalShader } = {};
     private readonly _moduleRegex = new RegExp(
         `^\\s*${MODULE_INCLUDE_KEYWORD}\\s+"([^"]+)"\\s*;?\\s*$`,
         "gm",
@@ -21,10 +23,11 @@ export class WebGlShaderModule implements IShaderModule {
     private _program?: WebGLProgram;
 
     /**
-     * The constructor of the WebGL shader module.
-     * @param framework The framework.
-     * @param shaderFilePath
-     * @param keyValueDictionary
+     * The constructor of the WebGL shader module. Compiles and links the program.
+     * @param framework The framework. Its graphics device must be a WebGL2 device.
+     * @param shaderFilePath Key in {@link GlslShaderModuleContent}, for example `unlit_material`.
+     * @param keyValueDictionary Optional `##KEY##` names to numbers. By default, omitted, so no token is replaced.
+     * @throws Error when the shader id or an `#include` is unknown, or compiling or linking fails.
      */
     public constructor(framework: IFramework, shaderFilePath: string, keyValueDictionary?: { [id: string]: number }) {
         this._graphicsDevice = framework.renderer.graphicsDevice as WebGlGraphicsDevice;
@@ -39,46 +42,42 @@ export class WebGlShaderModule implements IShaderModule {
     public nativeHandle?: any;
 
     /**
-     * The program of this shader module
+     * The linked WebGL program of this shader module. Undefined after {@link dispose}.
      */
     public get program(): WebGLProgram | null | undefined {
         return this._program;
     }
 
     /**
-     * Loads the shader module code from path.
-     * @param path The path.
+     * Loads the included GLSL source for `path`.
+     * @param path The path inside `#include "path"`.
+     * @returns That entry's `shader` text.
+     * @throws Error when no entry has this `path`, or its `shader` is absent.
      * @private
      */
     private _loadModule(path: string): string {
 
-        let module = this._modules[path];
-
-        if (module) {
-            if (module.shader === undefined) {
-                throw new Error(`Module "${path}" not found.`);
-            }
-            return module.shader;
+        const cached = this._modules[path];
+        if (cached?.shader !== undefined) {
+            return cached.shader;
         }
 
         for (const id in GlslShaderModuleContent) {
-            module = GlslShaderModuleContent[id];
-            (module as unknown as Record<string, InternalShader>)[path] = module;
-            if (module.path === path) {
-                if (module.shader === undefined) {
-                    throw new Error(`Module "${path}" not found.`);
-                }
+            const module = GlslShaderModuleContent[id];
+            if (module.path === path && module.shader !== undefined) {
+                this._modules[path] = module;
                 return module.shader;
             }
         }
 
-        throw new Error(`Module "${path}" not found.`);
+        throw new Error(`WebGlShaderModule: #include "${path}" not found; no GlslShaderModuleContent entry has this path and a shader.`);
     }
 
     /**
-     * Injects modules to the shader.
+     * Replaces each full-line `#include "path"` with that module's source.
      * @param shaderSource The shader source.
-     * @private The source with modules.
+     * @returns The source with modules.
+     * @private
      */
     private _injectModules(shaderSource: string): string {
 
@@ -92,6 +91,13 @@ export class WebGlShaderModule implements IShaderModule {
         return shaderSource;
     }
 
+    /**
+     * Builds the program for `shaderFilePath`: expands includes, replaces `##KEY##` tokens, compiles and links.
+     * @param shaderFilePath Key in {@link GlslShaderModuleContent}.
+     * @param keyValueDictionary Optional replacements. By default, omitted.
+     * @returns The linked program.
+     * @private
+     */
     private _loadShaders(shaderFilePath: string, keyValueDictionary?: { [id: string]: number }): WebGLProgram {
 
         const internalShader = GlslShaderModuleContent[shaderFilePath];
@@ -102,10 +108,10 @@ export class WebGlShaderModule implements IShaderModule {
             const vertexSource = internalShader.vertex;
             const fragmentSource = internalShader.fragment;
             if (!vertexSource) {
-                throw new Error(`Vertex shader source is missing for ${shaderFilePath}.`);
+                throw new Error(`WebGlShaderModule: the vertex shader source is missing for '${shaderFilePath}'.`);
             }
             if (!fragmentSource) {
-                throw new Error(`Fragment shader source is missing for ${shaderFilePath}.d`)
+                throw new Error(`WebGlShaderModule: the fragment shader source is missing for '${shaderFilePath}'.`);
             }
             vertexShaderSource = vertexSource;
             fragmentShaderSource = fragmentSource;
@@ -115,7 +121,7 @@ export class WebGlShaderModule implements IShaderModule {
 
         } else {
 
-            throw new Error("Not implemented");
+            throw new Error(`WebGlShaderModule: GLSL shader '${shaderFilePath}' is not a built-in shader (GlslShaderModuleContent); loading shaders from files is not implemented for WebGL2 yet.`);
 
             // TODO: THIS API SUCKS, WE NEED BETTER WAY TO LOAD SHADER
 

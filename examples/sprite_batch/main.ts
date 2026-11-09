@@ -72,7 +72,7 @@ runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
             drawRect.height = parrots.size[1];
             // TextureFormat is a string enum, so the value is the enum name.
             console.log(`[sprite_batch] kodim23_etc1s.ktx2: format ${parrots.textureFormat}, `
-                + `size ${parrots.size[0]}×${parrots.size[1]}, native size ${parrots.nativeSize[0]}×${parrots.nativeSize[1]}`);
+                + `size ${parrots.size[0]}×${parrots.size[1]}`);
             logOutput(framework);
             status.textContent = `Loaded kodim23_etc1s.ktx2 (${parrots.size[0]}×${parrots.size[1]}, ${parrots.textureFormat}).`;
         } catch (error) {

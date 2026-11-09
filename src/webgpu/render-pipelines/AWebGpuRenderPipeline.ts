@@ -79,7 +79,7 @@ export abstract class AWebGpuRenderPipeline implements IRenderPipeline {
         depthStencilFormat?: TextureFormat): void {
 
         if (!this.vertexBufferLayouts || this.vertexBufferLayouts.length === 0) {
-            throw new Error("At least one vertex buffer layout must be provided for the render pipeline.");
+            throw new Error(`AWebGpuRenderPipeline '${label}': vertexBufferLayouts is empty; at least one vertex buffer layout must be provided for the render pipeline.`);
         }
         const device = this._graphicsDevice.device;
         this._pipelineLayout = WebGpuUtilities.pipelineLayout.create(device, bindGroupLayouts, `${label} layout`);

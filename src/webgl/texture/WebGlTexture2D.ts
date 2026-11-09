@@ -6,7 +6,7 @@ import {
     type ITextureDescriptor, TextureFormat,
 } from "../../api";
 import type {WebGlGraphicsDevice} from "../WebGlGraphicsDevice.ts";
-import {ATexture2D} from "../../core/rendering/texture/texture.ts";
+import {ATexture2D} from "../../api/rendering/texture/ATexture2D.ts";
 import {vec2} from "gl-matrix";
 
 /**
@@ -23,7 +23,7 @@ export class WebGlTexture2D extends ATexture2D {
 
     /**
      * The constructor.
-     * @param _framework The framework instance.
+     * @param framework The framework instance.
      * @param textureDescriptor The texture descriptor.
      */
     constructor(
@@ -37,13 +37,13 @@ export class WebGlTexture2D extends ATexture2D {
     }
 
     /**
-     * The @{link WebGL2RenderingContext}
+     * The {@link WebGL2RenderingContext} of the framework's graphics device.
      * @internal
      */
     public readonly gl: WebGL2RenderingContext;
 
     /**
-     * Gets the underlying WebGL texture.
+     * Gets the underlying WebGL texture (a `TEXTURE_2D`). Null-asserted; only valid after {@link initialize} and before {@link dispose}.
      * @returns The WebGL texture.
      */
     public get glTexture(): WebGLTexture {
@@ -52,11 +52,7 @@ export class WebGlTexture2D extends ATexture2D {
 
     /** @inheritdoc */
     public initialize(): void {
-        if (this._state == State.INITIALIZED) {
-            throw new Error("Texture is already initialized.");
-        } else if (this._state == State.DISPOSED) {
-            throw new Error("Texture is already disposed.");
-        }
+        this._validateState();
 
         if (TextureUtilities.isCompressedTextureFormat(this.textureFormat)) {
             this._glTexture = WebGlUtilities.texture.createCompressedTexture2D(

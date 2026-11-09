@@ -144,7 +144,7 @@ export class WebGpuConverter {
             case TextureFormat.ASTC_12X12_UNORM_SRGB:
                 return "astc-12x12-unorm-srgb";
             default:
-                throw new Error(`Texture format ${format} is not implemented for WebGPU.`);
+                throw new Error(`WebGpuConverter.convertTextureFormat: texture format ${format} is not implemented for WebGPU.`);
         }
     }
 
@@ -221,7 +221,7 @@ export class WebGpuConverter {
             case BlendFactor.ONE_MINUS_SRC_ALPHA:
                 return "one-minus-src-alpha";
             default:
-                throw new Error(`Blend factor ${factor} is not implemented for WebGPU.`);
+                throw new Error(`WebGpuConverter.convertBlendFactor: blend factor ${factor} is not implemented for WebGPU.`);
         }
     }
 
@@ -239,7 +239,7 @@ export class WebGpuConverter {
             case BlendOperation.MAX:
                 return "max";
             default:
-                throw new Error(`Blend operation ${operation} is not implemented for WebGPU.`);
+                throw new Error(`WebGpuConverter.convertBlendOperation: blend operation ${operation} is not implemented for WebGPU.`);
         }
     }
 
@@ -288,7 +288,7 @@ export class WebGpuConverter {
             case VertexFormat.FLOAT_32X4:
                 return "float32x4";
             default:
-                throw new Error(`Vertex format ${VertexFormat[format]} is not implemented for WebGPU.`);
+                throw new Error(`WebGpuConverter.convertVertexFormat: vertex format ${VertexFormat[format]} is not implemented for WebGPU.`);
         }
     }
 

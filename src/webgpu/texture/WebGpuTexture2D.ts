@@ -7,12 +7,11 @@ import {
     type ITextureDescriptor,
     type TextureFormat,
 } from "../../api/index.ts";
-import { ATexture2D } from "../../core/rendering/texture/texture.ts";
+import { ATexture2D } from "../../api/rendering/texture/ATexture2D.ts";
 import type { WebGpuGraphicsDevice } from "../WebGpuGraphicsDevice.ts";
 import { WebGpuConverter } from "../utilities/WebGpuConverter.ts";
 import { WebGpuTextureView } from "./WebGpuTextureView.ts";
 import { WebGpuUtilities } from "../utilities/WebGpuUtilities.ts";
-import { vec2 } from "gl-matrix";
 
 /**
  * The WebGPU 2D texture.
@@ -64,7 +63,7 @@ export class WebGpuTexture2D extends ATexture2D {
         const isCompressed = TextureUtilities.isCompressedTextureFormat(this.textureFormat);
 
         if (this._generateMipMaps) {
-            throw new Error("Not implemented!");
+            throw new Error(`WebGpuTexture2D.initialize: mipmap generation (generateMipmaps) is not implemented for WebGPU yet ('${this.label ?? this.id}'). Provide the mip levels in ITextureDescriptor.data instead.`);
         }
 
         const device = this._graphicsDevice.device;
@@ -73,7 +72,7 @@ export class WebGpuTexture2D extends ATexture2D {
 
         if (isCompressed) {
             if (hasImages) {
-                throw new Error("WebGpuTexture2D: compressed formats need Uint8Array data, not images.");
+                throw new Error(`WebGpuTexture2D.initialize: compressed format ${this.textureFormat} needs Uint8Array data, not images ('${this.label ?? this.id}').`);
             }
 
             // Compressed formats need a block-aligned base size (e.g. ASTC 10x5 at 768x512 -> 770x515).
@@ -90,7 +89,6 @@ export class WebGpuTexture2D extends ATexture2D {
                 this.viewFormats);
 
             this._gpuTexture = result.texture;
-            this._nativeSize = vec2.fromValues(result.size.width, result.size.height!);
         }
         else {
             this._gpuTexture = WebGpuUtilities.texture.create(
@@ -108,8 +106,8 @@ export class WebGpuTexture2D extends ATexture2D {
 
         this._state = State.INITIALIZED;
 
-        let width = this.nativeSize[0];
-        let height = this.nativeSize[1];
+        let width = this.size[0];
+        let height = this.size[1];
         this._vramSize = 0;
         for (let i = 0; i < this.mipLevels; i++) {
             this._vramSize += TextureUtilities.getVRamSize(this.textureFormat, width, height);

@@ -244,7 +244,7 @@ export class TextureUtilities {
 
     /**
      * Gets the number of mip levels for the given width and height.
-     *
+     * This is the full chain down to 1x1: `floor(log2(max(width, height))) + 1`, the same as `gl.generateMipmap` produces.
      * @param width The width.
      * @param height The height.
      * @returns The number of mip levels.
@@ -254,17 +254,36 @@ export class TextureUtilities {
     }
 
     /**
-     * Gets the number of VRAM reserved for a given texture format of a given size.
+     * Inspects data array which contains layers and mipmap levels and finds maximum number of mipmaps.
+     * Maximum number is maximum mip levels of inspected layers.
+     * @param data The data per layer per mip level.
+     * @returns The largest mip count of any layer, at least `1`. `1` when there is no data.
+     */
+    public static maxMipLevels(data?: Uint8Array[][] | HTMLImageElement[][]) {
+        if(!data) {
+            return 1;
+        }
+
+        let maxMipLevels = 1;
+        for (const layer of data) {
+            maxMipLevels = Math.max(maxMipLevels, layer?.length ?? 0);
+        }
+        return maxMipLevels;
+    }
+
+    /**
+     * Gets the approximate VRAM size of one mip level of the given format and size. Compressed sizes are aligned to the block size.
      *
      * @param textureFormat The texture format.
-     * @param width Texture width.
-     * @param height Texture height.
-     * @returns The number of bytes per pixel.
+     * @param width Texture width in pixels.
+     * @param height Texture height in pixels.
+     * @returns The size in bytes.
+     * @throws Error when the format has no known VkFormat mapping.
      */
     public static getVRamSize(textureFormat: TextureFormat, width: number, height: number): number {
         let vkFormat = this._textureFormatVkFormat[textureFormat];
         if (!vkFormat) {
-            throw new Error(`Not implemented: ${textureFormat}`);
+            throw new Error(`TextureUtilities.getVRamSize: Not implemented: ${textureFormat} (no VkFormat mapping).`);
         }
 
         const texInfo = TextureFormatInfo.fromVkFormat(vkFormat);
@@ -283,11 +302,12 @@ export class TextureUtilities {
      * Converts the VkFormat to TextureFormat.
      * @param vkFormat The VK format.
      * @returns The texture format.
+     * @throws Error when the VkFormat has no texture format mapping.
      */
     public static convertVkFormatToTextureFormat(vkFormat: VkFormat): TextureFormat {
         const format = this._vkFormatTextureFormat[vkFormat];
         if (!format) {
-            throw new Error(`Not implemented: ${vkFormat}`);
+            throw new Error(`TextureUtilities.convertVkFormatToTextureFormat: Not implemented: ${vkFormat} (no texture format mapping).`);
         }
         return format;
     }
@@ -296,11 +316,12 @@ export class TextureUtilities {
      * Maps the Texture Format to Ktx Transcode Format.
      * @param textureFormat The texture format.
      * @returns The Ktx Transcode Format.
+     * @throws Error when the texture format is not a KTX2 transcode target.
      */
     public static convertTextureFormatToKtxTranscodeFormat(textureFormat: TextureFormat): KtxTranscodeFormat {
         const format = this._mapTextureFormatKtxTranscodeFormat[textureFormat];
         if (!format) {
-            throw new Error(`Not implemented: ${textureFormat}`);
+            throw new Error(`TextureUtilities.convertTextureFormatToKtxTranscodeFormat: Not implemented: ${textureFormat} (not a KTX2 transcode target).`);
         }
         return format;
     }
@@ -309,11 +330,12 @@ export class TextureUtilities {
      * Converts the Ktx Transcode Format to VkFormat.
      * @param transcodeFormat The KTX transcode format.
      * @returns The VkFormat.
+     * @throws Error when the transcode format has no VkFormat mapping.
      */
     public static convertKtxTranscodeFormatToVkFormat(transcodeFormat: KtxTranscodeFormat): VkFormat {
         const format = this._mapKtxTranscodeFormatVkFormat[transcodeFormat];
         if (!format) {
-            throw new Error(`Not implemented: ${transcodeFormat}`);
+            throw new Error(`TextureUtilities.convertKtxTranscodeFormatToVkFormat: Not implemented: ${transcodeFormat} (no VkFormat mapping).`);
         }
         return format;
     }

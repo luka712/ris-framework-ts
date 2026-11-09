@@ -69,7 +69,7 @@ export class SpriteBatch implements ISpriteBatch {
 
     private _validateTexture(texture?: ITexture2D) {
         if (!texture) {
-            throw new Error(`Texture cannot be empty.`);
+            throw new Error(`SpriteBatch: texture cannot be empty; pass an initialized ITexture2D (got ${texture}).`);
         }
     }
 
@@ -183,11 +183,10 @@ export class SpriteBatch implements ISpriteBatch {
             sourceRect.height = texture.size[1];
         }
 
-        // UVs are relative to the native (GPU) size, so padding of block-compressed textures is not sampled.
-        const u0 = sourceRect.x / texture.nativeSize[0];
-        const v0 = sourceRect.y / texture.nativeSize[1];
-        const u1 = (sourceRect.x + sourceRect.width) / texture.nativeSize[0];
-        const v1 = (sourceRect.y + sourceRect.height) / texture.nativeSize[1];
+        const u0 = sourceRect.x / texture.size[0];
+        const v0 = sourceRect.y / texture.size[1];
+        const u1 = (sourceRect.x + sourceRect.width) / texture.size[0];
+        const v1 = (sourceRect.y + sourceRect.height) / texture.size[1];
 
         this._tempPosition[0] = drawRect.x;
         this._tempPosition[1] = drawRect.y;

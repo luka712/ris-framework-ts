@@ -1,4 +1,5 @@
 export * from "./ITexture2D.ts";
+export * from "./ITexture2DArray.ts";
 export * from "./TextureUsage.ts";
 export * from "./ITextureViewDescriptor.ts";
 export * from "./TextureViewDimension.ts";

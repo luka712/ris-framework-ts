@@ -11,6 +11,9 @@ class TestFactory extends ATextureFactory {
         this.last = descriptor;
         return {} as ITexture2D;
     }
+    protected _createAndInitializeTexture2DArray(): never {
+        throw new Error("Not implemented.");
+    }
 }
 
 function createFactory(rendererColorSpace = OutputColorSpace.NONE, bc = true) {

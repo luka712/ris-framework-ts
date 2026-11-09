@@ -1,4 +1,4 @@
-/**/import type { vec2 } from "gl-matrix";
+import type { vec2 } from "gl-matrix";
 import {CanvasBounds, type ICanvasManager} from "../index.ts";
 
 /**
@@ -24,32 +24,41 @@ export class CanvasManager implements ICanvasManager {
     }
   }
 
+  /** @inheritdoc */
   handleSwapChain = true;
+    /** @inheritdoc */
     canvasBounds = new CanvasBounds();
+    /** @inheritdoc */
     title = "";
+    /** @inheritdoc */
     addUpdateListener(event: () => void): void {
         this._updateCallbacks.push(event);
     }
+    /** @inheritdoc */
     removeUpdateListener(event: () => void): void {
         const index = this._updateCallbacks.indexOf(event);
         if (index >= 0) {
             this._updateCallbacks.splice(index, 1);
         }
     }
+    /** @inheritdoc */
     addRenderListener(event: () => void): void {
         this._renderCallbacks.push(event);
     }
+    /** @inheritdoc */
     removeRenderListener(event: () => void): void {
         const index = this._renderCallbacks.indexOf(event);
         if (index >= 0) {
             this._renderCallbacks.splice(index, 1);
         }
     }
+    /** Not implemented yet; always throws. */
     addOnResizeListener(_event: (arg1: ICanvasManager, arg2: vec2) => void): void {
-        throw new Error("Method not implemented.");
+        throw new Error("CanvasManager.addOnResizeListener: Not implemented.");
     }
+    /** Not implemented yet; always throws. */
     removeOnResizeListener(_event: (arg1: ICanvasManager, arg2: vec2) => void): void {
-        throw new Error("Method not implemented.");
+        throw new Error("CanvasManager.removeOnResizeListener: Not implemented.");
     }
 
     /** Stops the event loop, drops all callbacks and removes the canvas when this manager created it. */

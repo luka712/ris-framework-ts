@@ -21,6 +21,7 @@ export class WebGLIndexBuffer implements IIndexBuffer {
     /**
      * The constructor.
      * @param framework The framework.
+     * @param data The indices. Uploaded as `Uint16Array` when every index fits, otherwise as `Uint32Array`.
      * @param label An optional label for the index buffer, which can be used for debugging purposes.
      */
     constructor(framework: IFramework, data: ArrayLike<number>, label?: string) {
@@ -94,7 +95,7 @@ export class WebGLIndexBuffer implements IIndexBuffer {
             this._type = IndexBufferType.UINT_32;
             this._elementByteSize = Uint32Array.BYTES_PER_ELEMENT;
         } else {
-            throw new Error("Invalid data type for index buffer. Expected Uint16Array or Uint32Array.");
+            throw new Error(`WebGLIndexBuffer: invalid index data type ${(typedData as object)?.constructor?.name}; expected Uint16Array or Uint32Array.`);
         }
 
         this._indicesCount = data.length;

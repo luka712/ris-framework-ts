@@ -15,10 +15,10 @@ function createFramework() {
     return {framework, device, createTexture};
 }
 
-describe("WebGpuTexture2D native size", () => {
+describe("WebGpuTexture2D size", () => {
     afterEach(() => vi.unstubAllGlobals());
 
-    it("keeps the logical size and stores the block-aligned GPU size as native size", () => {
+    it("keeps size as the descriptor size while the GPU texture is block-aligned", () => {
         vi.stubGlobal("GPUTextureUsage", {COPY_SRC: 1, COPY_DST: 2, TEXTURE_BINDING: 4, STORAGE_BINDING: 8, RENDER_ATTACHMENT: 16});
         const {framework, createTexture} = createFramework();
         const texture = new WebGpuTexture2D(framework, {
@@ -30,11 +30,10 @@ describe("WebGpuTexture2D native size", () => {
         texture.initialize();
 
         expect(Array.from(texture.size)).toEqual([768, 512]);
-        expect(Array.from(texture.nativeSize)).toEqual([770, 515]);
         expect(createTexture.mock.calls[0][0].size).toMatchObject({width: 770, height: 515});
     });
 
-    it("uses the logical size as native size for uncompressed formats", () => {
+    it("uses the descriptor size for uncompressed formats", () => {
         vi.stubGlobal("GPUTextureUsage", {COPY_SRC: 1, COPY_DST: 2, TEXTURE_BINDING: 4, STORAGE_BINDING: 8, RENDER_ATTACHMENT: 16});
         const {framework} = createFramework();
         const texture = new WebGpuTexture2D(framework, {
@@ -45,6 +44,5 @@ describe("WebGpuTexture2D native size", () => {
         texture.initialize();
 
         expect(Array.from(texture.size)).toEqual([3, 2]);
-        expect(Array.from(texture.nativeSize)).toEqual([3, 2]);
     });
 });

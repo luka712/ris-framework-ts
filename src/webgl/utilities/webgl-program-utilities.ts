@@ -13,7 +13,7 @@ export class WebGLProgramUtilities {
     public create(gl: WebGL2RenderingContext, vertexShader: WebGLShader, fragmentShader: WebGLShader): WebGLProgram {
         const program = gl.createProgram();
         if (!program) {
-            throw new Error("Failed to create program.");
+            throw new Error("WebGLProgramUtilities.create: gl.createProgram() returned null (the WebGL context may be lost).");
         }
         gl.attachShader(program, vertexShader);
         gl.attachShader(program, fragmentShader);
@@ -21,7 +21,7 @@ export class WebGLProgramUtilities {
         if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
             const infoLog = gl.getProgramInfoLog(program);
             gl.deleteProgram(program);
-            throw new Error(`Failed to link program: ${infoLog}`);
+            throw new Error(`WebGLProgramUtilities.create: failed to link program: ${infoLog}`);
         }
         return program;
     }

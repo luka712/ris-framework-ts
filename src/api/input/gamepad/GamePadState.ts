@@ -11,8 +11,8 @@ export class GamePadState {
     /**
      * The constructor.
      * @param isConnected - Set to true if gamepad is connected.
-     * @param downButtons - The down buttons.
-     * @param releasedButtons - The released buttons.
+     * @param _downButtons - The down buttons.
+     * @param _releasedButtons - The released buttons.
      * @param leftThumbstick - The left thumbstick position.
      * @param rightThumbstick - The right thumbstick position.
      */

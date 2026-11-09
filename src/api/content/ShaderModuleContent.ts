@@ -4,6 +4,8 @@ import spriteVS from "../../../shaders/glsl/sprite_vs.glsl?raw";
 import spriteFS from "../../../shaders/glsl/sprite_fs.glsl?raw";
 import inspectTextureMipsVS from "../../../shaders/glsl/inspect/inspect_texture_mips_vs.glsl?raw";
 import inspectTextureMipsFS from "../../../shaders/glsl/inspect/inspect_texture_mips_fs.glsl?raw";
+import inspectTextureArrayVS from "../../../shaders/glsl/inspect/inspect_texture_array_vs.glsl?raw";
+import inspectTextureArrayFS from "../../../shaders/glsl/inspect/inspect_texture_array_fs.glsl?raw";
 import unlitMaterialVS from "../../../shaders/glsl/unlit_material_vs.glsl?raw";
 import unlitMaterialFS from "../../../shaders/glsl/unlit_material_fs.glsl?raw";
 import forwardBlinnPhongVS from "../../../shaders/glsl/forward_blinn_phong_material_vs.glsl?raw";
@@ -11,9 +13,8 @@ import forwardBlinnPhongFS from "../../../shaders/glsl/forward_blinn_phong_mater
 import colorConversion from "../../../shaders/glsl/modules/color_conversion.glsl?raw";
 
 
-/** The representation of internal shader.*/
 /**
- * One GLSL or WGSL registry entry.
+ * One built-in GLSL or WGSL shader registry entry.
  * `path` is set only for an importable module. By default, absent, and the entry is a program.
  * `vertex` and `fragment` are WebGL sources. By default, absent. WGSL programs use `shader` instead.
  * `shader` is a WGSL program or a module body. By default, absent.
@@ -27,17 +28,21 @@ export interface InternalShader {
     /** The vertex shader. Used by WebGL2 shaders. By default, absent. */
     vertex?: string;
 
-    /** The fragment shader. Used by WebGL2 shader. By default, absent. */
+    /** The fragment shader. Used by WebGL2 shaders. By default, absent. */
     fragment?: string;
 
-    /** The shader or shader module. Used by WebGPU or shaders module for both apis. By default, absent. */
+    /** The WGSL program, or a module body (GLSL or WGSL) pulled in with `#include`. By default, absent. */
     shader?: string;
 
     /** The reflection data. By default, absent. Built-in GLSL entries set `{}`. */
     reflection?: any; // This will be type in the future.
 }
 
-
+/**
+ * Built-in GLSL programs and modules keyed by shader id.
+ * Programs set `vertex` and `fragment`; modules set `path` and `shader` and are pulled in with `#include "<path>"`.
+ * @internal
+ */
 export const GlslShaderModuleContent : {[id: string]: InternalShader} = {
 
     "main_render_target": {
@@ -52,10 +57,16 @@ export const GlslShaderModuleContent : {[id: string]: InternalShader} = {
         "reflection": {}
     },
 
-    "inspect_texture_mips": {
-        "vertex": inspectTextureMipsVS,
-        "fragment": inspectTextureMipsFS,
-        "reflection": {}
+    inspect_texture_mips: {
+        vertex: inspectTextureMipsVS,
+        fragment: inspectTextureMipsFS,
+        reflection: {}
+    },
+
+    inspect_texture_array: {
+        vertex: inspectTextureArrayVS,
+        fragment: inspectTextureArrayFS,
+        reflection: {}
     },
 
     "unlit_material": {
@@ -85,13 +96,10 @@ import inspectTextureMips from "../../../shaders/wgsl/inspect/inspect_texture_mi
 import colorConversionWgsl from "../../../shaders/wgsl/modules/color_conversion.wgsl?raw";
 
 /**
- * The framework's built-in WGSL shaders, keyed by the same ids the WebGL backend uses where one exists.
- * Every shader has `main_vs` and `main_fs` entry points.
+ * The framework's built-in WGSL programs and modules, keyed by the same ids the WebGL backend uses where one exists.
+ * `shader` is the WGSL source; every program has `main_vs` and `main_fs` entry points.
+ * Modules also set `path` and are pulled in with `#include "<path>"`. `vertex` and `fragment` are absent on these entries.
  * @internal
- */
-/**
- * Built-in WGSL programs keyed by shader id.
- * `shader` is the WGSL source. By default, `path`, `vertex`, and `fragment` are absent on these entries.
  */
 export const WgslShaderModuleContent: { [id: string]: InternalShader } = {
     main_frame_buffer: {

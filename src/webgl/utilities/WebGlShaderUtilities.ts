@@ -14,14 +14,14 @@ export class WebGlShaderUtilities {
     public create(gl: WebGL2RenderingContext, shaderSource: string ,shaderType : GLenum): WebGLShader {
         const shader = gl.createShader(shaderType);
         if (!shader) {
-            throw new Error("Failed to create shader.");
+            throw new Error(`WebGlShaderUtilities.create: gl.createShader(${shaderType}) returned null (invalid shader type, or the WebGL context is lost).`);
         }
         gl.shaderSource(shader, shaderSource);
         gl.compileShader(shader);
         if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
             const infoLog = gl.getShaderInfoLog(shader);
             gl.deleteShader(shader);
-            throw new Error(`Failed to compile shader: ${infoLog}`);
+            throw new Error(`WebGlShaderUtilities.create: failed to compile ${shaderType == gl.VERTEX_SHADER ? "vertex" : shaderType == gl.FRAGMENT_SHADER ? "fragment" : shaderType} shader: ${infoLog}`);
         }
         return shader;
     }

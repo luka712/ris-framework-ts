@@ -1,5 +1,6 @@
 #version 300 es
 precision mediump float;
+precision mediump sampler2DArray;
 
 in vec4 v_color;
 in vec2 v_texCoords;
@@ -17,9 +18,9 @@ uniform sampler2DArray u_textureArray;
 void main() {
     vec3 texArrayCoords = vec3(v_texCoords, u_layer);
 
-    if(u_inspectLod > 0.5f) {
-        o_outputColor = textureLod(u_texture, texArrayCoords, mipLevel) * v_color;
+    if (u_inspectLod > 0.5) {
+        o_outputColor = textureLod(u_textureArray, texArrayCoords, u_mipLevel) * v_color;
     } else {
-        o_outputColor = texture(u_textureArray, texArrayCoords);
+        o_outputColor = texture(u_textureArray, texArrayCoords) * v_color;
     }
 }

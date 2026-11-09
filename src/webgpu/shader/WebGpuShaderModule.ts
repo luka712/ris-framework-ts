@@ -60,7 +60,7 @@ export class WebGpuShaderModule implements IShaderModule {
      * Loads the included WGSL source for `path`.
      * @param path The path inside `#include "path"`. The content id is not a path.
      * @returns That entry's `shader` text.
-     * @throws `Module "<path>" not found.` when no entry has this `path`, or its `shader` is absent.
+     * @throws Error when no {@link WgslShaderModuleContent} entry has this `path`, or its `shader` is absent.
      */
     private _loadModule(path: string): string {
         let module = this._modules[path];
@@ -76,7 +76,7 @@ export class WebGpuShaderModule implements IShaderModule {
             }
         }
 
-        throw new Error(`Module "${path}" not found.`);
+        throw new Error(`WebGpuShaderModule: #include "${path}" not found; no WgslShaderModuleContent entry has this path and a shader.`);
     }
 
     /**
@@ -113,12 +113,12 @@ export class WebGpuShaderModule implements IShaderModule {
      * @param id Key in {@link WgslShaderModuleContent}.
      * @param keyValueDictionary Optional replacements. By default, omitted.
      * @returns The created shader module.
-     * @throws `WGSL shader '<id>' is not implemented for WebGPU.` when `id` is missing or `shader` is absent.
+     * @throws Error when `id` is missing from {@link WgslShaderModuleContent} or its `shader` is absent.
      */
     private _loadShader(device: GPUDevice, id: string, keyValueDictionary?: {[id: string]: number}): GPUShaderModule {
         let code = WgslShaderModuleContent[id]?.shader;
         if (code === undefined) {
-            throw new Error(`WGSL shader '${id}' is not implemented for WebGPU.`);
+            throw new Error(`WebGpuShaderModule: WGSL shader '${id}' is not implemented for WebGPU (no WgslShaderModuleContent entry with a shader).`);
         }
 
         code = this._injectModules(code);

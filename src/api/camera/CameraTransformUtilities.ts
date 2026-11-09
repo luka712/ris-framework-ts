@@ -128,9 +128,17 @@ export class CameraAim {
     private _hasTarget = false;
     private readonly _up = vec3.fromValues(0, 1, 0);
 
+    /**
+     * The constructor.
+     * @param _transform Returns the camera transform. Called on every access, so a replaced transform is picked up.
+     */
     public constructor(private readonly _transform: () => TransformNode) {
     }
 
+    /**
+     * Moves the camera to `eye` (world space). Re-aims at the stored target, if any.
+     * @param eye The eye position.
+     */
     public setEye(eye: vec3): void {
         CameraTransformUtilities.setWorldPosition(this._transform(), eye);
         if (this._hasTarget) {
@@ -138,17 +146,31 @@ export class CameraAim {
         }
     }
 
+    /**
+     * Gets the eye (world position) from the transform.
+     * @param out The output vector. By default, a new vector.
+     * @returns `out`.
+     */
     public getEye(out: vec3 = vec3.create()): vec3 {
         const m = this._transform().modelMatrix;
         return vec3.set(out, m[12], m[13], m[14]);
     }
 
+    /**
+     * Stores `target` and aims the camera at it. The camera keeps aiming at it when the eye or up changes.
+     * @param target The target in world space.
+     */
     public setTarget(target: vec3): void {
         vec3.copy(this._target, target);
         this._hasTarget = true;
         this.aim();
     }
 
+    /**
+     * Gets the stored target, or, without one, the point one unit in front of the eye.
+     * @param out The output vector. By default, a new vector.
+     * @returns `out`.
+     */
     public getTarget(out: vec3 = vec3.create()): vec3 {
         if (this._hasTarget) {
             return vec3.copy(out, this._target);
@@ -158,6 +180,10 @@ export class CameraAim {
         return vec3.set(out, m[12] + _f[0], m[13] + _f[1], m[14] + _f[2]);
     }
 
+    /**
+     * Sets the up vector. Re-aims at the stored target, if any.
+     * @param up The up vector. Defaults to `[0, 1, 0]` until set.
+     */
     public setUp(up: vec3): void {
         vec3.copy(this._up, up);
         if (this._hasTarget) {
@@ -165,6 +191,11 @@ export class CameraAim {
         }
     }
 
+    /**
+     * Gets the up vector.
+     * @param out The output vector. By default, a new vector.
+     * @returns `out`.
+     */
     public getUp(out: vec3 = vec3.create()): vec3 {
         return vec3.copy(out, this._up);
     }

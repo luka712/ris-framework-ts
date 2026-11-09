@@ -4,7 +4,7 @@ import {
     State,
     type TextureFormat,
     TextureUsage,
-} from "../../../api";
+} from "../../index.ts";
 import { vec2 } from "gl-matrix";
 
 /**
@@ -22,23 +22,33 @@ export abstract class ATexture2D implements ITexture2D {
      */
     protected readonly _textureViews: Map<TextureFormat, ITextureView2D> = new Map();
 
+    /** The base (mip 0) size [width, height] in pixels. Returned by {@link size}. */
     protected _baseSize: vec2;
-    protected _nativeSize: vec2;
+    /** The native texture handle (backend specific). Returned by {@link handle}. */
     protected _handle: any;
+    /** The lifecycle state. Defaults to {@link State.CREATED}. */
     protected _state: State = State.CREATED;
+    /** The approximate VRAM size in bytes. Set by the backend in {@link initialize}. Defaults to `0`. */
     protected _vramSize = 0;
+    /** Whether the backend generates mipmaps. Only true when requested and no mip levels are provided. Defaults to `false`. */
     protected _generateMipMaps: boolean = false;
+    /** The number of mip levels: the length of {@link _data}, or `1` without data. Backends update it when mipmaps are generated. */
     protected _mipLevels: number;
+    /** The data per mip level, from {@link ITextureDescriptor.data}. */
     protected _data?: Uint8Array[] | HTMLImageElement[];
+    /** The block size of a compressed format, from {@link ITextureDescriptor.blockSize}. Defaults to `[1, 1]`. */
     protected _blockSize: vec2;
+    /** The label, from {@link ITextureDescriptor.label}. */
     protected _label?: string;
 
+    /** The listeners raised by {@link dispose}. */
     protected _disposedListeners: ((tex: ITexture2D) => void)[] = [];
 
     /**
-     * The constructor for the ATexture2D class.
+     * The constructor.
      * @param graphicsDevice The graphics device. Used to reject `viewFormats` when {@link IGraphicsDeviceFeatures.supportsTextureView} is false.
-     * @param descriptor The texture descriptor.
+     * @param descriptor The texture descriptor. `textureFormat`, `width` and `height` are required; `width` and `height` must be greater than `0`.
+     * @throws Error when `viewFormats` are given on a device without texture views, or when the format or size is missing.
      */
     protected constructor(
         graphicsDevice: IGraphicsDevice,
@@ -54,19 +64,17 @@ export abstract class ATexture2D implements ITexture2D {
         }
 
         if (!descriptor.textureFormat) {
-            throw new Error("Texture format is required.");
+            throw new Error(`ATexture2D: '${descriptor.label ?? "unlabeled"}' has no textureFormat. Set ITextureDescriptor.textureFormat.`);
         }
 
         if (!descriptor.width || !descriptor.height || descriptor.width <= 0 || descriptor.height <= 0) {
-            throw new Error("Width or height cannot be undefined or zero.");
+            throw new Error(`ATexture2D: '${descriptor.label ?? "unlabeled"}' has size ${descriptor.width}x${descriptor.height}; width and height must be greater than 0.`);
         }
 
         this.id = ATexture2D._generateId();
         this.textureFormat = descriptor.textureFormat;
         this.textureUsage = descriptor.textureUsage ?? (TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST);
         this._baseSize = vec2.fromValues(descriptor.width ?? 0, descriptor.height ?? 0);
-        // By default, the GPU allocation matches the logical size. Backends that pad (e.g. WebGPU compressed) override it.
-        this._nativeSize = vec2.clone(this._baseSize);
         this._data = descriptor.data;
         this._mipLevels = this._data?.length ?? 1;
         this._generateMipMaps = (descriptor.generateMipmaps ?? false) && this._mipLevels <= 1;
@@ -135,22 +143,23 @@ export abstract class ATexture2D implements ITexture2D {
         return ATexture2D._nextId++;
     }
 
-    /** Validate state of this texture. */
+    /**
+     * Checks that the texture can still be initialized. Backends call this at the start of {@link initialize}.
+     * @throws Error when the texture is already initialized or disposed.
+     */
     protected _validateState(): void {
 
         if (this._state == State.INITIALIZED) {
-            throw new Error("Texture is already initialized.");
+            throw new Error(`Texture '${this.label ?? this.id}' is already initialized.`);
         } else if (this._state == State.DISPOSED) {
-            throw new Error("Texture is already disposed.");
+            throw new Error(`Texture '${this.label ?? this.id}' is already disposed.`);
         }
     }
 
-    /**
-     * Initializes the texture.
-     */
+    /** @inheritDoc */
     abstract initialize(): void;
 
-    /** @inheritdoc */
+    /** The current state. Same as {@link textureState}. */
     public get state(): State {
         return this._state;
     }
@@ -158,11 +167,6 @@ export abstract class ATexture2D implements ITexture2D {
     /** @inheritdoc */
     public get size(): vec2 {
         return this._baseSize;
-    }
-
-    /** @inheritdoc */
-    public get nativeSize(): vec2 {
-        return this._nativeSize;
     }
 
     /** @inheritDoc */
@@ -204,6 +208,7 @@ export abstract class ATexture2D implements ITexture2D {
     /**
      * Creates a native texture view. Called once per view format by {@link getTextureView}, which caches the result.
      * @param textureFormat The view format. Always one of {@link viewFormats}.
+     * @returns The new texture view.
      * @protected
      */
     protected abstract _createTextureView(textureFormat: TextureFormat): ITextureView2D;

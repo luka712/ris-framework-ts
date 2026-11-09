@@ -114,7 +114,7 @@ export class Mesh implements IMesh {
     private _fillColors(index: { vertexDataIndex: number, colorIndex: number }, colors: number[]): void {
 
         if (!this._vertexData) {
-            throw new Error("Vertex data is not initialized");
+            throw new Error("Mesh._fillColors: vertex data is not initialized; it is allocated when the buffers are created.");
         }
 
         let v = index.vertexDataIndex;

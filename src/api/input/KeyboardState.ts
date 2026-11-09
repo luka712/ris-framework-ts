@@ -7,8 +7,8 @@ export class KeyboardState {
 
     /**
      * The constructor.
-     * @param downKeys - The keys that are down.
-     * @param releasedKeys - The keys that are just released.
+     * @param _downKeys - The keys that are down.
+     * @param _releasedKeys - The keys that are just released.
      */
     public constructor(private readonly _downKeys: { [key: number]: boolean },
                        private readonly _releasedKeys: { [key: number]: boolean }) {

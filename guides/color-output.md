@@ -114,4 +114,4 @@ linear UNORM]
 - `src/api/rendering/render-pipelines/IMainRenderTargetRenderPipeline.ts`
 - `shaders/glsl/main_render_target_fs.glsl`, `shaders/wgsl/main_frame_buffer.wgsl`
 - `src/api/rendering/IGraphicsDeviceFeatures.ts` — `supportsTextureView`
-- `src/core/rendering/texture/texture.ts` — `ATexture2D` view cache / viewFormats gate
+- `../src/api/rendering/texture/ATexture2D.ts` — `ATexture2D` view cache / viewFormats gate

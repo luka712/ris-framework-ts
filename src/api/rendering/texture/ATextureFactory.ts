@@ -4,6 +4,7 @@ import type { ITextureFactory } from "./ITextureFactory.ts";
 import type { IFramework } from "../../IFramework.ts";
 import type { ITextureDescriptor } from "./ITextureDescriptor.ts";
 import type { ITexture2D } from "./ITexture2D.ts";
+import type {ITexture2DArray} from "./ITexture2DArray.ts";
 import { ColorSpace } from "../enums.ts";
 import { TextureFormat } from "./TextureFormat.ts";
 import { TextureUtilities } from "./TextureUtilities.ts";
@@ -28,20 +29,28 @@ export abstract class ATextureFactory implements ITextureFactory {
     protected abstract _createAndInitializeTexture(descriptor: ITextureDescriptor): ITexture2D;
 
     /**
-     * Create a texture from a KTX2 file.
-     * @param ktxTexture The ktx2 texture.
-     * @param textureFormat The desired texture format. By default, TextureFormat.UNDEFINED, which picks the format from the GPU features.
-     * @param colorSpace The color space override. By default, null, which follows the file: its DFD transfer function (sRGB or linear),
-     * or, if unspecified, the file's vkFormat (non-transcoded) or linear (transcoded).
-     * @returns The 2D texture.
+     * Creates the backend texture array (WebGL or WebGPU) from the descriptor and initializes it.
+     * @param descriptor The texture descriptor, with `layers` and `dataArray`.
+     * @returns The backend texture array.
      */
-    public createFromKtx2(ktxTexture: IKtx2Texture, textureFormat = TextureFormat.UNDEFINED, colorSpace: ColorSpace | null = null): ITexture2D {
+    protected abstract _createAndInitializeTexture2DArray(descriptor: ITextureDescriptor): ITexture2DArray;
+
+    /**
+     * Picks the final texture format of a KTX2 texture and transcodes Basis Universal data to it.
+     * Shared by {@link createFromKtx2} and {@link createTexture2DArrayFromKtx2}.
+     * @param ktxTexture The ktx2 texture. Transcoded in place when it holds Basis Universal data.
+     * @param textureFormat The desired texture format. `TextureFormat.UNDEFINED` picks the format from the GPU features.
+     * @param colorSpace The color space override. `null` follows the file.
+     * @param method The calling method, used in error messages.
+     * @returns The final texture format and its block size.
+     * @throws Error when the final format is not supported by the graphics device, or its block size is unknown.
+     * @protected
+     */
+    protected _resolveKtx2Format(ktxTexture: IKtx2Texture, textureFormat: TextureFormat, colorSpace: ColorSpace | null, method: string): { textureFormat: TextureFormat, blockSize: vec2 } {
 
         const vkFormat = ktxTexture.vkFormat;
         const requestedFormat = textureFormat;
 
-        // Ktx2 will have different cases, for now we consider simple 2d case.
-        const numLevels = ktxTexture.numLevels;
         let transcodeFormat = KtxTranscodeFormat.NO_SELECTION;
         const gpuFeatures = this._framework.graphicsDevice.features;
 
@@ -106,7 +115,7 @@ export abstract class ATextureFactory implements ITextureFactory {
 
         // The device must support the final format (the file's format, or the transcode target).
         if (!gpuFeatures.supportsTextureFormat(textureFormat!)) {
-            throw new Error(`Texture format ${textureFormat} of '${ktxTexture.filePath}' is not supported by this graphics device.`);
+            throw new Error(`ATextureFactory.${method}: texture format ${textureFormat} of '${ktxTexture.filePath}' is not supported by this graphics device (${this._framework.graphicsDevice.api}).`);
         }
 
         // After transcoding, the block size is the one of the transcoded format, not of the file's vkFormat.
@@ -115,11 +124,19 @@ export abstract class ATextureFactory implements ITextureFactory {
             : vkFormat;
         const blockSize = ktxTexture.getTextureFormatInfo(finalVkFormat);
         if (!blockSize) {
-            throw new Error(`Unknown block size for texture format ${textureFormat}.`);
+            throw new Error(`ATextureFactory.${method}: unknown block size for texture format ${textureFormat} (vkFormat ${finalVkFormat}) of '${ktxTexture.filePath}'.`);
         }
 
+        return { textureFormat: textureFormat!, blockSize: vec2.fromValues(blockSize.blockWidth, blockSize.blockHeight) };
+    }
+
+    /** @inheritDoc */
+    public createFromKtx2(ktxTexture: IKtx2Texture, textureFormat = TextureFormat.UNDEFINED, colorSpace: ColorSpace | null = null): ITexture2D {
+
+        const resolved = this._resolveKtx2Format(ktxTexture, textureFormat, colorSpace, "createFromKtx2");
+
         const data: Uint8Array[] = [];
-        for (let i = 0; i < numLevels; i++) {
+        for (let i = 0; i < ktxTexture.numLevels; i++) {
             data.push(ktxTexture.getImage(i));
         }
 
@@ -127,13 +144,48 @@ export abstract class ATextureFactory implements ITextureFactory {
             width: ktxTexture.width,
             height: ktxTexture.height,
             data,
-            textureFormat,
-            blockSize: vec2.fromValues(blockSize.blockWidth, blockSize.blockHeight),
+            textureFormat: resolved.textureFormat,
+            blockSize: resolved.blockSize,
             textureUsage: TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST,
             label: ktxTexture.filePath
         };
 
         return this._createAndInitializeTexture(textureDescriptor);
+    }
+
+    /** @inheritDoc */
+    public createTexture2DArrayFromKtx2(ktxTexture: IKtx2Texture, layers: number, textureFormat = TextureFormat.UNDEFINED, colorSpace: ColorSpace | null = null, label?: string): ITexture2DArray {
+
+        label = label ?? ktxTexture.filePath;
+        if (!(layers > 0)) {
+            throw new Error(`ATextureFactory.createTexture2DArrayFromKtx2: '${label ?? "unlabeled"}' has ${layers} layers; the layer count must be greater than 0.`);
+        }
+
+        const resolved = this._resolveKtx2Format(ktxTexture, textureFormat, colorSpace, "createTexture2DArrayFromKtx2");
+
+        // One entry per layer, each with every mip level.
+        const dataArray: Uint8Array[][] = [];
+        for (let layer = 0; layer < layers; layer++) {
+            const levels: Uint8Array[] = [];
+            for (let level = 0; level < ktxTexture.numLevels; level++) {
+                levels.push(ktxTexture.getImage(level, layer));
+            }
+            dataArray.push(levels);
+        }
+
+        const desc: ITextureDescriptor = {
+            width: ktxTexture.width,
+            height: ktxTexture.height,
+            layers,
+            dataArray,
+            textureFormat: resolved.textureFormat,
+            blockSize: resolved.blockSize,
+            textureUsage: TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST,
+            label,
+        };
+
+        this._validateArrayData("createTexture2DArrayFromKtx2", desc.width!, desc.height!, layers, dataArray, resolved.textureFormat, 4, label);
+        return this._createAndInitializeTexture2DArray(desc);
     }
 
     /** @inheritdoc */
@@ -151,14 +203,14 @@ export abstract class ATextureFactory implements ITextureFactory {
         }
 
         if (!data) {
-            throw new Error("Data must not be null.");
+            throw new Error(`ATextureFactory.create: '${label ?? "unlabeled"}' has no data. Use createEmpty for a texture without data.`);
         }
         if (width == 0 || height == 0) {
-            throw new Error("width and height must be greater than 0.");
+            throw new Error(`ATextureFactory.create: '${label ?? "unlabeled"}' has size ${width}x${height}; width and height must be greater than 0.`);
         }
 
         if (channels == 0) {
-            throw new Error("channels must be greater than 0.");
+            throw new Error(`ATextureFactory.create: '${label ?? "unlabeled"}' has ${channels} channels; channels must be greater than 0.`);
         }
 
         // Images are uploaded as-is; pixel data is passed as bytes.
@@ -172,6 +224,10 @@ export abstract class ATextureFactory implements ITextureFactory {
             levelData = [new Uint8Array(view.buffer, view.byteOffset, view.byteLength)];
         }
 
+        if (levelData[0] instanceof Uint8Array) {
+            this._validateLevelByteLength("create", label, levelData[0], width, height, textureFormat, channels);
+        }
+
         const desc: ITextureDescriptor = {
             width,
             height,
@@ -183,6 +239,96 @@ export abstract class ATextureFactory implements ITextureFactory {
         };
 
         return this._createAndInitializeTexture(desc);
+    }
+
+    /** @inheritDoc */
+    public createTexture2DArray(width: number, height: number, layer: number, data?: HTMLImageElement[][] | Uint8Array[][], label?: string, usage?: TextureUsage, textureFormat?: TextureFormat, generateMipmaps?: boolean): ITexture2DArray {
+        if (textureFormat == undefined || textureFormat == TextureFormat.UNDEFINED) {
+            textureFormat = this._framework.renderer.preferredTextureFormat;
+        }
+
+        if (!data) {
+            throw new Error(`ATextureFactory.createTexture2DArray: '${label ?? "unlabeled"}' has no data. Pass the data per layer, per mip level.`);
+        }
+        if (width == 0 || height == 0 || layer == 0) {
+            throw new Error(`ATextureFactory.createTexture2DArray: '${label ?? "unlabeled"}' has size ${width}x${height} with ${layer} layers; width, height and layer must be greater than 0.`);
+        }
+
+        this._validateArrayData("createTexture2DArray", width, height, layer, data, textureFormat, 4, label);
+
+        const desc: ITextureDescriptor = {
+            width,
+            height,
+            layers: layer,
+            dataArray: data,
+            textureFormat,
+            textureUsage: usage,
+            generateMipmaps: generateMipmaps ?? false,
+            label: label ?? undefined,
+        };
+
+        return this._createAndInitializeTexture2DArray(desc);
+    }
+
+    /**
+     * Gets the bytes per pixel of an uncompressed format, or `fallback` when the format has no known size.
+     * @param textureFormat The texture format.
+     * @param fallback The value to use when the format is unknown (e.g. the channel count, for 8-bit data).
+     * @returns The bytes per pixel.
+     * @private
+     */
+    private static _bytesPerPixel(textureFormat: TextureFormat, fallback: number): number {
+        try {
+            return TextureUtilities.getVRamSize(textureFormat, 1, 1);
+        } catch {
+            return fallback;
+        }
+    }
+
+    /**
+     * Checks that one mip level of pixel bytes is large enough for its size. Compressed formats are not checked.
+     * The expected length is `width * height * bytesPerPixel`, where the bytes per pixel come from the texture format
+     * (e.g. 4 for RGBA8), or from `channels` when the format has no known size.
+     * @throws Error when the data is shorter than expected.
+     * @private
+     */
+    private _validateLevelByteLength(method: string, label: string | null | undefined, bytes: Uint8Array,
+                                     width: number, height: number, textureFormat: TextureFormat, channels: number,
+                                     where: string = ""): void {
+        if (TextureUtilities.isCompressedTextureFormat(textureFormat)) {
+            return;
+        }
+        const bytesPerPixel = ATextureFactory._bytesPerPixel(textureFormat, channels);
+        const expected = width * height * bytesPerPixel;
+        if (bytes.byteLength < expected) {
+            throw new Error(`ATextureFactory.${method}: '${label ?? "unlabeled"}'${where} has ${bytes.byteLength} bytes of data; ` +
+                `${width}x${height} ${textureFormat} needs at least ${expected} (${bytesPerPixel} bytes per pixel).`);
+        }
+    }
+
+    /**
+     * Checks texture array data: at most `layers` layer entries, and every Uint8Array mip level large enough for its size.
+     * Fewer layer entries than `layers` are allowed (the remaining layers stay uninitialized). Images and compressed formats are not size-checked.
+     * @throws Error when there are more layer entries than layers, or a level is too short.
+     * @private
+     */
+    private _validateArrayData(method: string, width: number, height: number, layers: number,
+                               data: HTMLImageElement[][] | Uint8Array[][], textureFormat: TextureFormat,
+                               channels: number, label: string | null | undefined): void {
+        if (data.length > layers) {
+            throw new Error(`ATextureFactory.${method}: '${label ?? "unlabeled"}' has data for ${data.length} layers, but the texture array has ${layers} layers.`);
+        }
+        for (let layer = 0; layer < data.length; layer++) {
+            const levels = data[layer] ?? [];
+            for (let level = 0; level < levels.length; level++) {
+                const levelData = levels[level];
+                if (levelData instanceof Uint8Array) {
+                    this._validateLevelByteLength(method, label, levelData,
+                        Math.max(1, width >> level), Math.max(1, height >> level), textureFormat, channels,
+                        ` layer ${layer} mip ${level}`);
+                }
+            }
+        }
     }
 
     /** @inheritdoc */
@@ -199,7 +345,7 @@ export abstract class ATextureFactory implements ITextureFactory {
         const height = size[1];
 
         if (width == 0 || height == 0) {
-            throw new Error("Width and height must be greater than 0.");
+            throw new Error(`ATextureFactory.createEmpty: '${label ?? "unlabeled"}' has size ${width}x${height}; width and height must be greater than 0.`);
         }
 
         if (textureFormat == TextureFormat.UNDEFINED) {

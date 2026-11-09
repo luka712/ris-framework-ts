@@ -171,6 +171,7 @@ export enum TextureFormat {
     PVRTC1_RGB_2BPP_UNORM = "PVRTC1_RGB_2BPP_UNORM",
 }
 
+/** Every ASTC texture format (linear and sRGB). They require `WEBGL_compressed_texture_astc` on WebGL2 and `texture-compression-astc` on WebGPU. */
 export const ASTC_TEXTURE_FORMATS = [
     TextureFormat.ASTC_4X4_UNORM,
     TextureFormat.ASTC_4X4_UNORM_SRGB,

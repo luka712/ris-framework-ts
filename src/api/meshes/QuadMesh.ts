@@ -75,7 +75,7 @@ export class QuadMesh extends RenderableMesh {
     public applyChanges(): void {
         if (!this._isUpdatable)
         {
-            throw new Error("This mesh is not updatable.");
+            throw new Error("QuadMesh.applyChanges: This mesh is not updatable. Create it with isUpdatable = true to change it after creation.");
         }
 
         this._vertexBuffer!.update(this._vertexData!);

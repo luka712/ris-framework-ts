@@ -17,7 +17,7 @@ export function asWebGLRenderer(renderer: ITempRenderer): WebGlRenderer {
     if (renderer instanceof WebGlRenderer) {
         return renderer;
     } else {
-        throw new Error("Renderer is not a WebGLRenderer.");
+        throw new Error(`asWebGLRenderer: expected a WebGlRenderer, got ${renderer?.constructor?.name ?? renderer}.`);
     }
 }
 
@@ -30,7 +30,7 @@ export function asWebGLTexture2D(texture: ITexture2D): WebGlTexture2D {
     if (texture instanceof WebGlTexture2D) {
         return texture;
     } else {
-        throw new Error("Texture is not a WebGLTexture2D.");
+        throw new Error(`asWebGLTexture2D: expected a WebGlTexture2D, got ${texture?.constructor?.name ?? texture}.`);
     }
 }
 
@@ -43,7 +43,7 @@ export function asWebGLVertexBuffer(vertexBuffer: IVertexBuffer): WebGlVertexBuf
     if (vertexBuffer instanceof WebGlVertexBuffer) {
         return vertexBuffer;
     } else {
-        throw new Error("Vertex buffer is not a WebGLVertexBuffer.");
+        throw new Error(`asWebGLVertexBuffer: expected a WebGlVertexBuffer, got ${vertexBuffer?.constructor?.name ?? vertexBuffer}.`);
     }
 }
 
@@ -56,7 +56,7 @@ export function asWebGLIndexBuffer(indexBuffer: IIndexBuffer): WebGLIndexBuffer 
     if (indexBuffer instanceof WebGLIndexBuffer) {
         return indexBuffer;
     } else {
-        throw new Error("Index buffer is not a WebGLIndexBuffer.");
+        throw new Error(`asWebGLIndexBuffer: expected a WebGLIndexBuffer, got ${indexBuffer?.constructor?.name ?? indexBuffer}.`);
     }
 }
 
@@ -69,7 +69,7 @@ export function asWebGLUniformBuffer(uniformBuffer: IUniformBuffer): WebGlUnifor
     if (uniformBuffer instanceof WebGlUniformBuffer) {
         return uniformBuffer;
     } else {
-        throw new Error("Uniform buffer is not a WebGLUniformBuffer.");
+        throw new Error(`asWebGLUniformBuffer: expected a WebGlUniformBuffer, got ${uniformBuffer?.constructor?.name ?? uniformBuffer}.`);
     }
 }
 
@@ -82,7 +82,7 @@ export function asWebGLGraphicsDevice(graphicsDevice: ITempRenderer["graphicsDev
     if (graphicsDevice instanceof WebGlGraphicsDevice   ) {
         return graphicsDevice as WebGlGraphicsDevice;
     } else {
-        throw new Error("Graphics device is not a WebGL graphics device.");
+        throw new Error(`asWebGLGraphicsDevice: expected a WebGlGraphicsDevice, got ${graphicsDevice?.constructor?.name ?? graphicsDevice}.`);
     }   
 }
 
@@ -95,6 +95,6 @@ export function asWebGLBlendState(blendState: IBlendState): WebGlBlendState {
     if (blendState instanceof WebGlBlendState) {
         return blendState as WebGlBlendState;
     } else {
-        throw new Error("Blend state is not a WebGL blend state.");
+        throw new Error(`asWebGLBlendState: expected a WebGlBlendState, got ${blendState?.constructor?.name ?? blendState}.`);
     }
 }

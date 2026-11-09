@@ -1,6 +1,7 @@
 export * from "./IMaterial.ts"
 export * from "./IMaterialFactory.ts"
 export * from "./InspectTextureMipsMaterial.ts"
+export * from "./InspectTextureArrayMaterial.ts"
 export * from "./MaterialFactory.ts"
 export * from "./SpriteMaterial.ts"
 export * from "./UnlitMaterial.ts"

@@ -3,22 +3,26 @@ import type {TextureUsage} from "./TextureUsage.ts";
 import type {vec2} from "gl-matrix";
 import type {ColorSpace} from "../enums.ts";
 
-/**
- * The texture descriptor. Every field is optional; factories fill in the defaults for missing fields.
- */
+/** The texture descriptor. Every field is optional; factories fill in the defaults for missing fields. */
 export interface ITextureDescriptor {
 
     /**
-     * The texture width.
-     * By default, it is 0.
+     * The texture width in pixels. Required by textures; must be greater than 0.
+     * By default, undefined.
      */
     width?: number;
 
     /**
-     * The texture height.
-     * By default, it is 0.
+     * The texture height in pixels. Required by textures; must be greater than 0.
+     * By default, undefined.
      */
     height?: number;
+
+    /**
+     * The number of layers of a texture array. Ignored by 2D textures.
+     * By default, undefined, which uses the length of {@link dataArray}. A texture array needs at least one layer.
+     */
+    layers?: number;
 
     /**
      * The texture format. When loading texture preferred format can be set.
@@ -45,14 +49,20 @@ export interface ITextureDescriptor {
      */
     textureUsage?: TextureUsage;
 
-    /** The texture label. */
+    /** The texture label, used as the label of the GPU texture. By default, undefined. */
     label?: string;
 
     /**
-     * The data per mip level.
+     * The data per mip level for a 2d texture.
      * By default, it is undefined.
      */
     data?: Uint8Array[] | HTMLImageElement[];
+
+    /**
+     * The data per layer, per mip level for a 2D texture array (`dataArray[layer][mipLevel]`). Ignored by 2D textures.
+     * By default, it is undefined.
+     */
+    dataArray?: Uint8Array[][] | HTMLImageElement[][];
 
     /**
      * Should mipmaps be generated.

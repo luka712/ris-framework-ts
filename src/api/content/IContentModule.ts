@@ -19,48 +19,49 @@ export interface IContentModule {
     contentPath?: string;
 
     /**
-     * Use to notify the content manager that the content bundle has been loaded.
-     * The first parameter is the bundle name, and the second parameter is the loaded bundle object.
+     * Adds a listener that notifies the content manager that a content bundle has been loaded.
+     * @param event The listener. Receives the bundle name and the loaded bundle object.
      */
     addOnBundleLoadedListener(event: (bundleName: string, bundle: any) => void): void;
 
     /**
-     * Use to notify the content manager that the content bundle has been loaded.
-     * The first parameter is the bundle name, and the second parameter is the loaded bundle object.
+     * Removes a listener added with {@link addOnBundleLoadedListener}.
+     * @param event The listener to remove.
      */
     removeOnBundleLoadedListener(event: (bundleName: string, bundle: any) => void): void;
 
     /**
      * Load the content with the specified ID.
-     *  The ID is a unique identifier for the content, and it is used to retrieve the content from the content manager.
+     * The ID is a unique identifier for the content, and it is used to retrieve the content from the content manager.
      * @param id - The unique identifier for the content.
      * @param options - The optional options for loading the content.
+     * @returns The loaded content.
      */
     load(id: string, options?: any): IContent;
 
     /**
-     * Load the content with the specified ID.
-     *     The ID is a unique identifier for the content, and it is used to retrieve the content from the content manager.
+     * Load the content with the specified ID asynchronously.
+     * The ID is a unique identifier for the content, and it is used to retrieve the content from the content manager.
      * @param id - The unique identifier for the content.
      * @param options - The optional options for loading the content.
+     * @returns A promise of the loaded content.
      */
     loadAsync(id: string, options?: any): Promise<IContent>;
 
     /**
      * Load the content bundle with the specified name.
-     *     A content bundle is a collection of related content items that can be loaded together.
+     * A content bundle is a collection of related content items that can be loaded together.
      * @param bundleName - The bundle name.
      * @param options - The optional options for loading the bundle.
-     * @returns True if the bundle was loaded successfully; otherwise, false.
      */
     loadBundle(bundleName: string, options?: any): void;
 
     /**
-     * Load the content bundle with the specified name.
-     *     A content bundle is a collection of related content items that can be loaded together.
+     * Load the content bundle with the specified name asynchronously.
+     * A content bundle is a collection of related content items that can be loaded together.
      * @param bundleName - The bundle name.
      * @param options - The optional options for loading the bundle.
-     * @returns True if the bundle was loaded successfully; otherwise, false.
+     * @returns A promise that resolves once the bundle is loaded.
      */
     loadBundleAsync(bundleName: string, options?: any): Promise<void>;
 

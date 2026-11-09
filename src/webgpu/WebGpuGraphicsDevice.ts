@@ -112,7 +112,7 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
 
         this._context = this._canvasManager.canvas.getContext("webgpu") as GPUCanvasContext;
         if (!this._context) {
-            throw new Error("WebGPU canvas context is not available.");
+            throw new Error("WebGpuGraphicsDevice.initializeAsync: canvas.getContext(\"webgpu\") returned null; WebGPU is not available for this canvas (or it already has another context).");
         }
 
         this._adapter = await WebGpuUtilities.adapter.requestAdapterAsync(this._descriptor.powerPreference);

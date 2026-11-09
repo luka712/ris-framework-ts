@@ -173,13 +173,13 @@ export class WebGlRenderPass implements IRenderPass {
 
                 if (!this._enableDepthTest) {
                     // TODO: Implement this.
-                    throw new Error("Not implemented");
+                    throw new Error("WebGlRenderPass: a stencil-only depth/stencil render buffer (stencil test without depth test, no texture) is not implemented for WebGL2 yet. Enable the depth test or pass a depth/stencil texture.");
                 }
                 else if (!this._enableStencilTest) {
                     format = TextureFormat.DEPTH32_FLOAT;
                 }
                 var colorTex = colorAttachments[0].texture!;
-                this._depthStencilRenderBuffer = WebGlUtilities.renderBuffer.create(this._gl, format, colorTex.nativeSize[0], colorTex.nativeSize[1], null);
+                this._depthStencilRenderBuffer = WebGlUtilities.renderBuffer.create(this._gl, format, colorTex.size[0], colorTex.size[1], null);
                 WebGlUtilities.framebuffer.attachDepthStencilRenderBuffer(this._gl, this._frameBuffer!, this._depthStencilRenderBuffer, format);
             }
         }

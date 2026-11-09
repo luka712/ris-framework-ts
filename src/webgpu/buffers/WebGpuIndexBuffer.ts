@@ -105,7 +105,7 @@ export class WebGpuIndexBuffer implements IIndexBuffer {
      */
     public update(data: Uint16Array | Uint32Array, offset: number = 0, length: number = 0): void {
         if (data.BYTES_PER_ELEMENT !== this._elementByteSize) {
-            throw new Error("WebGpuIndexBuffer: the data type does not match the index buffer type.");
+            throw new Error(`WebGpuIndexBuffer.update: the data has ${data.BYTES_PER_ELEMENT}-byte indices, but the index buffer uses ${this._elementByteSize}-byte indices.`);
         }
         WebGpuUtilities.buffer.writeBuffer(this._graphicsDevice.device.queue, this.gpuBuffer, data, offset, length);
     }

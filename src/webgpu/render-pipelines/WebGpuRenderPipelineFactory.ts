@@ -3,6 +3,7 @@ import type {
     IForwardBlinnPhongRenderPipeline,
     IFramework,
     IInspectTextureMipsRenderPipeline,
+    IInspectTextureArrayRenderPipeline,
     IMainRenderTargetRenderPipeline,
     IPrimitiveState,
     IRenderPipelineFactory,
@@ -57,13 +58,27 @@ export class WebGpuRenderPipelineFactory implements IRenderPipelineFactory {
         return pipeline;
     }
 
-    /** @inheritDoc */
+    /**
+     * Not implemented for WebGPU yet; always throws.
+     * @inheritDoc
+     */
     public createInspectTextureMipsRenderPipeline(_projectionViewBuffer: IUniformBuffer, _modelBuffer: IUniformBuffer, _textureConstantsBuffer: IUniformBuffer): IInspectTextureMipsRenderPipeline {
-        throw new Error("The inspect texture mips render pipeline is not implemented for WebGPU.");
+        throw new Error("WebGpuRenderPipelineFactory.createInspectTextureMipsRenderPipeline: the inspect texture mips render pipeline is not implemented for WebGPU yet.");
     }
 
-    /** @inheritDoc */
+    /**
+     * Not implemented for WebGPU yet; always throws.
+     * @inheritDoc
+     */
+    public createInspectTextureArrayRenderPipeline(_projectionViewBuffer: IUniformBuffer, _modelBuffer: IUniformBuffer, _fragmentDataBuffer: IUniformBuffer): IInspectTextureArrayRenderPipeline {
+        throw new Error("WebGpuRenderPipelineFactory.createInspectTextureArrayRenderPipeline: the inspect texture array render pipeline (2D texture arrays) is not implemented for WebGPU yet.");
+    }
+
+    /**
+     * Not implemented for WebGPU yet; always throws.
+     * @inheritDoc
+     */
     public createForwardBlinnPhongRenderPipeline(_descriptor: ForwardBlinnPhongRenderPipelineDescriptor): IForwardBlinnPhongRenderPipeline {
-        throw new Error("The forward Blinn-Phong render pipeline is not implemented for WebGPU.");
+        throw new Error("WebGpuRenderPipelineFactory.createForwardBlinnPhongRenderPipeline: the forward Blinn-Phong render pipeline is not implemented for WebGPU yet.");
     }
 }

@@ -22,7 +22,7 @@ import {
     CanvasBounds,
     RenderingBackend,
 } from "../src/api/index.ts";
-import {ATexture2D} from "../src/core/rendering/texture/texture.ts";
+import {ATexture2D} from "../src/api/rendering/texture/ATexture2D.ts";
 import {ATextureFactory} from "../src/api/rendering/texture/ATextureFactory.ts";
 import type {IFramework, ISwapChainDescriptor, ITexture2D, ITextureDescriptor, ITextureView2D} from "../src/api/index.ts";
 
@@ -66,6 +66,9 @@ class TestTextureFactory extends ATextureFactory {
         texture.initialize();
         return texture;
     }
+    protected _createAndInitializeTexture2DArray(): never {
+        throw new Error("Not implemented.");
+    }
 }
 
 describe("value defaults", () => {
@@ -93,7 +96,6 @@ describe("value defaults", () => {
         const texture = new TestTexture({width: 2, height: 3, textureFormat: TextureFormat.RGBA8_UNORM});
 
         expect(Array.from(texture.size)).toEqual([2, 3]);
-        expect(Array.from(texture.nativeSize)).toEqual([2, 3]);
         expect(texture.textureFormat).toBe(TextureFormat.RGBA8_UNORM);
         expect(texture.textureUsage).toBe(TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST);
         expect(texture.textureUsage & TextureUsage.RENDER_ATTACHMENT).toBe(0);

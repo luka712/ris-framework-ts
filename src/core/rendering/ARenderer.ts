@@ -65,8 +65,9 @@ export abstract class ARenderer implements ITempRenderer {
         this._mainRenderPassDirty = true;
     }
 
+    /** The rendering limits. Not implemented yet; always throws. */
     public get limits(): RenderingLimits | null {
-        throw new Error("Method not implemented.");
+        throw new Error("ARenderer.limits: Not implemented.");
     }
 
     /** @inheritdoc */
@@ -140,7 +141,8 @@ export abstract class ARenderer implements ITempRenderer {
         this._outputColorSpace = configuration.outputColorSpace;
     }
 
-     backend: RenderingBackend = RenderingBackend.WEB_GL;
+    /** The rendering backend. Defaults to {@link RenderingBackend.WEB_GL}; backends override it. */
+    backend: RenderingBackend = RenderingBackend.WEB_GL;
 
     /** @inheritDoc */
     public addOnResizedListener(event: (sender: any, e: vec2) => void): void {
@@ -154,11 +156,14 @@ export abstract class ARenderer implements ITempRenderer {
             this._resizeListeners.splice(index, 1);
         }
     }
+
+    /** Compute passes are not implemented yet; always throws. */
     beginComputePass(): void {
-        throw new Error("Method not implemented.");
+        throw new Error("ARenderer.beginComputePass: compute passes are not implemented.");
     }
+    /** Compute passes are not implemented yet; always throws. */
     endComputePass(): void {
-        throw new Error("Method not implemented.");
+        throw new Error("ARenderer.endComputePass: compute passes are not implemented.");
     }
 
     /**

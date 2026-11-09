@@ -11,8 +11,10 @@ import type {
     ForwardBlinnPhongRenderPipelineDescriptor,
 } from "../../api";
 import {WebGlInspectTextureMipsRenderPipeline} from "./inspect/WebGlInspectTextureMipsRenderPipeline.ts";
+import {WebGlInspectTextureArrayRenderPipeline} from "./inspect/WebGlInspectTextureArrayRenderPipeline.ts";
 import {WebGlUnlitRenderPipeline} from "./material/WebGlUnlitRenderPipeline.ts";
 import {WebGlForwardBlinnPhongRenderPipeline} from "./material/WebGlBlinnPhongRenderPipeline.ts";
+import type { IInspectTextureArrayRenderPipeline } from "../../api/rendering/render-pipelines/inspect/IInspectTextureArrayRenderPipeline.ts";
 
 /**
  * The WebGL implementation of the IRenderPipelineFactory interface.
@@ -26,6 +28,7 @@ export class WebGlRenderPipelineFactory implements IRenderPipelineFactory {
      */
     constructor(private readonly _framework: IFramework) {
     }
+
 
     /** @inheritDoc */
     public createUnlitRenderPipeline(projectionViewBuffer: IUniformBuffer,
@@ -70,11 +73,21 @@ export class WebGlRenderPipelineFactory implements IRenderPipelineFactory {
     public createInspectTextureMipsRenderPipeline(
         projectionViewBuffer: IUniformBuffer,
         modelBuffer: IUniformBuffer,
-        textureConstantsBuffer: IUniformBuffer,
+        fragmentDataBuffer: IUniformBuffer,
         primitiveState?: IPrimitiveState,
         ): IInspectTextureMipsRenderPipeline {
         const pipeline = new WebGlInspectTextureMipsRenderPipeline(
-            this._framework, projectionViewBuffer, modelBuffer, textureConstantsBuffer, primitiveState
+            this._framework, projectionViewBuffer, modelBuffer, fragmentDataBuffer, primitiveState
+        );
+        pipeline.initialize();
+        return pipeline;
+    }
+
+
+    /** @inheritDoc */
+    public createInspectTextureArrayRenderPipeline(projectionViewBuffer: IUniformBuffer, modelBuffer: IUniformBuffer, fragmentDataBuffer: IUniformBuffer): IInspectTextureArrayRenderPipeline {
+        const pipeline = new WebGlInspectTextureArrayRenderPipeline(
+            this._framework, projectionViewBuffer, modelBuffer, fragmentDataBuffer,
         );
         pipeline.initialize();
         return pipeline;

@@ -129,7 +129,7 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
         if (hasData) {
             const bytesPerBlock = TextureUtilities.getVRamSize(format, blockSize[0], blockSize[1]);
 
-            // The copies use the logical mip sizes rounded up to whole blocks, which stay within the physical mips.
+            // Each mip copy uses that mip's size, rounded up to whole blocks, which stays inside the block-aligned GPU texture.
             for (let i = 0; i < data!.length; i++) {
                 const mipWidth = Math.max(1, size[0] >> i);
                 const mipHeight = Math.max(1, size[1] >> i);

@@ -104,7 +104,7 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
     /** @inheritdoc */
     public get mainRenderTarget(): ITexture2D {
         if (!this._mainRenderTarget) {
-            throw new Error("Render target is not set.");
+            throw new Error("WebGlMainRenderTargetRenderPipeline.mainRenderTarget: the main render target is not set yet. It is created when the main render pass is set up.");
         }
         return this._mainRenderTarget;
     }

@@ -2,8 +2,11 @@
  * The logger used by the WebGPU utilities, like the optional `ILogger` in the C# utilities. `console` fits.
  */
 export interface IWebGpuLogger {
+    /** Logs an error, e.g. a validation error popped from an error scope. */
     error(message: string): void;
+    /** Logs a warning. */
     warn(message: string): void;
+    /** Logs an informational message. */
     info(message: string): void;
 }
 

@@ -13,6 +13,10 @@ import {
     TextureFormat
 } from "../../api/index.ts";
 
+/**
+ * Converts framework enums (topology, culling, blending, texture and vertex formats, sampler states) to WebGL2 enums.
+ * Every converter throws for a value that has no WebGL2 mapping yet.
+ */
 export class WebGlConverter {
 
     /**
@@ -34,7 +38,7 @@ export class WebGlConverter {
             case PrimitiveTopology.TRIANGLE_STRIP:
                 return WebGL2RenderingContext.TRIANGLE_STRIP;
             default:
-                throw new Error("Method not implemented.");
+                throw new Error(`WebGlConverter.convertPrimitiveType: primitive topology ${topology} is not implemented for WebGL2.`);
         }
     }
 
@@ -53,7 +57,7 @@ export class WebGlConverter {
             case CullMode.FRONT:
                 return WebGL2RenderingContext.FRONT;
             default:
-                throw new Error("Method not implemented.");
+                throw new Error(`WebGlConverter.convertCullFace: cull mode ${cullFace} is not implemented for WebGL2.`);
         }
 
     }
@@ -70,7 +74,7 @@ export class WebGlConverter {
             case FrontFace.CCW:
                 return WebGL2RenderingContext.CCW;
             default:
-                throw new Error("Method not implemented.");
+                throw new Error(`WebGlConverter.convertFrontFace: front face ${frontFace} is not implemented for WebGL2.`);
         }
     }
 
@@ -112,7 +116,7 @@ export class WebGlConverter {
             case BlendOperation.MAX:
                 return gl.MAX;
             default:
-                throw new Error("NotImplementedException");
+                throw new Error(`WebGlConverter.convertBlendOperation: blend operation ${blendOperation} is not implemented for WebGL2.`);
         }
     }
 
@@ -142,7 +146,7 @@ export class WebGlConverter {
             // case BlendFactor.ONE_MINUS_DST_ALPHA:
             //     return gl.ONE_MINUS_DST_ALPHA;
             default:
-                throw new Error("NotImplementedException");
+                throw new Error(`WebGlConverter.convertBlendFactor: blend factor ${blendingFactor} is not implemented for WebGL2.`);
         }
     }
 
@@ -161,12 +165,12 @@ export class WebGlConverter {
             case Culling.None:
                 return gl.NONE;
             default:
-                throw new Error("NotImplementedException");
+                throw new Error(`WebGlConverter.convertCulling: culling ${culling} is not implemented for WebGL2.`);
         }
     }
 
     /**
-     * Converts TextureFormat to WebGL internal format, format, and type.
+     * Converts TextureFormat to the WebGL internal (sized) format, e.g. `RGBA8` or a compressed format enum.
      * @param gl The WebGL2RenderingContext.
      * @param textureFormat The TextureFormat.
      * @returns The WebGL internal format.
@@ -273,7 +277,7 @@ export class WebGlConverter {
                 return WebGlConstants.GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG;
 
             default:
-                throw new Error("NotImplementedException");
+                throw new Error(`WebGlConverter.convertInternalFormat: texture format ${textureFormat} is not implemented for WebGL2.`);
         }
     }
 
@@ -293,7 +297,7 @@ export class WebGlConverter {
             case TextureFormat.DEPTH24_PLUS_STENCIL8:
                 return gl.DEPTH_STENCIL;
             default:
-                throw new Error("NotImplementedException");
+                throw new Error(`WebGlConverter.convertToPixelFormat: texture format ${textureFormat} is not implemented for WebGL2.`);
         }
     }
 
@@ -313,7 +317,7 @@ export class WebGlConverter {
             case TextureFormat.DEPTH24_PLUS_STENCIL8:
                 return gl.UNSIGNED_INT_24_8;
             default:
-                throw new Error("NotImplementedException");
+                throw new Error(`WebGlConverter.convertToTextureType: texture format ${textureFormat} is not implemented for WebGL2.`);
         }
     }
 
@@ -335,12 +339,12 @@ export class WebGlConverter {
             case VertexFormat.FLOAT_32X16:
                 return 16;
             default:
-                throw new Error("NotImplementedException");
+                throw new Error(`WebGlConverter.convertVertexFormat: vertex format ${vertexFormat} is not implemented for WebGL2.`);
         }
     }
 
     /**
-     * Converts SamplerFilter to WebGL enum.
+     * Converts SamplerFilter to the WebGL magnification filter enum.
      * @param gl The WebGL2RenderingContext.
      * @param filter The SamplerFilter.
      * @returns The WebGL enum.
@@ -352,7 +356,7 @@ export class WebGlConverter {
             case SamplerFilter.LINEAR:
                 return gl.LINEAR;
             default:
-                throw new Error("NotImplementedException");
+                throw new Error(`WebGlConverter.convertMagFilter: sampler filter ${filter} is not implemented for WebGL2.`);
         }
     }
 
@@ -376,7 +380,7 @@ export class WebGlConverter {
                     case MipMapSamplerFilter.LINEAR:
                         return gl.NEAREST_MIPMAP_LINEAR;
                     default:
-                        throw new Error("NotImplementedException");
+                        throw new Error(`WebGlConverter.convertMinFilter: sampler filter ${filter} with mipmap filter ${mipMapFilter} is not implemented for WebGL2.`);
                 }
             case SamplerFilter.LINEAR:
                 switch (mipMapFilter) {
@@ -385,10 +389,10 @@ export class WebGlConverter {
                     case MipMapSamplerFilter.LINEAR:
                         return gl.LINEAR_MIPMAP_LINEAR;
                     default:
-                        throw new Error("NotImplementedException");
+                        throw new Error(`WebGlConverter.convertMinFilter: sampler filter ${filter} with mipmap filter ${mipMapFilter} is not implemented for WebGL2.`);
                 }
             default:
-                throw new Error("NotImplementedException");
+                throw new Error(`WebGlConverter.convertMinFilter: sampler filter ${filter} with mipmap filter ${mipMapFilter} is not implemented for WebGL2.`);
         }
     }
 
@@ -410,7 +414,7 @@ export class WebGlConverter {
                 // WebGL2 has no clamp-to-border wrap mode. Clamp to edge is the closest match.
                 return gl.CLAMP_TO_EDGE;
             default:
-                throw new Error("NotImplementedException");
+                throw new Error(`WebGlConverter.convertAddressMode: sampler address mode ${addressMode} is not implemented for WebGL2.`);
         }
     }
 

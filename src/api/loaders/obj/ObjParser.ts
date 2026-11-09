@@ -207,7 +207,7 @@ export class ObjParser {
         closeRange();
 
         if(positions.length == 0){
-            throw new Error("Invalid obj file.");
+            throw new Error("ObjParser.fromText: invalid obj file; it has no vertex positions (`v` lines).");
         }
 
         return {
