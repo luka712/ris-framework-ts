@@ -24,3 +24,8 @@ Thumbs.db
 .vite/
 .eslintcache
 npm-debug.log*
+
+# Assistant backups and transfer artifacts
+.ris-backup/
+.shader-registry-local-edits*.json
+.local-webgl-module-snapshot-*.tar.gz
