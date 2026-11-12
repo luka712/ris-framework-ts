@@ -164,20 +164,16 @@ export class ContentManager implements IContentManager {
                 throw new Error(`ContentManager.loadTexture2DArrayAsync: all texture array layers must be ${width}x${height} (the size of "${filePaths[0]}"); layer ${diffIndex} "${filePaths[diffIndex]}" is ${diff.baseWidth}x${diff.baseHeight}.`);
             }
 
-            const dataPerLayerPerMip: Uint8Array[][] = [];
-            for(let i = 0; i < data.length; i++) {
-                // Push layer, with 0 level only
-                dataPerLayerPerMip.push([
-                    data[i].getData(0) as Uint8Array
-                ]);
-            }
+            // One layer per file, with mip level 0 only. The image loader returns HTMLImageElements in the browser.
+            const dataPerLayerPerMip = data.map(image => [image.getData(0)]) as Uint8Array[][] | HTMLImageElement[][];
 
 
             return this._framework.textureFactory.createTexture2DArray(
                 width, height, data.length,
                 dataPerLayerPerMip,
                 textureDescriptor?.label ?? filePaths[0],
-                textureDescriptor?.textureUsage ?? (TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_SRC),
+                // WebGPU copies the images with copyExternalImageToTexture, which needs COPY_DST and RENDER_ATTACHMENT.
+                textureDescriptor?.textureUsage ?? (TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST | TextureUsage.RENDER_ATTACHMENT),
                 format,
                 textureDescriptor?.generateMipmaps ?? false
             );

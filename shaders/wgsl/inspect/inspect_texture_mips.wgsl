@@ -1,8 +1,8 @@
 // Inspect texture mips shader (WebGPU): draws a texture at an explicit mip level.
+// textureSampleLevel (not textureSample) is used, so it needs no uniform control flow.
 // Hand-maintained, mirrors slang/inspect_texture_mips.slang and glsl_300_es/inspect_texture_mips_*.glsl.
-// Note: there is no WebGPU inspect pipeline yet; the layout follows the mesh pipelines.
 //
-// Bind groups:
+// Bind groups (WebGpuInspectTextureMipsRenderPipeline):
 //   group 0: binding 0 = projection view matrix, binding 1 = model matrix (vertex)
 //   group 1: binding 0 = texture, binding 1 = sampler (fragment)
 //   group 2: binding 2 = texture constants (fragment)

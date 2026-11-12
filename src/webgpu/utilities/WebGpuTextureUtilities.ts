@@ -148,6 +148,177 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
     }
 
     /**
+     * Creates an uncompressed 2D array texture (`dimension: "2d"`, `depthOrArrayLayers` = `layers`) and uploads every given layer and mip level.
+     * Layer `l`, level `i` of `data` is written to array layer `l` (`origin.z`), mip level `i`.
+     * The mip level count is taken from `data` with {@link TextureUtilities.maxMipLevels}, as on WebGL.
+     * For block-compressed formats use {@link create2DArrayCompressed}.
+     * @param device The device.
+     * @param size The size of one layer [width, height] in pixels.
+     * @param layers The number of array layers. Must be greater than 0.
+     * @param format The texture format. Must not be compressed.
+     * @param usage The texture usage, used as-is. Uploading bytes needs `COPY_DST`;
+     * uploading images needs `COPY_DST` and `RENDER_ATTACHMENT`.
+     * @param data The data per layer, per mip level, as bytes or images. By default, none (one mip level, nothing is uploaded).
+     * Layers with fewer mip levels than the largest layer leave the rest uninitialized (zeros), as do missing layers.
+     * @param label The label. By default, none.
+     * @param viewFormats The formats views of this texture may use (`GPUTextureDescriptor.viewFormats`).
+     * In WebGPU they may only differ from `format` in sRGB-ness. By default, none (only `format`).
+     * @returns The texture and its size.
+     * @throws Error when `layers` is not greater than 0, or `format` is compressed.
+     */
+    public create2DArray(device: GPUDevice,
+        size: vec2,
+        layers: number,
+        format: TextureFormat,
+        usage: TextureUsage,
+        data?: Uint8Array[][] | HTMLImageElement[][],
+        label?: string,
+        viewFormats?: TextureFormat[]): WebGpuCreateTextureResult {
+
+        if (TextureUtilities.isCompressedTextureFormat(format)) {
+            throw new Error(`WebGpuTextureUtilities.create2DArray: '${label ?? "unlabeled"}' has compressed format ${format}; use create2DArrayCompressed instead.`);
+        }
+
+        const mipLevelCount = TextureUtilities.maxMipLevels(data);
+        const result = this._create2DArrayTexture(device, "create2DArray", size, layers, format, usage, mipLevelCount, label, viewFormats);
+        if (!data) {
+            return result;
+        }
+
+        const bytesPerPixel = TextureUtilities.getVRamSize(format, 1, 1);
+        for (let layer = 0; layer < data.length; layer++) {
+            const levels = data[layer] ?? [];
+            for (let level = 0; level < levels.length; level++) {
+                const levelData = levels[level];
+                if (typeof HTMLImageElement !== "undefined" && levelData instanceof HTMLImageElement) {
+                    device.queue.copyExternalImageToTexture(
+                        { source: levelData },
+                        { texture: result.texture, mipLevel: level, origin: { x: 0, y: 0, z: layer } },
+                        { width: levelData.width, height: levelData.height });
+                    continue;
+                }
+                this.writeToTexture(device.queue, result.texture, this._mipSize(size, level), levelData as Uint8Array, bytesPerPixel, level, layer);
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Creates a block-compressed (BC, ETC2, ASTC, ...) 2D array texture (`dimension: "2d"`, `depthOrArrayLayers` = `layers`)
+     * and uploads every given layer and mip level.
+     * Layer `l`, level `i` of `data` is written to array layer `l` (`origin.z`), mip level `i`.
+     * The size is rounded up to whole blocks, as WebGPU requires, and every mip copy covers whole blocks.
+     * The mip level count is taken from `data` with {@link TextureUtilities.maxMipLevels}, as on WebGL.
+     * @param device The device.
+     * @param size The size of one layer [width, height] in pixels.
+     * @param layers The number of array layers. Must be greater than 0.
+     * @param blockSize The block size [width, height] in pixels.
+     * @param format The texture format. Must be compressed.
+     * @param usage The texture usage, used as-is. Uploading needs `COPY_DST`.
+     * @param data The data per layer, per mip level. By default, none (one mip level, nothing is uploaded).
+     * Layers with fewer mip levels than the largest layer leave the rest uninitialized (zeros), as do missing layers.
+     * @param label The label. By default, none.
+     * @param viewFormats The formats views of this texture may use (`GPUTextureDescriptor.viewFormats`).
+     * In WebGPU they may only differ from `format` in sRGB-ness. By default, none (only `format`).
+     * @returns The texture and its block-aligned size.
+     * @throws Error when `layers` is not greater than 0, or `format` is not compressed.
+     */
+    public create2DArrayCompressed(device: GPUDevice,
+        size: vec2,
+        layers: number,
+        blockSize: vec2,
+        format: TextureFormat,
+        usage: TextureUsage,
+        data?: Uint8Array[][],
+        label?: string,
+        viewFormats?: TextureFormat[]): WebGpuCreateTextureResult {
+
+        if (!TextureUtilities.isCompressedTextureFormat(format)) {
+            throw new Error(`WebGpuTextureUtilities.create2DArrayCompressed: '${label ?? "unlabeled"}' has uncompressed format ${format}; use create2DArray instead.`);
+        }
+
+        // WebGPU needs a block-aligned base size for compressed formats.
+        const alignedSize = vec2.fromValues(
+            AlignUtilities.align(size[0], blockSize[0]),
+            AlignUtilities.align(size[1], blockSize[1]));
+
+        const mipLevelCount = TextureUtilities.maxMipLevels(data);
+        const result = this._create2DArrayTexture(device, "create2DArrayCompressed", alignedSize, layers, format, usage, mipLevelCount, label, viewFormats);
+        if (!data) {
+            return result;
+        }
+
+        const bytesPerBlock = TextureUtilities.getVRamSize(format, blockSize[0], blockSize[1]);
+        for (let layer = 0; layer < data.length; layer++) {
+            const levels = data[layer] ?? [];
+            for (let level = 0; level < levels.length; level++) {
+                this.writeCompressedToTexture(device.queue, result.texture, this._mipSize(size, level), blockSize, levels[level], bytesPerBlock, level, layer);
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Creates the GPU texture shared by {@link create2DArray} and {@link create2DArrayCompressed}.
+     * @param device The device.
+     * @param caller The calling method's name, for error messages.
+     * @param size The size of one layer [width, height] in pixels, already block-aligned for compressed formats.
+     * @param layers The number of array layers. Must be greater than 0.
+     * @param format The texture format.
+     * @param usage The texture usage, used as-is.
+     * @param mipLevelCount The mip level count.
+     * @param label The label. By default, none.
+     * @param viewFormats The view formats. By default, none.
+     * @returns The texture and its size.
+     * @throws Error when `layers` is not greater than 0.
+     */
+    private _create2DArrayTexture(device: GPUDevice,
+        caller: string,
+        size: vec2,
+        layers: number,
+        format: TextureFormat,
+        usage: TextureUsage,
+        mipLevelCount: number,
+        label?: string,
+        viewFormats?: TextureFormat[]): WebGpuCreateTextureResult {
+
+        if (!(layers > 0)) {
+            throw new Error(`WebGpuTextureUtilities.${caller}: '${label ?? "unlabeled"}' has ${layers} layers; the layer count must be greater than 0.`);
+        }
+
+        const extentSize: GPUExtent3DDict = {
+            width: size[0],
+            height: size[1],
+            depthOrArrayLayers: layers
+        };
+
+        const texture = this.withValidation(device, "Texture", label, () => device.createTexture({
+            label,
+            size: extentSize,
+            dimension: "2d",
+            mipLevelCount,
+            sampleCount: 1,
+            format: WebGpuConverter.convertTextureFormat(format),
+            usage: WebGpuConverter.convertTextureUsage(usage),
+            viewFormats: this._convertViewFormats(format, viewFormats),
+        }));
+
+        return { texture, size: extentSize };
+    }
+
+    /**
+     * Gets the size of a mip level: each level halves the base size, down to 1.
+     * @param size The base size [width, height] in pixels.
+     * @param level The mip level.
+     * @returns The mip level size [width, height] in pixels.
+     */
+    private _mipSize(size: vec2, level: number): vec2 {
+        return vec2.fromValues(Math.max(1, size[0] >> level), Math.max(1, size[1] >> level));
+    }
+
+    /**
      * Creates a depth texture, usable as a render attachment.
      * @param device The device.
      * @param size The size [width, height].
@@ -168,17 +339,20 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
      * @param data The data.
      * @param bytesPerPixel The bytes per pixel. By default, 4 (RGBA8).
      * @param mipLevel The mip level. By default, 0.
+     * @param arrayLayer The array layer to write (`origin.z`). By default, 0.
      */
     public writeToTexture(queue: GPUQueue,
         texture: GPUTexture,
         size: vec2,
         data: ArrayBufferView,
         bytesPerPixel: number = 4,
-        mipLevel: number = 0): void {
+        mipLevel: number = 0,
+        arrayLayer: number = 0): void {
 
         const destination: GPUTexelCopyTextureInfo = {
             texture,
-            mipLevel
+            mipLevel,
+            origin: { x: 0, y: 0, z: arrayLayer }
         };
 
         const dataLayout: GPUTexelCopyBufferLayout = {
@@ -207,6 +381,7 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
      * @param data The data.
      * @param bytesPerBlock The bytes per block.
      * @param mipLevel The mip level. By default, 0.
+     * @param arrayLayer The array layer to write (`origin.z`). By default, 0.
      */
     public writeCompressedToTexture(queue: GPUQueue,
         texture: GPUTexture,
@@ -214,14 +389,16 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
         blockSize: vec2,
         data: ArrayBufferView,
         bytesPerBlock: number,
-        mipLevel: number = 0): void {
+        mipLevel: number = 0,
+        arrayLayer: number = 0): void {
 
         const blocksWide = Math.ceil(size[0] / blockSize[0]);
         const blocksHigh = Math.ceil(size[1] / blockSize[1]);
 
         const destination: GPUTexelCopyTextureInfo = {
             texture,
-            mipLevel
+            mipLevel,
+            origin: { x: 0, y: 0, z: arrayLayer }
         };
 
         const dataLayout: GPUTexelCopyBufferLayout = {
@@ -284,5 +461,4 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
         const other = (viewFormats ?? []).filter(f => f != format);
         return other.length > 0 ? other.map(f => WebGpuConverter.convertTextureFormat(f)) : undefined;
     }
-
 }

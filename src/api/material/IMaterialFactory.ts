@@ -11,14 +11,14 @@ import type {ForwardBlinnPhongMaterial, ForwardBlinnPhongMaterialDescriptor} fro
 export interface IMaterialFactory {
 
     /**
-     * Creates a material for inspecting texture mips.
+     * Creates a material for inspecting texture mips. Works on WebGL2 and WebGPU.
      * @returns The Inspect Texture Mips Material.
      */
     createInspectTextureMipsMaterial(): InspectTextureMipsMaterial;
 
     /**
      * Creates a material for inspecting a 2D texture array.
-     * The layer index defaults to 0. WebGPU throws because texture arrays are not implemented there yet.
+     * The layer index defaults to 0. Works on WebGL2 and WebGPU.
      * @returns The inspect texture array material.
      */
     createInspectTextureArrayMaterial(): InspectTextureArrayMaterial;

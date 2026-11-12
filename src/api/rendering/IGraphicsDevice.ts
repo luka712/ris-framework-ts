@@ -11,6 +11,7 @@ import type { ISwapChain } from "./swapchain/ISwapChain.ts";
 import {SamplerDescriptor} from "./sampler/SamplerDescriptor.ts";
 import type {IPrimitiveStateDescriptor} from "./primitive/IPrimitiveStateDescriptor.ts";
 import type {RenderingBackend} from "./RenderingBackend.ts";
+import type { State } from "../_export.ts";
 
 /**
  * The interface for a graphics device.
@@ -20,14 +21,13 @@ export interface IGraphicsDevice extends IDisposable {
     /** The api used. */
     readonly api: RenderingBackend;
 
-    /**
-     * The info about the GPU.
-     */
+    /** The life-cycle state of the graphics device. */
+    readonly state: State;
+
+    /** The info about the GPU.*/
     readonly gpuInfo: IGPUInfo;
 
-    /**
-     * The features of the graphics device.
-     */
+    /** The features of the graphics device. */
     readonly features: IGraphicsDeviceFeatures;
 
     /**

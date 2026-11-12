@@ -109,6 +109,7 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
 
     /** @inheritDoc */
     public async initializeAsync(): Promise<void> {
+        this._validateState("WebGpuGraphicsDevice.initializeAsync");
 
         this._context = this._canvasManager.canvas.getContext("webgpu") as GPUCanvasContext;
         if (!this._context) {
@@ -179,11 +180,10 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
         this.currentRenderPassEncoder?.popDebugGroup();
     }
 
-    /** @inheritDoc */
-    public dispose(): void {
-        super.dispose();
+    /** Disposes the swap chain and destroys the GPU device. */
+    protected _disposeBackend(): void {
         this._swapChain?.dispose();
         this._swapChain = null;
-        this._device.destroy();
+        this._device?.destroy();
     }
 }

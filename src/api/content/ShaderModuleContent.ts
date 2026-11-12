@@ -93,6 +93,7 @@ import unlitMaterial from "../../../shaders/wgsl/unlit_material.wgsl?raw";
 import forwardBlinnPhongMaterial from "../../../shaders/wgsl/forward_blinn_phong_material.wgsl?raw";
 import sprite from "../../../shaders/wgsl/sprite.wgsl?raw";
 import inspectTextureMips from "../../../shaders/wgsl/inspect/inspect_texture_mips.wgsl?raw";
+import inspectTextureArrayWgsl from "../../../shaders/wgsl/inspect/inspect_texture_array.wgsl?raw";
 import colorConversionWgsl from "../../../shaders/wgsl/modules/color_conversion.wgsl?raw";
 
 /**
@@ -111,7 +112,8 @@ export const WgslShaderModuleContent: { [id: string]: InternalShader } = {
     forward_blinn_phong_material: { shader: forwardBlinnPhongMaterial },
     sprite: { shader: sprite },
     inspect_texture_mips: { shader: inspectTextureMips },
-       color_conversion: {
+    inspect_texture_array: { shader: inspectTextureArrayWgsl },
+    color_conversion: {
         path: "modules/color_conversion.wgsl",
         shader: colorConversionWgsl,
         reflection: {}

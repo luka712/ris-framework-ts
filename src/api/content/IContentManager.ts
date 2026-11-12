@@ -50,15 +50,15 @@ export interface IContentManager {
     loadTexture2DAsync(path: string, desc?: ITextureDescriptor, contentConfig?: ContentConfig): Promise<ITexture2D>;
 
     /**
-     * Loads a texture2D array. Not implemented for WebGPU yet (throws).
+     * Loads a texture2D array. Works on WebGL2 and WebGPU.
      * @param filePaths - The image file paths, one per layer, in layer order. All images must have the same size.
      * A single image path is loaded as a one-layer array. A single `.ktx2` path is loaded with
      * {@link ITextureFactory.createTexture2DArrayFromKtx2}: one array layer per KTX2 layer (a non-array file gives one layer),
      * each with all of the file's mip levels, and the format and color space picked like {@link ITextureFactory.createFromKtx2}.
-     * Compressed KTX2 formats are not implemented for WebGL2 texture arrays yet (throws). KTX2 cube maps and 3D textures are rejected.
+     * Compressed KTX2 formats are not implemented for WebGL2 texture arrays yet (throws); WebGPU supports them. KTX2 cube maps and 3D textures are rejected.
      * @param desc - The texture descriptor. Only `textureFormat`, `preferredColorSpace`, `label`, `textureUsage` and `generateMipmaps` are used.
      * By default, the format is the renderer's {@link IRenderer.preferredTextureFormat}, the label is the first path
-     * and usage is `TEXTURE_BINDING | COPY_SRC`.
+     * and usage is `TEXTURE_BINDING | COPY_DST | RENDER_ATTACHMENT` (WebGPU copies the images with `copyExternalImageToTexture`, which needs both).
      * @param contentConfig - The content config. By default, data is not kept cached.
      * @returns The Texture2DArray.
      * @throws Error when `filePaths` is empty or the layers have different sizes, or a `.ktx2` path cannot be fetched or is not a 2D (array) KTX2 file.

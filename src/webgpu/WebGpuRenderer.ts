@@ -1,7 +1,6 @@
 import {ARenderer} from "../core/rendering/ARenderer.ts";
 import {type IFramework, type IGraphicsDevice, type IRendererConfiguration, RenderingBackend} from "../api/index.ts";
 import {WebGpuGraphicsDevice} from "./WebGpuGraphicsDevice.ts";
-import {WebGpuUtilities} from "./utilities/WebGpuUtilities.ts";
 
 /**
  * The WebGPU renderer. WebGPU hands out the adapter and device asynchronously; the graphics device
@@ -18,13 +17,6 @@ export class WebGpuRenderer extends ARenderer {
     public constructor(framework: IFramework, renderConfiguration: IRendererConfiguration) {
         super(framework, renderConfiguration);
         this.backend = RenderingBackend.WEB_GPU;
-    }
-
-    /**
-     * Whether WebGPU is available in this browser (`navigator.gpu` exists).
-     */
-    public static isSupported(): boolean {
-        return WebGpuUtilities.instance.isSupported();
     }
 
 

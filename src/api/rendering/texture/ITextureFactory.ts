@@ -60,8 +60,29 @@ export interface ITextureFactory {
            generateMipMaps?: boolean): ITexture2D;
 
     /**
+     * Creates a 2D texture from explicit mip levels: `mipLevels[i]` is the pixel bytes of mip level `i`,
+     * sized `max(1, width >> i)` x `max(1, height >> i)`. Useful to inspect mips, e.g. with {@link InspectTextureMipsMaterial}.
+     * Works on WebGL2 and WebGPU. Compressed formats are not size-checked.
+     * @param width - The width of mip level 0 in pixels. Must be greater than 0.
+     * @param height - The height of mip level 0 in pixels. Must be greater than 0.
+     * @param mipLevels - The bytes per mip level, starting at level 0. Must not be empty and must not have more levels than the full mip chain of `width` x `height`.
+     * @param label - The label. By default, none.
+     * @param usage - Texture usage. By default, COPY_DST | TEXTURE_BINDING.
+     * @param textureFormat - The texture format. By default (or when UNDEFINED), the renderer's current {@link IRenderer.preferredTextureFormat}.
+     * @returns The initialized texture with `mipLevels.length` mip levels.
+     * @throws Error when `mipLevels` is empty or longer than the full mip chain, the size is 0,
+     * or a level is shorter than `levelWidth * levelHeight * bytesPerPixel` (uncompressed formats only).
+     */
+    createWithMipLevels(width: number, height: number,
+                        mipLevels: Uint8Array[],
+                        label?: string,
+                        usage?: TextureUsage,
+                        textureFormat?: TextureFormat): ITexture2D;
+
+    /**
      * Creates a 2D texture array from image data. Every layer has the same size and format.
-     * Not implemented for WebGPU yet (throws).
+     * Mipmap generation (`generateMipMaps`) is not implemented for WebGPU yet (throws); pass the mip levels in `data` instead.
+     * On WebGPU, uploading data needs `COPY_DST` usage, and `HTMLImageElement` data also needs `RENDER_ATTACHMENT`.
      * @param width - The width of one layer in pixels. Must be greater than 0.
      * @param height - The height of one layer in pixels. Must be greater than 0.
      * @param layer - The number of layers. Must be greater than 0.
@@ -98,7 +119,7 @@ export interface ITextureFactory {
     /**
      * Create a 2D texture array from a KTX2 file: one array layer per KTX2 layer, each with all mip levels.
      * The format and color space are picked the same way as {@link createFromKtx2}.
-     * Compressed texture arrays are not implemented for WebGL2 yet, and texture arrays are not implemented for WebGPU yet (both throw).
+     * Compressed texture arrays are not implemented for WebGL2 yet (throws). WebGPU supports them, block-compressed formats included.
      * @param ktxTexture - The ktx2 texture. Transcoded in place when it holds Basis Universal data.
      * @param layers - The number of layers in the file. Must be greater than 0. A non-array KTX2 file has 1.
      * @param textureFormat - The desired texture format. By default, TextureFormat.UNDEFINED, which picks the format from the GPU features.

@@ -5,8 +5,11 @@ import {
     Framework,
     RenderingBackend,
     RenderableMesh,
+    Scene,
+    type GameTime,
     TextureFormat,
     type IFramework,
+    type ITexture2DArray,
     type InspectTextureArrayMaterial,
 } from "../../src";
 
@@ -26,25 +29,24 @@ runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
         renderingBackend: backend,
     });
 
-    const meshes: RenderableMesh[] = [];
+    // The scene draws the quads; disposing it disposes the meshes and their materials (not the texture).
+    let scene: Scene | undefined;
+    let texture: ITexture2DArray | undefined;
 
     framework.addOnLoadContentListener(async () => {
-        if (backend === RenderingBackend.WEB_GPU) {
-            status.textContent = "2D texture arrays are not implemented for WebGPU yet.";
-            return;
-        }
-
         try {
             const layers = LAYER_URLS.length;
-            const texture = await framework.content.loadTexture2DArrayAsync([...LAYER_URLS], {
+            const loaded = await framework.content.loadTexture2DArrayAsync([...LAYER_URLS], {
                 label: "PngLayers",
                 textureFormat: TextureFormat.RGBA8_UNORM,
             });
             if (!isCurrent()) {
-                texture.dispose();
+                loaded.dispose();
                 return;
             }
 
+            texture = loaded;
+            scene = new Scene(framework);
             for (let layer = 0; layer < layers; layer++) {
                 const material: InspectTextureArrayMaterial = framework.materialFactory.createInspectTextureArrayMaterial();
                 material.texture = texture;
@@ -52,10 +54,11 @@ runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
                 const mesh = new RenderableMesh(framework, material);
                 mesh.setGeometry(framework.geometryBuilder.quadGeometry(vec2.fromValues(0.42, 0.42)));
                 mesh.transform.position[0] = -0.72 + layer * 0.48;
-                meshes.push(mesh);
+                scene.add(mesh);
             }
 
-            status.textContent = `WebGL texture array: ${layers} PNG layers (16×16), one quad each.`;
+            const backendName = backend === RenderingBackend.WEB_GPU ? "WebGPU" : "WebGL";
+            status.textContent = `${backendName} texture array: ${layers} PNG layers (16×16), one quad each.`;
         } catch (error) {
             if (!isCurrent()) {
                 return;
@@ -64,10 +67,12 @@ runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
         }
     });
 
+    framework.addOnUpdateListener((time: GameTime) => {
+        scene?.update(time);
+    });
+
     framework.addOnRenderListener(() => {
-        for (const mesh of meshes) {
-            mesh.render();
-        }
+        scene?.render();
     });
 
     return {
@@ -76,9 +81,8 @@ runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
             framework.renderer.clearColor = Color.lightPink();
         },
         dispose: () => {
-            for (const mesh of meshes) {
-                mesh.dispose();
-            }
+            scene?.dispose();
+            texture?.dispose();
         },
     };
 });

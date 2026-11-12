@@ -62,8 +62,8 @@ export interface IRenderPipelineFactory {
      * Creates the inspect texture mip level pipeline.
      * @param projectionViewBuffer - The projection view buffer.
      * @param modelBuffer - The world buffer.
-     * @param fragmentDataBuffer - The fragment data buffer. TODO: describe buffer contents
-     * @returns The inspect texture mips render pipeline.
+     * @param fragmentDataBuffer - The fragment data buffer: one std140 float `[mipLevel]`, the mip level to sample.
+     * @returns The initialized inspect texture mips render pipeline (WebGL2 and WebGPU).
      */
     createInspectTextureMipsRenderPipeline(projectionViewBuffer: IUniformBuffer, modelBuffer: IUniformBuffer, fragmentDataBuffer: IUniformBuffer): IInspectTextureMipsRenderPipeline;
 
@@ -71,8 +71,8 @@ export interface IRenderPipelineFactory {
      * Creates the inspect texture array pipeline.
      * @param projectionViewBuffer - The projection view buffer.
      * @param modelBuffer - The world buffer.
-     * @param fragmentDataBuffer - The fragment data buffer. TODO: describe buffer contents
-     * @returns The inspect texture mips render pipeline.
+     * @param fragmentDataBuffer - The fragment data buffer: std140 floats `[inspectLod, layer, mipLevel, padding]`.
+     * @returns The initialized inspect texture array render pipeline (WebGL2 and WebGPU).
      */
     createInspectTextureArrayRenderPipeline(projectionViewBuffer: IUniformBuffer, modelBuffer: IUniformBuffer, fragmentDataBuffer: IUniformBuffer): IInspectTextureArrayRenderPipeline;
 

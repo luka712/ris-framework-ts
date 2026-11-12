@@ -15,9 +15,11 @@ import type {
 import {WebGpuMainRenderTargetRenderPipeline} from "./WebGpuMainRenderTargetRenderPipeline.ts";
 import {WebGpuUnlitRenderPipeline} from "./material/WebGpuUnlitRenderPipeline.ts";
 import {WebGpuSpriteRenderPipeline} from "./sprite/WebGpuSpriteRenderPipeline.ts";
+import {WebGpuInspectTextureArrayRenderPipeline} from "./inspect/WebGpuInspectTextureArrayRenderPipeline.ts";
+import {WebGpuInspectTextureMipsRenderPipeline} from "./inspect/WebGpuInspectTextureMipsRenderPipeline.ts";
 
 /**
- * The WebGPU render pipeline factory. Slice 1 implements the main render target and unlit pipelines.
+ * The WebGPU render pipeline factory. Implements the main render target, unlit, sprite, inspect texture mips and inspect texture array pipelines.
  * @internal
  */
 export class WebGpuRenderPipelineFactory implements IRenderPipelineFactory {
@@ -58,20 +60,18 @@ export class WebGpuRenderPipelineFactory implements IRenderPipelineFactory {
         return pipeline;
     }
 
-    /**
-     * Not implemented for WebGPU yet; always throws.
-     * @inheritDoc
-     */
-    public createInspectTextureMipsRenderPipeline(_projectionViewBuffer: IUniformBuffer, _modelBuffer: IUniformBuffer, _textureConstantsBuffer: IUniformBuffer): IInspectTextureMipsRenderPipeline {
-        throw new Error("WebGpuRenderPipelineFactory.createInspectTextureMipsRenderPipeline: the inspect texture mips render pipeline is not implemented for WebGPU yet.");
+    /** @inheritDoc */
+    public createInspectTextureMipsRenderPipeline(projectionViewBuffer: IUniformBuffer, modelBuffer: IUniformBuffer, fragmentDataBuffer: IUniformBuffer): IInspectTextureMipsRenderPipeline {
+        const pipeline = new WebGpuInspectTextureMipsRenderPipeline(this._framework, projectionViewBuffer, modelBuffer, fragmentDataBuffer);
+        pipeline.initialize();
+        return pipeline;
     }
 
-    /**
-     * Not implemented for WebGPU yet; always throws.
-     * @inheritDoc
-     */
-    public createInspectTextureArrayRenderPipeline(_projectionViewBuffer: IUniformBuffer, _modelBuffer: IUniformBuffer, _fragmentDataBuffer: IUniformBuffer): IInspectTextureArrayRenderPipeline {
-        throw new Error("WebGpuRenderPipelineFactory.createInspectTextureArrayRenderPipeline: the inspect texture array render pipeline (2D texture arrays) is not implemented for WebGPU yet.");
+    /** @inheritDoc */
+    public createInspectTextureArrayRenderPipeline(projectionViewBuffer: IUniformBuffer, modelBuffer: IUniformBuffer, fragmentDataBuffer: IUniformBuffer): IInspectTextureArrayRenderPipeline {
+        const pipeline = new WebGpuInspectTextureArrayRenderPipeline(this._framework, projectionViewBuffer, modelBuffer, fragmentDataBuffer);
+        pipeline.initialize();
+        return pipeline;
     }
 
     /**

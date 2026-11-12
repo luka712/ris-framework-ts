@@ -11,7 +11,10 @@ export interface IInspectTextureMipsRenderPipeline extends IRenderPipeline {
     /** The texture. By default, a 1x1 white texture. */
     texture: ITexture2D;
 
-    /** The texture sampler. By default, the pipeline's default sampler. */
+    /**
+     * The texture sampler. By default, the pipeline's default sampler.
+     * It needs a mipmap filter to reach levels above 0; the default sampler has none and samples mip 0 only.
+     */
     textureSampler?: ISampler;
 
     /**

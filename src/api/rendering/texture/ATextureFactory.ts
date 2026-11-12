@@ -242,6 +242,37 @@ export abstract class ATextureFactory implements ITextureFactory {
     }
 
     /** @inheritDoc */
+    public createWithMipLevels(width: number, height: number, mipLevels: Uint8Array[], label?: string,
+                               usage = TextureUsage.COPY_DST | TextureUsage.TEXTURE_BINDING,
+                               textureFormat = TextureFormat.UNDEFINED): ITexture2D {
+        if (textureFormat == TextureFormat.UNDEFINED) {
+            textureFormat = this._framework.renderer.preferredTextureFormat;
+        }
+        if (!(width > 0) || !(height > 0)) {
+            throw new Error(`ATextureFactory.createWithMipLevels: '${label ?? "unlabeled"}' has size ${width}x${height}; width and height must be greater than 0.`);
+        }
+        const maxLevels = TextureUtilities.mipLevels(width, height);
+        if (!mipLevels || mipLevels.length == 0 || mipLevels.length > maxLevels) {
+            throw new Error(`ATextureFactory.createWithMipLevels: '${label ?? "unlabeled"}' has ${mipLevels?.length ?? 0} mip levels; ` +
+                `a ${width}x${height} texture needs between 1 and ${maxLevels}.`);
+        }
+        for (let level = 0; level < mipLevels.length; level++) {
+            this._validateLevelByteLength("createWithMipLevels", label, mipLevels[level],
+                Math.max(1, width >> level), Math.max(1, height >> level), textureFormat, 4, ` mip ${level}`);
+        }
+
+        const desc: ITextureDescriptor = {
+            width,
+            height,
+            data: mipLevels,
+            textureFormat,
+            textureUsage: usage,
+            label,
+        };
+        return this._createAndInitializeTexture(desc);
+    }
+
+    /** @inheritDoc */
     public createTexture2DArray(width: number, height: number, layer: number, data?: HTMLImageElement[][] | Uint8Array[][], label?: string, usage?: TextureUsage, textureFormat?: TextureFormat, generateMipmaps?: boolean): ITexture2DArray {
         if (textureFormat == undefined || textureFormat == TextureFormat.UNDEFINED) {
             textureFormat = this._framework.renderer.preferredTextureFormat;

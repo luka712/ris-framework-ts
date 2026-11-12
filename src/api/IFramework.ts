@@ -61,8 +61,8 @@ export class IFrameworkConfiguration {
 
     /**
      * The rendering backend. Defaults to WebGL.
-     * WebGPU requires `Framework.initializeAsync()`; when `navigator.gpu` is missing or no device is available,
-     * the framework falls back to WebGL with a warning.
+     * WebGPU requires `Framework.initializeAsync()`. There is no fallback: when `navigator.gpu` is missing
+     * or no device is available, initialization throws.
      */
     renderingBackend?: RenderingBackend;
 }

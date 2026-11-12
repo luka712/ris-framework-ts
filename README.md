@@ -135,7 +135,7 @@ framework.addOnRenderListener(() => {
 
 ## Examples and scripts
 
-Examples live in [`examples/`](examples/): `unlit_mesh`, `blinn_phong_mesh` and `sprite_batch` (see [`examples/README.md`](examples/README.md)).
+Examples live in [`examples/`](examples/): `unlit_mesh`, `blinn_phong_mesh`, `sprite_batch`, `texture_array_2d` and `inspect_texture_mips` (see [`examples/README.md`](examples/README.md)).
 
 ```sh
 npm ci
@@ -147,6 +147,10 @@ npm run build            # library (dist/) and app build
 ```
 
 Requires Node.js 22 (or `^20.19.0`) and a WebGL2-capable browser.
+
+## Code conventions
+
+See [`ai-guide/CONVENTIONS.md`](ai-guide/CONVENTIONS.md). In short: no static pass-through wrappers and no silent fallbacks (throw a clear error instead).
 
 ## Known limitations
 

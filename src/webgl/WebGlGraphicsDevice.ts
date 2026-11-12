@@ -1,13 +1,13 @@
-import {WebGlSampler} from "./sampler/webgl-sampler";
-import {WebGlRenderPass} from "./render-pass/WebGlRenderPass.ts";
-import {AGraphicsDevice, type IGraphicsDeviceDescriptor} from "../core/rendering/AGraphicsDevice.ts";
-import {type BlendStateDescriptor} from "../core/rendering/blending/blend-state-descriptor";
-import {WebGlBlendState} from "./blending/webgl-blend-state";
-import {WebGlPrimitiveState} from "./primitive/WebGlPrimitiveState.ts";
-import {WebGlGraphicsDeviceFeatures} from "./WebGLGraphicsDeviceFeatures.ts";
-import {WebGlSwapChain} from "./swap-chain/WebGlSwapChain.ts";
-import {WebGlGpuInfo} from "./WebGlGpuInfo.ts";
-import type {SamplerDescriptor} from "../core/rendering/sampler/sampler-descriptor.ts";
+import { WebGlSampler } from "./sampler/webgl-sampler";
+import { WebGlRenderPass } from "./render-pass/WebGlRenderPass.ts";
+import { AGraphicsDevice, type IGraphicsDeviceDescriptor } from "../core/rendering/AGraphicsDevice.ts";
+import { type BlendStateDescriptor } from "../core/rendering/blending/blend-state-descriptor";
+import { WebGlBlendState } from "./blending/webgl-blend-state";
+import { WebGlPrimitiveState } from "./primitive/WebGlPrimitiveState.ts";
+import { WebGlGraphicsDeviceFeatures } from "./WebGLGraphicsDeviceFeatures.ts";
+import { WebGlSwapChain } from "./swap-chain/WebGlSwapChain.ts";
+import { WebGlGpuInfo } from "./WebGlGpuInfo.ts";
+import type { SamplerDescriptor } from "../core/rendering/sampler/sampler-descriptor.ts";
 import {
     type IBlendState,
     type IGPUInfo, type IPrimitiveState,
@@ -20,6 +20,7 @@ import {
     type ISwapChainDescriptor,
     RenderingBackend
 } from "../api/index.ts";
+import type { Spector } from "spectorjs";
 
 /**
  * Creates WebGL2 enabled graphics device.
@@ -27,34 +28,12 @@ import {
  */
 export class WebGlGraphicsDevice extends AGraphicsDevice {
 
-    /** @inheritdoc */
-    public readonly api = RenderingBackend.WEB_GL;
-
-    /** Not implemented for WebGL2; always throws. */
-    public setupDebugCallback(): void {
-        throw new Error("WebGlGraphicsDevice.setupDebugCallback: Not implemented for WebGL2.");
-    }
-
-    /** Not implemented for WebGL2; always throws. */
-    public frameEnd(): void {
-        throw new Error("WebGlGraphicsDevice.frameEnd: Not implemented for WebGL2.");
-    }
-
-    /** Not implemented for WebGL2; always throws. */
-    public pushDebugGroup(_groupName: string): void {
-        throw new Error("WebGlGraphicsDevice.pushDebugGroup: Not implemented for WebGL2.");
-    }
-
-    /** Not implemented for WebGL2; always throws. */
-    public popDebugGroup(): void {
-        throw new Error("WebGlGraphicsDevice.popDebugGroup: Not implemented for WebGL2.");
-    }
-
     private readonly _canvasManager: ICanvasManager;
     private _canvas: HTMLCanvasElement = null!;
     private _gl: WebGL2RenderingContext = null!;
     private _features: WebGlGraphicsDeviceFeatures = null!;
     private _gpuInfo: WebGlGpuInfo = null!;
+    private _spector?: Spector;
 
     /**
      * The constructor.
@@ -66,6 +45,9 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
         super(descriptor);
         this._canvasManager = canvasManager;
     }
+
+    /** @inheritdoc */
+    public readonly api = RenderingBackend.WEB_GL;
 
     /**
      * The WebGL rendering context.
@@ -86,13 +68,22 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
 
     /** @inheritdoc */
     public async initializeAsync(): Promise<void> {
+        this._validateState("WebGlGraphicsDevice.initializeAsync");
 
         this._canvas = this._canvasManager.canvas;
+
+        // Loaded on demand so non-debug builds and Node tests never evaluate Spector (it touches `self` at import).
+        // Spy before the context is created, so Spector wraps the real WebGL2 context instead of guessing one at capture time.
+        if (this._descriptor.debugContext) {
+            const { Spector } = await import("spectorjs");
+            this._spector = new Spector();
+            this._spector.spyCanvas(this._canvas);
+        }
 
         const contextOptions: WebGLContextAttributes = {
             antialias: false,
             alpha: this._descriptor.alpha,
-            powerPreference:  this._descriptor.powerPreference,
+            powerPreference: this._descriptor.powerPreference,
         };
 
         this._gl = this._canvas.getContext(
@@ -134,5 +125,32 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
     /** @inheritdoc */
     public createPrimitiveState(descriptor?: IPrimitiveStateDescriptor): IPrimitiveState {
         return new WebGlPrimitiveState(this._gl, descriptor);
+    }
+
+    /** @inheritdoc */
+    public pushDebugGroup(_groupName: string): void {
+        this._spector?.setMarker(_groupName);
+    }
+
+    /** @inheritdoc */
+    public popDebugGroup(): void {
+        this._spector?.clearMarker();
+    }
+
+    /** @inheritdoc */
+    public setupDebugCallback(): void {
+        this._spector?.onError.add(error => {
+            debugger;
+            console.error(error);
+        })
+    }
+
+    /** Not implemented for WebGL2; always throws. */
+    public frameEnd(): void {
+        throw new Error("WebGlGraphicsDevice.frameEnd: Not implemented for WebGL2.");
+    }
+
+    /** WebGL has nothing extra to release; the context goes away with the canvas. */
+    protected _disposeBackend(): void {
     }
 }

@@ -82,6 +82,8 @@ export class InspectTextureMipsMaterial {
 
     /**
      * The texture sampler. By default, the pipeline's default sampler.
+     * Use a sampler with a mipmap filter (`MipMapSamplerFilter.NEAREST` or `LINEAR`): without one (the default sampler),
+     * sampling is clamped to mip level 0 on WebGL2 and WebGPU.
      */
     public get textureSampler(): ISampler | undefined {
         return this._pipeline ? this._pipeline.textureSampler : this._pendingSampler;

@@ -57,8 +57,9 @@ export class WebGlTextureUtilities {
             for (let i = 0; i < mipLevels; i++) {
 
                 const mipLevelData = data[i];
-                const levelWidth = width >> i;
-                const levelHeight = height >> i;
+                // Each mip is at least 1x1 (non-square textures reach 1 on one side first).
+                const levelWidth = Math.max(1, width >> i);
+                const levelHeight = Math.max(1, height >> i);
 
                 if (mipLevelData) {
                     gl.texSubImage2D(gl.TEXTURE_2D,
@@ -221,13 +222,12 @@ export class WebGlTextureUtilities {
         const internalFormat = WebGlConverter.convertInternalFormat(gl, textureFormat);
         const format = WebGlConverter.convertToPixelFormat(gl, textureFormat);
 
-        let mipLevels = 1;
+        let mipLevels =1;
         const hasData = !!data;
         if (hasData) {
-            for (let layer = 0; layer < data.length; layer++) {
                 // Now find max mip
-                mipLevels = Math.max(mipLevels, data[layer].length);
-            }
+                mipLevels =  TextureUtilities.maxMipLevels(data);
+            
         }
 
         // We can generate only if mip levels are not provided.

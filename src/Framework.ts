@@ -35,6 +35,8 @@ import {
     TimeManager
 } from "./api/index.ts";
 import {WebGlTexture2D} from "./webgl/texture/WebGlTexture2D.ts";
+import {WebGlTexture2DArray} from "./webgl/texture/WebGlTexture2DArray.ts";
+import {WebGpuTexture2DArray} from "./webgpu/texture/WebGpuTexture2DArray.ts";
 import type {IDisposable} from "./api/core/IDisposable.ts";
 import {WebGlShaderModuleLoader} from "./webgl/shader/WebGlShaderModuleLoader.ts";
 import {TextureSamplerFilteringPreset} from "./core/rendering/enums.ts";
@@ -106,10 +108,6 @@ export class Framework implements IFramework {
         // The renderer, texture, pipeline, shader and buffer services depend on the backend.
         let backend = this._configuration.renderingBackend ?? RenderingBackend.WEB_GL;
         if (backend === RenderingBackend.DEFAULT) {
-            backend = RenderingBackend.WEB_GL;
-        }
-        if (backend === RenderingBackend.WEB_GPU && !WebGpuRenderer.isSupported()) {
-            console.warn("WebGPU was requested, but navigator.gpu is missing. Falling back to WebGL.");
             backend = RenderingBackend.WEB_GL;
         }
         this._setupBackendServices(backend);
@@ -351,6 +349,8 @@ export class Framework implements IFramework {
 
         WebGlTexture2D.disposeDefault(this);
         WebGpuTexture2D.disposeDefault(this);
+        WebGlTexture2DArray.disposeDefault(this);
+        WebGpuTexture2DArray.disposeDefault(this);
         (this._contentManager as Partial<IDisposable>).dispose?.();
         // Only exists after initialize(); it owns the default sampler and blend state.
         (this.renderer.graphicsDevice as IGraphicsDevice | undefined)?.dispose();

@@ -6,9 +6,11 @@ export class WebGpuBindGroupLayoutEntryUtilities {
      * @param binding The binding.
      * @param visibility The `GPUShaderStage` flags.
      * @param sampleType The sample type. By default, `float`.
+     * @param viewDimension The view dimension, e.g. `2d-array` for `texture_2d_array`. By default, `2d`.
      */
-    public createTextureBindGroupLayoutEntry(binding: number, visibility: GPUShaderStageFlags, sampleType: GPUTextureSampleType = "float"): GPUBindGroupLayoutEntry {
-        return {binding, visibility, texture: {sampleType}};
+    public createTextureBindGroupLayoutEntry(binding: number, visibility: GPUShaderStageFlags, sampleType: GPUTextureSampleType = "float",
+                                             viewDimension: GPUTextureViewDimension = "2d"): GPUBindGroupLayoutEntry {
+        return {binding, visibility, texture: {sampleType, viewDimension}};
     }
 
     /**
