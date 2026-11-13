@@ -26,7 +26,6 @@ Compared with 0.3.0.
 - `InspectTextureArrayMaterial`, and WebGPU support for `InspectTextureMipsMaterial`.
 - `graphicsDevice.state` lifecycle, plus `supportedTextureFormats` and `supportsTextureFormat()` on device features.
 - `#include` in GLSL and WGSL shader modules.
-- Spector.js debugging for WebGL with `debugContext`.
 - `texture_array_2d` and `inspect_texture_mips` examples.
 
 ### Changed
