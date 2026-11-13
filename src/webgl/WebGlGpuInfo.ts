@@ -1,4 +1,4 @@
-import {type IGPUInfo, RenderingBackend, TextureFormat} from "../api/index.ts";
+import {type IGPUInfo, RenderingBackend, TextureFormat, TextureUtilities} from "../api/index.ts";
 import type {WebGlGraphicsDevice} from "./WebGlGraphicsDevice.ts";
 
 /**
@@ -31,25 +31,8 @@ export class WebGlGpuInfo implements IGPUInfo {
         // This info is hidden, therefore default.
         this.underlyingBackend = RenderingBackend.DEFAULT;
 
-        const supportedCompressedTextureFormats = [];
-
-        if(graphicsDevice.features.supportsTextureCompressionASTC){
-            supportedCompressedTextureFormats.push(TextureFormat.ASTC_4X4_RGBA_UNORM)
-        }
-
-        if(graphicsDevice.features.supportsTextureCompressionS3TC) {
-            supportedCompressedTextureFormats.push(TextureFormat.BC3_RGBA_UNORM)
-        }
-
-        if(graphicsDevice.features.supportsTextureCompressionETC2) {
-            supportedCompressedTextureFormats.push(TextureFormat.ETC2_RGBA8_UNORM);
-        }
-
-        if(graphicsDevice.features.supportsTextureCompressionBC) {
-            supportedCompressedTextureFormats.push(TextureFormat.BC7_RGBA_UNORM);
-        }
-
-        // TODO: PVRC
+        const supportedCompressedTextureFormats = graphicsDevice.features.supportedTextureFormats
+            .filter(f => TextureUtilities.isCompressedTextureFormat(f));
 
         this.supportedCompressedTextureFormats = supportedCompressedTextureFormats;
 

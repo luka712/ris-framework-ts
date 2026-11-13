@@ -59,31 +59,36 @@ export function runWithBackendSwitcher(canvasSelector: string, setup: (context: 
     bar.append(button, label);
     canvas.before(bar);
 
-    const updateUi = (active?: RenderingBackend) => {
+    const updateUi = (started: boolean) => {
         const other = backend === RenderingBackend.WEB_GPU ? RenderingBackend.WEB_GL : RenderingBackend.WEB_GPU;
         button.textContent = `Switch to ${backendName(other)}`;
-        label.textContent = active === undefined
-            ? `Starting ${backendName(backend)}…`
-            : active === backend
-                ? `Backend: ${backendName(active)}`
-                : `Backend: ${backendName(active)} (${backendName(backend)} unavailable, fell back)`;
+        label.textContent = started ? `Backend: ${backendName(backend)}` : `Starting ${backendName(backend)}…`;
     };
 
+    // The button stays disabled until the run has started, so a switch never races an initialization.
     const start = async () => {
         const run = ++generation;
-        updateUi();
-        current = setup({canvas, backend, isCurrent: () => run === generation});
-        const framework = current.framework;
-        if (backend === RenderingBackend.WEB_GPU) {
+        button.disabled = true;
+        updateUi(false);
+        try {
+            current = setup({canvas, backend, isCurrent: () => run === generation});
+            const framework = current.framework;
             await framework.initializeAsync();
-        } else {
-            framework.initialize();
+            if (run !== generation) {
+                return;
+            }
+            current.afterInitialize?.();
+            updateUi(true);
+        } catch (error) {
+            // Errors of a run the user already switched away from are not shown.
+            if (run === generation) {
+                label.textContent = error instanceof Error ? error.message : String(error);
+            }
+        } finally {
+            if (run === generation) {
+                button.disabled = false;
+            }
         }
-        if (run !== generation) {
-            return;
-        }
-        current.afterInitialize?.();
-        updateUi(framework.renderingBackend);
     };
 
     const stop = () => {
@@ -101,20 +106,11 @@ export function runWithBackendSwitcher(canvasSelector: string, setup: (context: 
     };
 
     button.addEventListener("click", () => {
-        button.disabled = true;
         stop();
         backend = backend === RenderingBackend.WEB_GPU ? RenderingBackend.WEB_GL : RenderingBackend.WEB_GPU;
         writeBackend(backend);
-        start()
-            .catch(error => {
-                label.textContent = error instanceof Error ? error.message : String(error);
-            })
-            .finally(() => {
-                button.disabled = false;
-            });
+        void start();
     });
 
-    start().catch(error => {
-        label.textContent = error instanceof Error ? error.message : String(error);
-    });
+    void start();
 }

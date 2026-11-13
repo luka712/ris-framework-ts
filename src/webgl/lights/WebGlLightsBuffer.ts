@@ -32,7 +32,7 @@ export class WebGlLightsBuffer implements LightsBuffer {
 
     private _ambientLight!: AmbientLight;
     private readonly _buffer: IUniformBuffer;
-    private readonly _data: number[];
+    private readonly _data: Float32Array;
     private readonly _uploaded: number[];
     private _directionalLights: DirectionalLight[] = [];
     private _pointLights: PointLight[] = [];
@@ -57,7 +57,7 @@ export class WebGlLightsBuffer implements LightsBuffer {
         const floatCount = WebGlLightsBuffer.AMBIENT_FLOAT_COUNT
             + this.maxDirectionalLights * WebGlLightsBuffer.DIRECTIONAL_LIGHT_FLOAT_COUNT
             + this.maxPointLights * WebGlLightsBuffer.POINT_LIGHT_FLOAT_COUNT;
-        this._data = new Array<number>(floatCount).fill(0);
+        this._data = new Float32Array(floatCount);
         this._writeData();
         this._uploaded = [...this._data];
         this._buffer = framework.bufferFactory.createUniformBuffer(this._data, BufferUsage.UNIFORM | BufferUsage.COPY_DST);

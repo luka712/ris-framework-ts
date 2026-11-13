@@ -13,13 +13,8 @@ import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
 import type {WebGpuBlendState} from "../blending/WebGpuBlendState.ts";
 import type {WebGpuPrimitiveState} from "../primitive/WebGpuPrimitiveState.ts";
 import type {WebGpuSampler} from "../sampler/WebGpuSampler.ts";
-import type {
-    GpuBindGroupLayout,
-    GpuPipelineLayout,
-    GpuRenderPipeline,
-    GpuShaderModule,
-} from "../WebGpuTypes.ts";
 import {WebGpuConverter} from "../utilities/WebGpuConverter.ts";
+import {WebGpuUtilities} from "../utilities/WebGpuUtilities.ts";
 
 /**
  * The base WebGPU render pipeline. Holds the device, the states and the vertex layouts,
@@ -32,8 +27,8 @@ export abstract class AWebGpuRenderPipeline implements IRenderPipeline {
     protected readonly _graphicsDevice: WebGpuGraphicsDevice;
     protected readonly _defaultTextureSampler: WebGpuSampler;
     protected _blendState: WebGpuBlendState;
-    protected _gpuPipeline: GpuRenderPipeline | null = null;
-    protected _pipelineLayout: GpuPipelineLayout | null = null;
+    protected _gpuPipeline: GPURenderPipeline | null = null;
+    protected _pipelineLayout: GPUPipelineLayout | null = null;
 
     /**
      * The constructor.
@@ -78,39 +73,26 @@ export abstract class AWebGpuRenderPipeline implements IRenderPipeline {
      */
     protected _createGpuPipeline(
         label: string,
-        module: GpuShaderModule,
-        bindGroupLayouts: GpuBindGroupLayout[],
+        module: GPUShaderModule,
+        bindGroupLayouts: GPUBindGroupLayout[],
         colorFormat: TextureFormat,
         depthStencilFormat?: TextureFormat): void {
 
         if (!this.vertexBufferLayouts || this.vertexBufferLayouts.length === 0) {
-            throw new Error("At least one vertex buffer layout must be provided for the render pipeline.");
+            throw new Error(`AWebGpuRenderPipeline '${label}': vertexBufferLayouts is empty; at least one vertex buffer layout must be provided for the render pipeline.`);
         }
         const device = this._graphicsDevice.device;
-        this._pipelineLayout = device.createPipelineLayout({label: `${label} layout`, bindGroupLayouts});
-        this._gpuPipeline = device.createRenderPipeline({
+        this._pipelineLayout = WebGpuUtilities.pipelineLayout.create(device, bindGroupLayouts, `${label} layout`);
+        this._gpuPipeline = WebGpuUtilities.renderPipeline.create(device, {
             label,
             layout: this._pipelineLayout,
-            vertex: {
-                module,
-                entryPoint: "main_vs",
-                buffers: this.vertexBufferLayouts.map(l => WebGpuConverter.convertVertexBufferLayout(l)),
-            },
-            fragment: {
-                module,
-                entryPoint: "main_fs",
-                targets: [{
-                    format: WebGpuConverter.convertTextureFormat(colorFormat),
-                    blend: this._blendState.gpuBlendState,
-                }],
-            },
+            module,
+            vertexBufferLayouts: this.vertexBufferLayouts.map(l => WebGpuConverter.convertVertexBufferLayout(l)),
+            colorFormat: WebGpuConverter.convertTextureFormat(colorFormat),
+            blend: this._blendState.gpuBlendState,
             primitive: this.primitiveState.gpuPrimitiveState,
-            depthStencil: depthStencilFormat !== undefined ? {
-                format: WebGpuConverter.convertTextureFormat(depthStencilFormat),
-                depthWriteEnabled: true,
-                // Matches the WebGL backend's LEQUAL.
-                depthCompare: "less-equal",
-            } : undefined,
+            // Depth compare is less-equal, matching the WebGL backend's LEQUAL.
+            depthStencilFormat: depthStencilFormat !== undefined ? WebGpuConverter.convertTextureFormat(depthStencilFormat) : undefined,
         });
     }
 

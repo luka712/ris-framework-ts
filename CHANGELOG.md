@@ -4,6 +4,41 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 An unreleased version is dated `{{YYYY-MM-DD}}`; the publish pipeline fills in the date when it is merged to `main`.
 
+## [0.4.0] - {{YYYY-MM-DD}}
+
+Compared with 0.3.0.
+
+### Breaking changes
+
+- `WindowManager` is now `CanvasManager` (`framework.canvasManager`), and `WindowBounds` is now `CanvasBounds`.
+- `framework.initialize()` is removed; use `initializeAsync()`. `framework.renderingBackend` is removed; use `graphicsDevice.api`.
+- WebGPU no longer falls back to WebGL; initialization throws when WebGPU is unavailable. `WebGpuRenderer.isSupported()` is removed.
+- Textures expose `size: vec2` instead of `width` and `height`; the old `size` byte count is now `vramSize`. `createEmpty` takes a `vec2`, and `createFromKtx2(ktx, textureFormat?, colorSpace?)` replaces the descriptor overload.
+- `textureColorSpace` and `renderer.colorSpace` are replaced by `outputColorSpace`, default `OutputColorSpace.NONE`. See [`guides/color-output.md`](guides/color-output.md).
+- `TextureFormat` members use wgpu-style names, for example `RGBA8_UNORM` instead of `RGBA_8_UNORM`.
+- `ITextureView` is now `ITextureView2D`; texture views are not supported on WebGL2 (check `features.supportsTextureView`).
+- `SwapChainDescriptor` is now the `ISwapChainDescriptor` interface.
+
+### Added
+
+- 2D texture arrays on WebGL and WebGPU: `createTexture2DArray`, `createTexture2DArrayFromKtx2` and `content.loadTexture2DArrayAsync`.
+- `createWithMipLevels` for 2D textures with your own mip levels.
+- `InspectTextureArrayMaterial`, and WebGPU support for `InspectTextureMipsMaterial`.
+- `graphicsDevice.state` lifecycle, plus `supportedTextureFormats` and `supportsTextureFormat()` on device features.
+- `#include` in GLSL and WGSL shader modules.
+- `texture_array_2d` and `inspect_texture_mips` examples.
+
+### Changed
+
+- Requires `ris-ktx2` ^0.3.0-dev.18.
+- KTX2 textures use the color space stored in the file unless one is passed.
+- Texture factories validate data sizes and give clearer error messages.
+
+### Fixed
+
+- Examples no longer hang after switching backends several times.
+- Running or restarting the event loop no longer starts a second loop, and removing a listener during a frame no longer skips the next one.
+
 ## [0.3.0] - {{YYYY-MM-DD}}
 
 Compared with 0.2.0.

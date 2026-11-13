@@ -82,15 +82,19 @@ export class WebGlVertexBuffer implements IVertexBuffer {
     }
 
     /** @inheritdoc */
-    public update(data: number[], offset: number = 0, length: number = 0): void {
+    public update(data: Float32Array, offset: number = 0, length: number = 0): void {
 
-        length = length > 0 ? length : data.length;
+        length = length > 0 ? length : data.length - offset;
+        length = Math.min(length, data.length - offset, this._data.length - offset);
+        if (length <= 0) {
+            return;
+        }
 
-        for (let i = offset; i < length; ++i) {
+        for (let i = offset; i < offset + length; ++i) {
             this._data[i] = data[i];
         }
 
-        WebGlUtilities.buffer.updateVertexBuffer(this._gl, this.buffer!, this._data, 0, offset, length);
+        WebGlUtilities.buffer.updateVertexBuffer(this._gl, this.buffer!, this._data, offset * Float32Array.BYTES_PER_ELEMENT, offset, length);
     }
 
     /** @inheritDoc */

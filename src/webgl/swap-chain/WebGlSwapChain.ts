@@ -1,5 +1,5 @@
 import {vec2} from "gl-matrix";
-import {type IGraphicsDevice, type ISwapChain, TextureFormat} from "../../api/index.ts";
+import {type IGraphicsDevice, type ISwapChain, TextureFormat} from "../../api";
 import type {WebGlGraphicsDevice} from "../WebGlGraphicsDevice.ts";
 
 /**
@@ -16,9 +16,8 @@ export class WebGlSwapChain implements ISwapChain {
      * The WebGLSwapChain constructor.
      * @param canvas The HTML canvas element that the swap chain will use for rendering.
      * @param graphicsDevice The graphics device.
-     * @param srgb Prefer use of
      */
-    public constructor(canvas: HTMLCanvasElement, graphicsDevice: IGraphicsDevice, srgb = true) {
+    public constructor(canvas: HTMLCanvasElement, graphicsDevice: IGraphicsDevice) {
         this._canvas = canvas;
         this._graphicsDevice = graphicsDevice as WebGlGraphicsDevice;
         this._backBufferSize = vec2.fromValues(this._canvas.width, this._canvas.height);
@@ -27,12 +26,13 @@ export class WebGlSwapChain implements ISwapChain {
             this._backBufferSize[1] = this._canvas.height;
         });
 
-        // Nothing else to do. Typically, framebuffer should be srgb, but that is already handled through canvas.
-        this.textureFormat = srgb ? TextureFormat.RGBA_8_UNORM_SRGB : TextureFormat.RGBA_8_UNORM;
     }
 
-    /** @inheritdoc */
-    public readonly textureFormat: TextureFormat;
+    /**
+     * Always {@link TextureFormat.RGBA8_UNORM}: the WebGL default framebuffer is never sRGB.
+     * With sRGB output the main render target pipeline's blit shader encodes instead.
+     */
+    public readonly textureFormat: TextureFormat = TextureFormat.RGBA8_UNORM;
 
     /** @inheritdoc */
     public get backBufferSize(): vec2 {

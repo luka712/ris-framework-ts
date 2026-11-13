@@ -48,7 +48,7 @@ framework.addOnLoadContentListener(async () =>
 
   const texDesc: ITextureDescriptor = {
     generateMipmaps: true,
-    textureFormat: TextureFormat.RGBA_8_UNORM,
+    textureFormat: TextureFormat.RGBA8_UNORM,
   };
 
   tex = await framework.content.loadTexture2DAsync("/assets/test.png", texDesc);
@@ -78,7 +78,7 @@ framework.addOnRenderListener(() =>
   spriteBatch.end();
 });
 
-framework.initialize();
+framework.initializeAsync();
 framework.renderer.clearColor = Color.lightPink();
 
 

@@ -8,18 +8,58 @@ import {
     TextureSamplerFilteringPreset,
 } from "../../src/index.ts";
 // Kodak test image kodim23 (parrots), resized to 512×341. See README.md for source and license.
-import parrotsUrl from "./assets/kodim23.ktx2?url";
-import {ColorSpace} from "../../src/api/rendering/enums.ts";
+import parrotsUrl from "./assets/kodim23_etc1s.ktx2?url";
+import {OutputColorSpace} from "../../src/api/rendering/enums.ts";
 
 const status = document.querySelector<HTMLParagraphElement>("#status")!;
+const outputButton = document.querySelector<HTMLButtonElement>("#output-color-space")!;
+const outputLabel = document.querySelector<HTMLSpanElement>("#output-color-space-label")!;
+
+// The output color space is switched at runtime through renderer.outputColorSpace and kept across backend switches (?output=srgb). NONE is the default.
+const OUTPUT_KEY = "output";
+let outputColorSpace = new URLSearchParams(location.search).get(OUTPUT_KEY) === "srgb" ? OutputColorSpace.SRGB : OutputColorSpace.NONE;
+let currentFramework: IFramework | undefined;
+
+// The swap chain is not part of the public API; WebGPU's graphics device exposes it, WebGL always presents to an RGBA8 framebuffer.
+const swapChainFormat = (framework: IFramework): string =>
+    (framework.graphicsDevice as unknown as {swapChain?: {textureFormat: string} | null}).swapChain?.textureFormat ?? "RGBA8_UNORM (WebGL default framebuffer)";
+
+const logOutput = (framework: IFramework) => {
+    console.log(`[sprite_batch] output color space: ${framework.renderer.outputColorSpace}, `
+        + `main render target: ${framework.renderer.preferredTextureFormat}, swap chain: ${swapChainFormat(framework)}`);
+};
+
+const updateOutputUi = () => {
+    const other = outputColorSpace === OutputColorSpace.SRGB ? OutputColorSpace.NONE : OutputColorSpace.SRGB;
+    outputButton.textContent = `Switch output to ${other}`;
+    outputLabel.textContent = `Output color space: ${outputColorSpace}`;
+};
+
+outputButton.addEventListener("click", () => {
+    outputColorSpace = outputColorSpace === OutputColorSpace.SRGB ? OutputColorSpace.NONE : OutputColorSpace.SRGB;
+    const url = new URL(location.href);
+    if (outputColorSpace === OutputColorSpace.SRGB) {
+        url.searchParams.set(OUTPUT_KEY, "srgb");
+    } else {
+        url.searchParams.delete(OUTPUT_KEY);
+    }
+    history.replaceState(null, "", url);
+    if (currentFramework) {
+        currentFramework.renderer.outputColorSpace = outputColorSpace;
+        logOutput(currentFramework);
+    }
+    updateOutputUi();
+});
+updateOutputUi();
 
 runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
     const framework: IFramework = new Framework({
         canvas,
         renderingBackend: backend,
         textureFiltering: TextureSamplerFilteringPreset.BILINEAR,
-        textureColorSpace: ColorSpace.SRGB
+        outputColorSpace,
     });
+    currentFramework = framework;
 
     let parrots: ITexture2D | undefined;
     const drawRect = new Rect(16, 16, 512, 341);
@@ -28,9 +68,13 @@ runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
     framework.addOnLoadContentListener(async () => {
         try {
             parrots = await framework.content.loadTexture2DAsync(parrotsUrl);
-            drawRect.width = parrots.width;
-            drawRect.height = parrots.height;
-            status.textContent = `Loaded kodim23.ktx2 (${parrots.width}×${parrots.height}).`;
+            drawRect.width = parrots.size[0];
+            drawRect.height = parrots.size[1];
+            // TextureFormat is a string enum, so the value is the enum name.
+            console.log(`[sprite_batch] kodim23_etc1s.ktx2: format ${parrots.textureFormat}, `
+                + `size ${parrots.size[0]}×${parrots.size[1]}`);
+            logOutput(framework);
+            status.textContent = `Loaded kodim23_etc1s.ktx2 (${parrots.size[0]}×${parrots.size[1]}, ${parrots.textureFormat}).`;
         } catch (error) {
             if (!isCurrent()) {
                 return;

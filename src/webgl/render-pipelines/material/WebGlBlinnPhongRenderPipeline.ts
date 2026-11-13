@@ -24,6 +24,7 @@ import type {WebGlSampler} from "../../sampler/webgl-sampler.ts";
 import type {
     IForwardBlinnPhongRenderPipeline
 } from "../../../api/rendering/render-pipelines/IForwardBlinnPhongRenderPipeline.ts";
+import { WebGlTextureFactory } from "../../texture/WebGlTextureFactory.ts";
 
 /**
  * The WebGL implementation of Blinn-Phong with forward calculated lighting.
@@ -204,7 +205,7 @@ export class WebGlForwardBlinnPhongRenderPipeline extends AWebGlRenderPipeline i
 
     private _createResources(): void {
         {
-            this._texture = WebGlTexture2D.getOrCreateDefault(this._framework);
+            this._texture = (this._framework.textureFactory as WebGlTextureFactory).getOrCreateDefaultTexture2D();
 
             this._cameraBlockIndex = this._gl.getUniformBlockIndex(this._program, "CameraBuffer");
             this._gl.uniformBlockBinding(this._program, this._cameraBlockIndex, WebGlForwardBlinnPhongRenderPipeline.CAMERA_BINDING_POINT);

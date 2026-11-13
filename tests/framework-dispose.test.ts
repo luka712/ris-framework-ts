@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Framework } from "../src/Framework.ts";
 import { TextureFormat } from "../src/api/rendering/texture/TextureFormat.ts";
-import { WebGlTexture2D } from "../src/webgl/texture/WebGlTexture2D.ts";
 import {IFrameworkConfiguration} from "../src";
+import { WebGlTextureFactory } from "../src/webgl/texture/WebGlTextureFactory.ts";
 
 /** A WebGL2 context stand-in: every call is recorded; created objects remember the context that made them. */
 function fakeGl(name: string) {
@@ -40,10 +40,10 @@ function createFramework(name: string) {
     config.canvas = canvas;
     const framework = new Framework(config);
     const context = fakeGl(name);
-    const graphicsDevice = { gl: context.gl, dispose: vi.fn() };
+    const graphicsDevice = { gl: context.gl, dispose: vi.fn(), api: "WEB_GL", features: { supportsTextureView: false } };
     // Stand in for renderer.initialize(), which needs a real canvas.
     Object.defineProperty(framework.renderer, "graphicsDevice", { get: () => graphicsDevice, configurable: true });
-    Object.defineProperty(framework.renderer, "preferredTextureFormat", { get: () => TextureFormat.RGBA_8_UNORM, configurable: true });
+    Object.defineProperty(framework.renderer, "preferredTextureFormat", { get: () => TextureFormat.RGBA8_UNORM, configurable: true });
     return { framework, graphicsDevice, ...context };
 }
 
@@ -58,8 +58,8 @@ describe("Framework.dispose", () => {
 
     it("disposes the default texture so a new framework creates one on its own context", () => {
         const first = createFramework("first");
-        const oldDefault = WebGlTexture2D.getOrCreateDefault(first.framework);
-        expect(WebGlTexture2D.getOrCreateDefault(first.framework)).toBe(oldDefault);
+        const oldDefault = (first.framework.textureFactory as WebGlTextureFactory).getOrCreateDefaultTexture2D();
+        expect((first.framework.textureFactory as WebGlTextureFactory).getOrCreateDefaultTexture2D()).toBe(oldDefault);
         expect((oldDefault.glTexture as unknown as { ctx: string }).ctx).toBe("first");
 
         first.framework.dispose();
@@ -68,7 +68,7 @@ describe("Framework.dispose", () => {
         expect(first.graphicsDevice.dispose).toHaveBeenCalledOnce();
 
         const second = createFramework("second");
-        const newDefault = WebGlTexture2D.getOrCreateDefault(second.framework);
+        const newDefault = (second.framework.textureFactory as WebGlTextureFactory).getOrCreateDefaultTexture2D();
         expect(newDefault).not.toBe(oldDefault);
         expect((newDefault.glTexture as unknown as { ctx: string }).ctx).toBe("second");
         second.framework.dispose();
@@ -77,7 +77,7 @@ describe("Framework.dispose", () => {
     it("keeps default textures separate for frameworks alive at the same time", () => {
         const a = createFramework("a");
         const b = createFramework("b");
-        expect(WebGlTexture2D.getOrCreateDefault(a.framework)).not.toBe(WebGlTexture2D.getOrCreateDefault(b.framework));
+        expect((a.framework.textureFactory as WebGlTextureFactory).getOrCreateDefaultTexture2D()).not.toBe((b.framework.textureFactory as WebGlTextureFactory).getOrCreateDefaultTexture2D());
         a.framework.dispose();
         b.framework.dispose();
     });
@@ -104,14 +104,14 @@ describe("Framework.dispose", () => {
         vi.stubGlobal("cancelAnimationFrame", caf);
         const { framework } = createFramework("x");
         const tick = vi.fn();
-        framework.windowManager.addUpdateListener(tick);
-        framework.windowManager.runEventLoop();
+        framework.canvasManager.addUpdateListener(tick);
+        framework.canvasManager.runEventLoop();
         expect(tick).toHaveBeenCalledOnce();
 
         framework.dispose();
         framework.dispose();
         expect(caf).toHaveBeenCalledExactlyOnceWith(7);
-        framework.windowManager.runEventLoop();
+        framework.canvasManager.runEventLoop();
         expect(tick).toHaveBeenCalledOnce();
         vi.unstubAllGlobals();
     });

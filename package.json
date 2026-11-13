@@ -28,13 +28,15 @@
     "test": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit && vitest run"
   },
   "devDependencies": {
+    "@webgpu/types": "^0.1.74",
+    "spectorjs": "^0.9.33",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
     "vitest": "^5.0.3"
   },
   "dependencies": {
     "gl-matrix": "^3.4.4",
-    "ris-ktx2": "^0.2.0"
+    "ris-ktx2": "^0.3.0-dev.18"
   },
   "files": [
     "dist",

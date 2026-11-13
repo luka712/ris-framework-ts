@@ -1,5 +1,6 @@
 import {RenderingBackend, type ShaderStage} from "../index.ts";
 
+/** Loads shader source files over `fetch`. */
 export class ShaderLoader {
 
     /**
@@ -12,12 +13,12 @@ export class ShaderLoader {
     public async load(shaderFilePath: string, renderingBackend: RenderingBackend, stages: ShaderStage[]): Promise<string> {
 
         if(stages.length === 0) {
-            throw new Error("At least one shader stage must be specified.");
+            throw new Error(`ShaderLoader.load("${shaderFilePath}"): stages is empty; at least one shader stage must be specified.`);
         }
 
         if(renderingBackend === RenderingBackend.WEB_GL) {
             if(stages.length > 1) {
-                throw new Error("WebGL does not support multiple shader stages in a single file.");
+                throw new Error(`ShaderLoader.load("${shaderFilePath}"): WebGL does not support multiple shader stages in a single file; got ${stages.length} stages.`);
             }
         }
 

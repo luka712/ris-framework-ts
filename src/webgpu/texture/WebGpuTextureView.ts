@@ -1,38 +1,48 @@
-import {type ITextureView, TextureFormat, TextureViewDimension} from "../../api/index.ts";
-import type {GpuTextureView} from "../WebGpuTypes.ts";
+import {type ITextureView2D, TextureFormat, TextureViewDimension} from "../../api/index.ts";
 
 /**
- * The WebGPU texture view.
+ * The WebGPU texture view. Wraps a native {@link GPUTextureView} created with `GPUTexture.createView`,
+ * so every view shares the storage of its texture (no copies).
  * @internal
  */
-export class WebGpuTextureView implements ITextureView {
+export class WebGpuTextureView implements ITextureView2D {
 
-    private _gpuTextureView: GpuTextureView | null;
+    private _gpuTextureView: GPUTextureView | null;
 
     /**
      * The constructor.
      * @param gpuTextureView The WebGPU view.
      * @param textureFormat The view format.
-     * @param dimension The view dimension.
+     * @param dimension The view dimension. By default, `TextureViewDimension.DIMENSION_2D`.
+     * @param label The label. By default, none.
      */
-    public constructor(gpuTextureView: GpuTextureView, textureFormat: TextureFormat, dimension = TextureViewDimension.DIMENSION_2D) {
+    public constructor(gpuTextureView: GPUTextureView, textureFormat: TextureFormat, dimension = TextureViewDimension.DIMENSION_2D, label?: string) {
         this._gpuTextureView = gpuTextureView;
-        this.textureFormat = textureFormat;
+        this.viewFormat = textureFormat;
         this.dimension = dimension;
+        this.label = label;
     }
 
     /** @inheritDoc */
-    public readonly textureFormat: TextureFormat;
+    public readonly viewFormat: TextureFormat;
 
     /** @inheritDoc */
     public readonly dimension: TextureViewDimension;
 
+    /** @inheritDoc */
+    public readonly label?: string;
+
     /** The WebGPU view. */
-    public get gpuTextureView(): GpuTextureView {
+    public get gpuTextureView(): GPUTextureView {
         if (!this._gpuTextureView) {
             throw new Error("WebGpuTextureView: the view is disposed.");
         }
         return this._gpuTextureView;
+    }
+
+    /** @inheritDoc */
+    public get nativeObject(): GPUTextureView {
+        return this.gpuTextureView;
     }
 
     /** @inheritDoc */

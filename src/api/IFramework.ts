@@ -15,7 +15,7 @@ import type { IMaterialFactory } from "./material/IMaterialFactory.ts";
 import type { AmbientLightFactory } from "./lights/LightFactory.ts";
 import type { ITimeManager } from "./time/ITimeManager.ts";
 import type { IInputManager } from "./input/IInputManager.ts";
-import type { IWindowManager } from "./window/IWindowManager.ts";
+import type { ICanvasManager } from "./canvas/ICanvasManager.ts";
 import {GameTime} from "./time/GameTime.ts";
 import type { IImageProcessor } from "./image/IImageProcessor.ts";
 import type { IKtx2Factory } from "ris-ktx2";
@@ -23,7 +23,7 @@ import type { IDisposable } from "./core/IDisposable.ts";
 import type {vec2} from "gl-matrix";
 import type {TextureSamplerFilteringPreset} from "../core/rendering/enums.ts";
 import type {PowerPreferenceType} from "./rendering/PowerPreference.ts";
-import type {ColorSpace} from "./rendering/enums.ts";
+import type {OutputColorSpace} from "./rendering/enums.ts";
 
 
 /**
@@ -41,8 +41,11 @@ export class IFrameworkConfiguration {
     /** The texture filtering to configure */
     textureFiltering?: TextureSamplerFilteringPreset;
 
-    /** The texture color space to use by default. By default, it is {@link ColorSpace.LINEAR}. */
-     textureColorSpace?: ColorSpace;
+    /**
+     * The renderer's output color space. By default, {@link OutputColorSpace.NONE}: no color management, values are written to the screen as-is.
+     * Use {@link OutputColorSpace.SRGB} to encode linear shader output to sRGB once at present. Material shaders never convert gamma in either mode.
+     */
+    outputColorSpace?: OutputColorSpace;
 
      /**
      * The HTMLCanvasElement to use for rendering.
@@ -58,8 +61,8 @@ export class IFrameworkConfiguration {
 
     /**
      * The rendering backend. Defaults to WebGL.
-     * WebGPU requires `Framework.initializeAsync()`; when `navigator.gpu` is missing or no device is available,
-     * the framework falls back to WebGL with a warning.
+     * WebGPU requires `Framework.initializeAsync()`. There is no fallback: when `navigator.gpu` is missing
+     * or no device is available, initialization throws.
      */
     renderingBackend?: RenderingBackend;
 }
@@ -72,10 +75,6 @@ export interface IFramework extends IDisposable {
      */
     readonly imageLoader: IImageLoader;
 
-    /**
-     * The used rendering backend.
-     */
-    readonly renderingBackend: RenderingBackend;
 
     /**
      * The sprite batches.
@@ -155,7 +154,7 @@ export interface IFramework extends IDisposable {
     readonly input: IInputManager;
 
     /** The window manager. */
-    readonly windowManager: IWindowManager;
+    readonly canvasManager: ICanvasManager;
 
     /** The image processor. */
     readonly imageProcessor: IImageProcessor;
@@ -198,13 +197,7 @@ export interface IFramework extends IDisposable {
      */
     removeOnRenderListener(event: () => void): void;
 
-    /** Initializes the framework. */
-    initialize(): void;
-
-    /**
-     * Initializes the framework asynchronously and starts the event loop.
-     * Required for the WebGPU backend; for WebGL it behaves like {@link initialize}.
-     */
+    /** Initializes the framework asynchronously and starts the event loop. */
     initializeAsync(): Promise<void>;
 
 }

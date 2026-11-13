@@ -1,7 +1,7 @@
 import type { ISwapChain } from "../swapchain/ISwapChain.ts";
 import {Color} from "../../data/Color.ts";
 import type { ITexture2D } from "../texture/ITexture2D.ts";
-import type { ITextureView } from "../texture/ITextureView.ts";
+import type { ITextureView2D } from "../texture/ITextureView2D.ts";
 import {StoreAction} from "./StoreAction.ts";
 import {LoadAction} from "./LoadAction.ts";
 
@@ -25,7 +25,7 @@ export class RenderPassColorAttachment {
      * The view into  to which the render pass will write for this attachment.
      * Must be defined if texture is not defined.
      */
-    public view?: ITextureView;
+    public view?: ITextureView2D;
 
     /**
      * Whether data will be written to through this attachment.
@@ -54,7 +54,7 @@ export class RenderPassColorAttachment {
      * If set, it is always written to, regardless of how Self::ops is configured.
      * Can be used instead of  if rendering backend supports .
      */
-    public resolveView?: ITextureView;
+    public resolveView?: ITextureView2D;
 
     /** Clear color for the attachment. */
     public clearColor = Color.transparent();

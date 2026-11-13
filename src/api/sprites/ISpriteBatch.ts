@@ -17,7 +17,8 @@ export interface ISpriteBatch {
 
     /**
      * Begins the sprite batch.
-     * @param projectionViewMatrix - The projection view matrix to use for rendering between Begin and End.
+     * @param projectionViewMatrix - The projection view matrix to use for rendering between Begin and End. By default, the previous one is kept.
+     * @param textureSampler - The sampler for the sprites drawn until End. By default, the graphics device's default texture sampler.
      */
     begin(projectionViewMatrix?: mat4, textureSampler?: ISampler): void;
 

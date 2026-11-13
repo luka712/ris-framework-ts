@@ -17,6 +17,7 @@ import {AWebGlRenderPipeline} from "../AWebGlRenderPipeline.ts";
 import type {WebGLIndexBuffer} from "../../buffers/webgl-index-buffer";
 import {type IIndexBuffer, IndexBufferType} from "../../../api/index.ts";
 import type {WebGlSampler} from "../../sampler/webgl-sampler.ts";
+import { WebGlTextureFactory } from "../../texture/WebGlTextureFactory.ts";
 
 /**
  * The WebGL implementation of the sprite render pipeline.
@@ -86,7 +87,7 @@ export class WebGlSpriteRenderPipeline extends AWebGlRenderPipeline implements I
 
     private _createResources(): void {
         {
-            this._texture = WebGlTexture2D.getOrCreateDefault(this._framework);
+            this._texture = (this._framework.textureFactory as WebGlTextureFactory).getOrCreateDefaultTexture2D();
 
             this._cameraBlockIndex = this._gl.getUniformBlockIndex(this._program, "CameraBuffer");
             this._gl.uniformBlockBinding(this._program, this._cameraBlockIndex, WebGlSpriteRenderPipeline.CAMERA_BINDING_POINT);

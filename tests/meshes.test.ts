@@ -23,7 +23,7 @@ class InspectableQuad extends QuadMesh {
         return this._bufferUsage;
     }
 
-    public useVertexData(data: number[]): void {
+    public useVertexData(data: Float32Array): void {
         this._vertexData = data;
     }
 }
@@ -108,7 +108,7 @@ describe("QuadMesh", () => {
 
     it("writes texture coordinates in bottom-left, top-left, bottom-right, top-right order", () => {
         const mesh = new InspectableQuad(framework, true);
-        const vertexData = new Array<number>(36).fill(0);
+        const vertexData = new Float32Array(36);
         mesh.useVertexData(vertexData);
 
         mesh.updateTextureCoords(new Rect(0.25, 0.5, 0.5, 0.25));

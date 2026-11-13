@@ -1,7 +1,6 @@
 import {BufferUsage, type IFramework, type IVertexBuffer} from "../../api/index.ts";
+import { WebGpuUtilities } from "../utilities/WebGpuUtilities.ts";
 import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
-import {GpuBufferUsage, type GpuBuffer} from "../WebGpuTypes.ts";
-import {WebGpuConverter} from "../utilities/WebGpuConverter.ts";
 
 /**
  * The WebGPU vertex buffer. Always created with COPY_DST so it can be updated.
@@ -10,10 +9,10 @@ import {WebGpuConverter} from "../utilities/WebGpuConverter.ts";
 export class WebGpuVertexBuffer implements IVertexBuffer {
 
     private readonly _graphicsDevice: WebGpuGraphicsDevice;
-    private readonly _data: Float32Array;
+    private  _initialData: Float32Array | null = null;
     private readonly _vertexCount: number;
     private readonly _byteSize: number;
-    private _gpuBuffer: GpuBuffer | null = null;
+    private _gpuBuffer: GPUBuffer | null = null;
 
     /**
      * The constructor.
@@ -28,20 +27,21 @@ export class WebGpuVertexBuffer implements IVertexBuffer {
                        private readonly _byteStride: number,
                        private readonly _bufferUsage: BufferUsage,
                        private readonly _label?: string) {
+
         this._graphicsDevice = framework.renderer.graphicsDevice as WebGpuGraphicsDevice;
         if (typeof dataOrVertexCount === "number") {
             this._vertexCount = dataOrVertexCount;
             this._byteSize = dataOrVertexCount * this._byteStride;
-            this._data = new Float32Array(this._byteSize / Float32Array.BYTES_PER_ELEMENT);
+            this._initialData = new Float32Array(this._byteSize / Float32Array.BYTES_PER_ELEMENT);
         } else {
-            this._data = new Float32Array(dataOrVertexCount);
-            this._byteSize = this._data.byteLength;
+            this._initialData = new Float32Array(dataOrVertexCount);
+            this._byteSize = this._initialData.byteLength;
             this._vertexCount = this._byteSize / this._byteStride;
         }
     }
 
     /** The WebGPU buffer. */
-    public get gpuBuffer(): GpuBuffer {
+    public get gpuBuffer(): GPUBuffer {
         if (!this._gpuBuffer) {
             throw new Error("WebGpuVertexBuffer: the buffer is not initialized or is disposed.");
         }
@@ -76,39 +76,18 @@ export class WebGpuVertexBuffer implements IVertexBuffer {
     /** @inheritDoc */
     public initialize(): void {
         const device = this._graphicsDevice.device;
-        // WebGPU buffer sizes must be a multiple of 4; float data always is.
-        this._gpuBuffer = device.createBuffer({
-            label: this._label,
-            size: Math.max(4, this._byteSize),
-            usage: WebGpuConverter.convertBufferUsage(this._bufferUsage) | GpuBufferUsage.VERTEX | GpuBufferUsage.COPY_DST,
-        });
-        if (this._data.length > 0) {
-            device.queue.writeBuffer(this._gpuBuffer, 0, this._data.buffer, this._data.byteOffset, this._data.byteLength);
-        }
+        this._gpuBuffer = WebGpuUtilities.buffer.createVertexBufferAsync(device, this._initialData ?? this._byteSize, this._bufferUsage, this._label);
+        this._initialData = null;
     }
 
     /**
      * Updates the buffer.
      * @param data The float data.
-     * @param offset The first float to write (in floats, like WebGL).
-     * @param length The number of floats to write; 0 writes the whole data.
+     * @param offset The first element to write (in floats).
+     * @param length The number of elements to write; 0 or less writes everything after the offset.
      */
-    public update(data: number[], offset: number = 0, length: number = 0): void {
-        length = length > 0 ? length : data.length - offset;
-        length = Math.min(length, this._data.length - offset, data.length - offset);
-        if (length <= 0) {
-            return;
-        }
-        for (let i = 0; i < length; ++i) {
-            this._data[offset + i] = data[offset + i];
-        }
-        // Write only the changed range, not the whole buffer.
-        this._graphicsDevice.device.queue.writeBuffer(
-            this.gpuBuffer,
-            offset * Float32Array.BYTES_PER_ELEMENT,
-            this._data.buffer,
-            this._data.byteOffset + offset * Float32Array.BYTES_PER_ELEMENT,
-            length * Float32Array.BYTES_PER_ELEMENT);
+    public update(data: Float32Array, offset: number = 0, length: number = 0): void {
+        WebGpuUtilities.buffer.writeBuffer(this._graphicsDevice.device.queue, this.gpuBuffer, data, offset, length);
     }
 
     /** @inheritDoc */

@@ -1,3 +1,5 @@
+import type {TextureFormat} from "../_export";
+
 /**
  * Represents the texture compression capabilities of a graphics device.
  */
@@ -36,4 +38,19 @@ export interface IGraphicsDeviceFeatures {
      */
     readonly supportsTextureCompressionPVRTC: boolean;
 
+    /** All texture formats this graphics device supports (uncompressed and compressed). */
+    readonly supportedTextureFormats: TextureFormat[];
+
+    /**
+     * Whether the backend supports texture views ({@link ITextureView2D} / `getTextureView`).
+     * WebGPU: true (native `GPUTexture.createView`). WebGL2: false (textures are used directly; requesting a view throws).
+     */
+    readonly supportsTextureView: boolean;
+
+    /**
+     * Checks if this graphics device supports given texture format.
+     * @param format The texture format.
+     * @returns True if the format can be used to create textures on this device.
+     */
+    supportsTextureFormat(format: TextureFormat): boolean;
 }

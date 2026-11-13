@@ -1,10 +1,9 @@
-import {WebGlAmbientLightFactory} from "./webgl/lights/WebGlAmbientLightFactory.ts";
-import {WindowManager} from "./api/window/WindowManager.ts";
-import {GeometryBuilder} from "./api/geometry/GeometryBuilder.ts";
-import {ContentManager} from "./api/content/ContentManager.ts";
-import {ObjLoader} from "./api/loaders/ObjLoader.ts";
-import {WebGlRenderer} from "./webgl/WebGlRenderer.ts";
-import {WebGlBuffersFactory} from "./webgl/buffers/WebGlBuffersFactory.ts";
+import { WebGlAmbientLightFactory } from "./webgl/lights/WebGlAmbientLightFactory.ts";
+import { GeometryBuilder } from "./api/geometry/GeometryBuilder.ts";
+import { ContentManager } from "./api/content/ContentManager.ts";
+import { ObjLoader } from "./api/loaders/ObjLoader.ts";
+import { WebGlRenderer } from "./webgl/WebGlRenderer.ts";
+import { WebGlBuffersFactory } from "./webgl/buffers/WebGlBuffersFactory.ts";
 import {
     type AmbientLightFactory,
     CameraFactory,
@@ -29,32 +28,30 @@ import {
     type ISpriteBatch,
     type ITextureFactory,
     type ITimeManager,
-    type IWindowManager,
+    type ICanvasManager,
     MaterialFactory,
     MeshFactory,
     RenderingBackend,
     TimeManager
 } from "./api/index.ts";
-import {WebGlTexture2D} from "./webgl/texture/WebGlTexture2D.ts";
-import type {IDisposable} from "./api/core/IDisposable.ts";
-import {WebGlShaderModuleLoader} from "./webgl/shader/WebGlShaderModuleLoader.ts";
-import {TextureSamplerFilteringPreset} from "./core/rendering/enums.ts";
-import {SpriteBatch} from "./api/sprites/SpriteBatch.ts";
-import {WebGlTextureFactory} from "./webgl/texture/WebGlTextureFactory.ts";
-import {WebGlRenderPipelineFactory} from "./webgl/render-pipelines/WebGlRenderPipelineFactory.ts";
-import {InputManager} from "./api/input/InputManager.ts";
-import type {IKtx2Factory} from "ris-ktx2";
-import {Ktx2Factory} from "ris-ktx2";
-import {PowerPreferenceType} from "./api/rendering/PowerPreference.ts";
-import {vec2} from "gl-matrix";
-import {ARenderer} from "./core/rendering/ARenderer.ts";
-import {WebGpuRenderer} from "./webgpu/WebGpuRenderer.ts";
-import {WebGpuTextureFactory} from "./webgpu/texture/WebGpuTextureFactory.ts";
-import {WebGpuRenderPipelineFactory} from "./webgpu/render-pipelines/WebGpuRenderPipelineFactory.ts";
-import {WebGpuShaderModuleLoader} from "./webgpu/shader/WebGpuShaderModuleLoader.ts";
-import {WebGpuBuffersFactory} from "./webgpu/buffers/WebGpuBuffersFactory.ts";
-import {WebGpuTexture2D} from "./webgpu/texture/WebGpuTexture2D.ts";
-import {ColorSpace} from "./api/rendering/enums.ts";
+import type { IDisposable } from "./api/core/IDisposable.ts";
+import { WebGlShaderModuleLoader } from "./webgl/shader/WebGlShaderModuleLoader.ts";
+import { TextureSamplerFilteringPreset } from "./core/rendering/enums.ts";
+import { SpriteBatch } from "./api/sprites/SpriteBatch.ts";
+import { WebGlTextureFactory } from "./webgl/texture/WebGlTextureFactory.ts";
+import { WebGlRenderPipelineFactory } from "./webgl/render-pipelines/WebGlRenderPipelineFactory.ts";
+import { InputManager } from "./api/input/InputManager.ts";
+import type { IKtx2Factory } from "ris-ktx2";
+import { Ktx2Factory } from "ris-ktx2";
+import { PowerPreferenceType } from "./api/rendering/PowerPreference.ts";
+import { vec2 } from "gl-matrix";
+import { WebGpuRenderer } from "./webgpu/WebGpuRenderer.ts";
+import { WebGpuTextureFactory } from "./webgpu/texture/WebGpuTextureFactory.ts";
+import { WebGpuRenderPipelineFactory } from "./webgpu/render-pipelines/WebGpuRenderPipelineFactory.ts";
+import { WebGpuShaderModuleLoader } from "./webgpu/shader/WebGpuShaderModuleLoader.ts";
+import { WebGpuBuffersFactory } from "./webgpu/buffers/WebGpuBuffersFactory.ts";
+import { OutputColorSpace } from "./api/rendering/enums.ts";
+import { CanvasManager } from "./api/canvas/CanvasManager.ts";
 
 /** The Ris framework */
 export class Framework implements IFramework {
@@ -65,7 +62,7 @@ export class Framework implements IFramework {
     private readonly _onRenderListeners: (() => void)[] = [];
 
     private _configuration: IFrameworkConfiguration;
-    private _textureFactory: ITextureFactory = null!;
+    private _textureFactory: ITextureFactory & IDisposable = null!;
     private _buffersFactory: IBufferFactory = null!;
     private _contentManager: IContentManager = null!;
     private readonly _rendererConfiguration: IRendererConfiguration = null!;
@@ -82,25 +79,25 @@ export class Framework implements IFramework {
 
         this._configuration = configuration ?? {}
 
-        if(!this._configuration.backBufferSize){
+        if (!this._configuration.backBufferSize) {
             this._configuration.backBufferSize = vec2.fromValues(800, 600);
         }
 
-        // Without a canvas, WindowManager creates one and appends it to document.body.
-        if(!this._configuration.canvas){
+        // Without a canvas, CanvasManager creates one and appends it to document.body.
+        if (!this._configuration.canvas) {
             console.warn("Canvas not provided. Creating canvas and appending it to document.body.")
         }
         this._configuration.backBufferSize = this._configuration.backBufferSize ?? vec2.fromValues(800, 600);
 
-        this.windowManager = new WindowManager(this._configuration.canvas ?? null);
+        this.canvasManager = new CanvasManager(this._configuration.canvas ?? null);
 
         // Services are created here and get their dependencies through their constructors.
-        this._rendererConfiguration  = {
+        this._rendererConfiguration = {
             backBufferSize: this._configuration.backBufferSize,
             textureFiltering: this._configuration.textureFiltering ?? TextureSamplerFilteringPreset.BILINEAR,
             alpha: this._configuration.alpha ?? false,
             powerPreference: this._configuration.powerPreference ?? PowerPreferenceType.DEFAULT,
-            textureColorSpace: this._configuration.textureColorSpace ?? ColorSpace.LINEAR
+            outputColorSpace: this._configuration.outputColorSpace ?? OutputColorSpace.NONE
         };
 
 
@@ -109,11 +106,6 @@ export class Framework implements IFramework {
         if (backend === RenderingBackend.DEFAULT) {
             backend = RenderingBackend.WEB_GL;
         }
-        if (backend === RenderingBackend.WEB_GPU && !WebGpuRenderer.isSupported()) {
-            console.warn("WebGPU was requested, but navigator.gpu is missing. Falling back to WebGL.");
-            backend = RenderingBackend.WEB_GL;
-        }
-        this.renderingBackend = backend;
         this._setupBackendServices(backend);
 
         this._geometryBuilder = new GeometryBuilder();
@@ -128,7 +120,7 @@ export class Framework implements IFramework {
         this.imageProcessor = new CpuImageProcessor();
         this.imageLoader = new ImageLoader(this);
 
-        if(this._configuration.useKtx2){
+        if (this._configuration.useKtx2) {
             this.ktx2Factory = new Ktx2Factory();
         }
     }
@@ -136,10 +128,9 @@ export class Framework implements IFramework {
     /** @inheritDoc */
     public readonly imageLoader: IImageLoader;
 
-    renderingBackend: RenderingBackend;
 
     /** @inheritDoc */
-    public readonly imageProcessor :IImageProcessor;
+    public readonly imageProcessor: IImageProcessor;
 
     /** @inheritDoc */
     public get renderer(): IRenderer {
@@ -151,7 +142,6 @@ export class Framework implements IFramework {
      * @param backend WEB_GL or WEB_GPU.
      */
     private _setupBackendServices(backend: RenderingBackend): void {
-        this.renderingBackend = backend;
         if (backend === RenderingBackend.WEB_GPU) {
             this._renderer = new WebGpuRenderer(this, this._rendererConfiguration);
             this._textureFactory = new WebGpuTextureFactory(this);
@@ -241,7 +231,7 @@ export class Framework implements IFramework {
     }
 
     /** @inheritdoc */
-    public readonly windowManager: IWindowManager;
+    public readonly canvasManager: ICanvasManager;
 
     /** @inheritdoc */
     public get textureFactory(): ITextureFactory {
@@ -278,35 +268,15 @@ export class Framework implements IFramework {
     /** @inheritDoc */
     public readonly input: IInputManager;
 
+
     /** @inheritdoc */
-    public initialize(): void {
-
-        // WebGPU needs an async device request; initialize() keeps the synchronous WebGL path.
-        if (this.renderingBackend === RenderingBackend.WEB_GPU) {
-            console.warn("WebGPU needs Framework.initializeAsync(). initialize() falls back to WebGL.");
-            this._setupBackendServices(RenderingBackend.WEB_GL);
-        }
-
-        if(this.ktx2Factory) {
-            this.ktx2Factory.initializeAsync();
-        }
-
-        this._initializeCore();
-    }
-
-    /**
-     * Initializes the framework and starts the event loop. Required for WebGPU, which requests its adapter
-     * and device asynchronously; for WebGL it behaves like {@link initialize}.
-     * If the WebGPU device cannot be acquired, the framework falls back to WebGL with a warning.
-     */
     public async initializeAsync(): Promise<void> {
-        if (this.renderingBackend === RenderingBackend.WEB_GPU) {
-            try {
-                await (this._renderer as WebGpuRenderer).acquireDeviceAsync();
-            } catch (error) {
-                console.warn(`WebGPU could not be initialized (${(error as Error)?.message ?? error}). Falling back to WebGL.`);
-                this._setupBackendServices(RenderingBackend.WEB_GL);
-            }
+
+        await this.renderer.initializeAsync();
+
+        // dispose() ran while the renderer was initializing; do not start the loop on a disposed framework.
+        if (this._disposed) {
+            return;
         }
 
         if (this.ktx2Factory) {
@@ -317,36 +287,35 @@ export class Framework implements IFramework {
     }
 
     private _initializeCore(): void {
-        (this._renderer as ARenderer).initialize();
         this.spriteBatch.initialize();
         this.input.initialize();
 
         this.timeManager.prepareStart();
 
         // Initialize callbacks.
-        for(const listener of this._onInitializeListeners){
+        for (const listener of this._onInitializeListeners) {
             listener();
         }
 
         // Load content events.
-        for(const listener of this._onLoadContentListeners){
+        for (const listener of this._onLoadContentListeners) {
             listener();
         }
 
         this.renderer.afterInitialize();
 
-        this.windowManager.addUpdateListener(() => {
+        this.canvasManager.addUpdateListener(() => {
             // Update logic here
             this.timeManager.frameStart();
             this.input.update();
 
-            for(const listener of this._onUpdateListeners){
+            for (const listener of this._onUpdateListeners) {
                 listener(this.timeManager.time);
             }
 
             this.input.afterUpdate();
         });
-        this.windowManager.addRenderListener(() => {
+        this.canvasManager.addRenderListener(() => {
             this.renderer.beginRenderPass();
 
             // Invoke render listeners.
@@ -357,7 +326,7 @@ export class Framework implements IFramework {
             this.spriteBatch.frameEnd();
             this.renderer.endRenderPass();
         });
-        this.windowManager.runEventLoop();
+        this.canvasManager.runEventLoop();
     }
 
     /**
@@ -369,9 +338,10 @@ export class Framework implements IFramework {
         if (this._disposed) {
             return;
         }
+        this.canvasManager.stopEventLoop();
         this._disposed = true;
 
-        this.windowManager.dispose();
+        this.canvasManager.dispose();
         (this.input as Partial<IDisposable>).dispose?.();
 
         this._onLoadContentListeners.length = 0;
@@ -379,8 +349,8 @@ export class Framework implements IFramework {
         this._onUpdateListeners.length = 0;
         this._onRenderListeners.length = 0;
 
-        WebGlTexture2D.disposeDefault(this);
-        WebGpuTexture2D.disposeDefault(this);
+        // Disposes the default textures it owns; before the device, which they belong to.
+        this._textureFactory.dispose();
         (this._contentManager as Partial<IDisposable>).dispose?.();
         // Only exists after initialize(); it owns the default sampler and blend state.
         (this.renderer.graphicsDevice as IGraphicsDevice | undefined)?.dispose();

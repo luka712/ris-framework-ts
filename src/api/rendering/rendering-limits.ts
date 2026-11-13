@@ -1,3 +1,4 @@
+/** The limits of the rendering backend. Not exposed yet: {@link IRenderer} `limits` is not implemented. */
 export class RenderingLimits {
 
     /**

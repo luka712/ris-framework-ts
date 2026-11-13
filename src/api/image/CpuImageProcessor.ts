@@ -12,14 +12,14 @@ export class CpuImageProcessor implements IImageProcessor {
         const data = image.getData(0);
 
         if (data === undefined) {
-            throw new Error("Invalid image data");
+            throw new Error("CpuImageProcessor.resizeAsync: Invalid image data (the base level has no data).");
         }
 
         if (data instanceof HTMLImageElement) {
             const htmlImage = await this._resizeHTMLImageAsync(data, vec2);
             return new RawImageData([htmlImage], htmlImage.width, htmlImage.height, image.channels);
         } else {
-            throw new Error("Not implemented.");
+            throw new Error("CpuImageProcessor.resizeAsync: Not implemented. Only HTMLImageElement data can be resized; got raw bytes.");
         }
     }
 
@@ -65,7 +65,7 @@ export class CpuImageProcessor implements IImageProcessor {
                     const htmlImage = await this._resizeHTMLImageAsync(data, resize);
                     resultData.push(htmlImage);
                 } else {
-                    throw new Error("Not implemented.");
+                    throw new Error("CpuImageProcessor.generateMipmapsAsync: Not implemented. Only HTMLImageElement data can be downscaled; got raw bytes.");
                 }
             }
         } else {
@@ -81,7 +81,7 @@ export class CpuImageProcessor implements IImageProcessor {
                     const htmlImage = await this._resizeHTMLImageAsync(data, resize);
                     resultData.push(htmlImage);
                 } else {
-                    throw new Error("Not implemented.");
+                    throw new Error("CpuImageProcessor.generateMipmapsAsync: Not implemented. Only HTMLImageElement data can be downscaled; got raw bytes.");
                 }
             }
         }

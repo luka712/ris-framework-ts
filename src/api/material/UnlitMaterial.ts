@@ -25,7 +25,7 @@ export class UnlitMaterial implements IMaterial {
 
     private readonly _framework: IFramework;
     private _color = Color.white();
-    private _materialData = [1,1,1,1];
+    private _materialData = new Float32Array([1, 1, 1, 1]);
     /** Created when the model buffer is assigned (the pipeline requires one). */
     private _pipeline?: IUnlitRenderPipeline;
     private readonly _primitiveState?: IPrimitiveState;

@@ -13,9 +13,8 @@ export interface IUniformBuffer extends IBuffer  {
     /**
      * Update the constant buffer.
      * @param data - The data array.
-     * @param offset - Defines where to start buffer write. Must be in bytes.
-     * @param length - Defines how many bytes to write. By default, -1 that means data length is used.
+     * @param offset - The first element to write, in floats. The data mirrors the buffer, so it is used for both. By default, 0.
+     * @param length - The number of floats to write. If 0 or less, everything after the offset is written.
      */
-    update(data: ArrayLike<number>, offset?: number, length?: number): void;
-
+    update(data: Float32Array, offset?: number, length?: number): void;
 }

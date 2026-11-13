@@ -7,8 +7,10 @@ import {
     type ISampler,
     type IBlendState,
     type IPrimitiveState,
-    type IGraphicsDevice, SwapChainDescriptor, type RenderPassDescriptor, SamplerFilter, MipMapSamplerFilter,
-    type ISwapChain, type IRenderPass, type IPrimitiveStateDescriptor
+    type IGraphicsDevice, type ISwapChainDescriptor, type RenderPassDescriptor, SamplerFilter, MipMapSamplerFilter,
+    type ISwapChain, type IRenderPass, type IPrimitiveStateDescriptor,
+    type RenderingBackend,
+    State
 } from "../../api/index.ts";
 import {PowerPreferenceType} from "../../api/rendering/PowerPreference.ts";
 
@@ -30,6 +32,9 @@ export interface IGraphicsDeviceDescriptor {
      *  The default texture sampler is used when a texture is sampled without a specific sampler being bound.
      */
     samplerFilteringPreset: TextureSamplerFilteringPreset;
+
+    /** Creates GPU with debug context. By default it is false. Enables GPU labels and markers, as well as advanced validation. */
+    debugContext?: boolean;
 }
 
 /**
@@ -41,6 +46,7 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     protected _defaultTextureSampler: ISampler = null!;
     protected _defaultBlendState: IBlendState = null!;
     protected _defaultPrimitiveState: IPrimitiveState = null!;
+    protected _state: State = State.CREATED;
 
     /**
      * The constructor.
@@ -48,6 +54,14 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
      */
     protected constructor(descriptor: IGraphicsDeviceDescriptor) {
         this._descriptor = descriptor;
+    }
+
+    /** @inheritdoc */
+    abstract readonly api: RenderingBackend;
+
+    /** @inheritdoc */
+    public get state(): State {
+        return this._state;
     }
 
     /** @inheritdoc */
@@ -83,15 +97,32 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
         return this.createSampler(samplerDescriptor);
     }
 
-    /** @inheritdoc */
-    public initialize(): void {
+    /**
+     * Checks that the device can still be initialized. Backends call this at the start of {@link initializeAsync}.
+     * @param caller The calling method, for the error message.
+     * @throws Error when the device is already initialized, disposing or disposed.
+     */
+    protected _validateState(caller: string): void {
+        if (this._state != State.CREATED) {
+            throw new Error(`${caller}: the graphics device is ${State[this._state]}; it can only be initialized once, from CREATED.`);
+        }
+    }
+
+    /**
+     * Creates the default sampler, blend state and primitive state, then moves the device to {@link State.INITIALIZED}.
+     * Backends call this last, after their own setup.
+     * @throws Error when the device is not in {@link State.CREATED}.
+     */
+    public async initializeAsync(): Promise<void> {
+        this._validateState("AGraphicsDevice.initializeAsync");
         this._defaultTextureSampler = this.configureAndCreateDefaultSampler();
         this._defaultBlendState = this.createBlendState(new BlendStateDescriptor());
         this._defaultPrimitiveState = this.createPrimitiveState();
+        this._state = State.INITIALIZED;
     }
 
     /** @inheritdoc */
-    public abstract createSwapChain(canvas: HTMLCanvasElement, swapChainDescriptor: SwapChainDescriptor): ISwapChain;
+    public abstract createSwapChain(canvas: HTMLCanvasElement, swapChainDescriptor: ISwapChainDescriptor): ISwapChain;
 
     /** @inheritdoc */
     public abstract createSampler(descriptor?: SamplerDescriptor): ISampler;
@@ -117,9 +148,24 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     /** @inheritDoc */
     public abstract popDebugGroup(): void;
 
-    /** @inheritDoc */
+    /**
+     * Releases backend-specific resources. Called by {@link dispose} while the state is {@link State.DISPOSING},
+     * after the default sampler and blend state are disposed.
+     */
+    protected abstract _disposeBackend(): void;
+
+    /**
+     * Disposes the default sampler and blend state and the backend resources.
+     * Moves the device through {@link State.DISPOSING} to {@link State.DISPOSED}. Calling it again does nothing.
+     */
     public dispose(): void {
-        this._defaultTextureSampler.dispose();
-        this._defaultBlendState.dispose();
+        if (this._state == State.DISPOSING || this._state == State.DISPOSED) {
+            return;
+        }
+        this._state = State.DISPOSING;
+        this._defaultTextureSampler?.dispose();
+        this._defaultBlendState?.dispose();
+        this._disposeBackend();
+        this._state = State.DISPOSED;
     }
 }

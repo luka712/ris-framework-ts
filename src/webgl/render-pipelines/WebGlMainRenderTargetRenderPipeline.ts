@@ -4,19 +4,21 @@ import {GeometryFormat} from "../../api/geometry/GeometryFormat.ts";
 import type {WebGLIndexBuffer} from "../buffers/webgl-index-buffer";
 import {VertexBufferLayout} from "../../core/rendering/vertex-buffer-layout";
 import type {WebGlTexture2D} from "../texture/WebGlTexture2D.ts";
+import type {WebGlUniformBuffer} from "../buffers/WebGlUniformBuffer.ts";
 import WebGlShaderModule from "../shader/WebGlShaderModule.ts";
 import {AWebGlRenderPipeline} from "./AWebGlRenderPipeline.ts";
 import {
     BufferUsage,
+    IndexBufferType,
     type IFramework,
     type IMainRenderTargetRenderPipeline,
     type ITexture2D,
-    TextureFormat
+    OutputColorSpace,
 } from "../../api/index.ts";
-import {ColorSpace} from "../../api/rendering/enums.ts";
 
 /**
  * The WebGL implementation of the main render target render pipeline.
+ * Encodes linear → sRGB in the blit shader when {@link outputColorSpace} is SRGB (the default framebuffer is never sRGB).
  */
 export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline implements IMainRenderTargetRenderPipeline {
 
@@ -24,9 +26,16 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
     private _indexBuffer: WebGLIndexBuffer = null!;
     private _mainRenderTarget: WebGlTexture2D = null!;
 
-    private _colorConversionUniformLocation: WebGLUniformLocation = null!;
-    /** The shader's `u_colorConversion`: 1 encodes linear to sRGB on output, 0 passes through. */
-    private _colorSpaceValue = 0;
+    private static readonly FRAGMENT_DATA_BINDING_POINT = 0;
+
+    /**
+     * The `FragmentDataBuffer` (std140, 16 bytes), offsets in floats:
+     * [0] u_flipY, [1] u_colorConversion, [2] u_gamma, [3] padding.
+     */
+    private readonly _fragmentData = new Float32Array(4);
+    private _fragmentDataBuffer: WebGlUniformBuffer | null = null;
+    private _fragmentDataBlockIndex = -1;
+    private _outputColorSpace: OutputColorSpace = OutputColorSpace.NONE;
 
     /**
      * The constructor.
@@ -37,25 +46,55 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
         super(framework);
         this._mainRenderTarget = mainRenderTarget as WebGlTexture2D;
 
-        if(framework.renderer.preferredTextureFormat == TextureFormat.RGBA_8_UNORM_SRGB) {
-            this._colorSpaceValue = 1;
-        }
+        // The default framebuffer's origin is bottom-left, so the render target is flipped by default.
+        this._fragmentData[0] = 1;
+        // Gamma default 2.2.
+        this._fragmentData[2] = 2.2;
     }
 
     /**
-     * The color space. With SRGB the main render target is sRGB (sampled back as linear) and the shader
-     * encodes to sRGB for the screen; with LINEAR the values are passed through. Takes effect on the next frame.
+     * Whether the render target is flipped vertically when drawn to the screen (the shader's `u_flipY`).
+     * By default, true, since the WebGL default framebuffer's origin is bottom-left.
      */
-    public get colorSpace(): ColorSpace {
-        return this._colorSpaceValue == 1 ? ColorSpace.SRGB : ColorSpace.LINEAR;
+    public get flipY(): boolean {
+        return this._fragmentData[0] == 1;
     }
 
-    public set colorSpace(value: ColorSpace) {
-        this._colorSpaceValue = value == ColorSpace.SRGB ? 1 : 0;
+    public set flipY(value: boolean) {
+        this._fragmentData[0] = value ? 1 : 0;
+        this._fragmentDataBuffer?.update(this._fragmentData, 0, 1);
+    }
+
+    /**
+     * The output color space. The default framebuffer is never sRGB, so this pipeline encodes in the shader.
+     * - NONE: pass sampled values through.
+     * - SRGB: encode with {@link gamma} (`pow(c, 1 / gamma)`).
+     * Set by the renderer when `renderer.outputColorSpace` changes. By default, `OutputColorSpace.NONE`.
+     */
+    public get outputColorSpace(): OutputColorSpace {
+        return this._outputColorSpace;
+    }
+
+    public set outputColorSpace(value: OutputColorSpace) {
+        this._outputColorSpace = value;
+        this._fragmentData[1] = value == OutputColorSpace.SRGB ? 1 : 0;
+        this._fragmentDataBuffer?.update(this._fragmentData, 1, 1);
+    }
+
+    /**
+     * The gamma used when {@link outputColorSpace} is SRGB. By default, 2.2.
+     */
+    public get gamma(): number {
+        return this._fragmentData[2];
+    }
+
+    public set gamma(value: number) {
+        this._fragmentData[2] = value;
+        this._fragmentDataBuffer?.update(this._fragmentData, 2, 1);
     }
 
     /** @inheritDoc */
-    public readonly geometryFormat = GeometryFormat.POS3_COLOR4_TEXTURECOORDS2;
+    public readonly geometryFormat = GeometryFormat.POS3_TEXTURECOORDS2;
 
     /** @inheritdoc */
     protected _provideBuffers(): WebGLBuffer[] {
@@ -65,7 +104,7 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
     /** @inheritdoc */
     public get mainRenderTarget(): ITexture2D {
         if (!this._mainRenderTarget) {
-            throw new Error("Render target is not set.");
+            throw new Error("WebGlMainRenderTargetRenderPipeline.mainRenderTarget: the main render target is not set yet. It is created when the main render pass is set up.");
         }
         return this._mainRenderTarget;
     }
@@ -77,13 +116,22 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
 
     /** @inheritdoc */
     public initialize(): void {
-        const shaderModule = this._framework.content.loadShaderModule("main_render_target_flip_y") as WebGlShaderModule;
+        const shaderModule = this._framework.content.loadShaderModule("main_render_target") as WebGlShaderModule;
         this._program = shaderModule.program!;
         this._createResources();
         this.vertexBufferLayouts = [VertexBufferLayout.createFloat3Float2Layout()];
         super.initialize();
 
-        this._colorConversionUniformLocation = this._gl.getUniformLocation(this._program, "u_colorConversion")!;
+        this._fragmentDataBuffer = this._framework.bufferFactory.createUniformBuffer(
+            this._fragmentData,
+            BufferUsage.UNIFORM | BufferUsage.COPY_DST,
+            "Main Render Target Fragment Data Buffer") as WebGlUniformBuffer;
+        this._fragmentDataBlockIndex = this._gl.getUniformBlockIndex(this._program, "FragmentDataBuffer");
+        if (this._fragmentDataBlockIndex !== this._gl.INVALID_INDEX) {
+            this._gl.uniformBlockBinding(this._program, this._fragmentDataBlockIndex, WebGlMainRenderTargetRenderPipeline.FRAGMENT_DATA_BINDING_POINT);
+        } else {
+            console.warn("WebGlMainRenderTargetRenderPipeline: uniform block 'FragmentDataBuffer' not found in the main_render_target shader.");
+        }
     }
 
     private _createResources(): void {
@@ -97,11 +145,11 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
             data,
             (3 + 2) * Float32Array.BYTES_PER_ELEMENT,
             BufferUsage.VERTEX,
-            "Main Frame Buffer Render Pipeline Vertex Buffer"
+            "Main Render Target Render Pipeline Vertex Buffer"
         ) as WebGlVertexBuffer;
 
         this._indexBuffer = this._framework.bufferFactory.createIndexBuffer(
-            geometry.indices!, "Main Frame Buffer Render Pipeline Index Buffer",
+            geometry.indices!, "Main Render Target Render Pipeline Index Buffer",
         ) as WebGLIndexBuffer;
     }
 
@@ -122,9 +170,10 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
         this._gl.bindTexture(this._gl.TEXTURE_2D, this._mainRenderTarget.glTexture);
         this._gl.bindSampler(0, this._defaultTextureSampler.glSampler);
 
-        this._gl.uniform1i(this._colorConversionUniformLocation, this._colorSpaceValue)
+        this._gl.bindBufferBase(this._gl.UNIFORM_BUFFER, WebGlMainRenderTargetRenderPipeline.FRAGMENT_DATA_BINDING_POINT, this._fragmentDataBuffer!.glBuffer!);
 
-        this._gl.drawElements(this._gl.TRIANGLES, this._indexBuffer.indicesCount, this._gl.UNSIGNED_SHORT, 0);
+        const indexType = this._indexBuffer.type == IndexBufferType.UINT_16 ? this._gl.UNSIGNED_SHORT : this._gl.UNSIGNED_INT;
+        this._gl.drawElements(this._gl.TRIANGLES, this._indexBuffer.indicesCount, indexType, 0);
     }
 
     /** @inheritdoc */
@@ -132,6 +181,8 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
         // ARenderer recreates this pipeline on every resize, so release the quad buffers too.
         this._vertexBuffer?.dispose();
         this._indexBuffer?.dispose();
+        this._fragmentDataBuffer?.dispose();
+        this._fragmentDataBuffer = null;
         super.dispose();
     }
 }

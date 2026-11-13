@@ -10,7 +10,7 @@ export class WebGlFrameBufferUtilities {
 
 
     /**
-     * Creates a framebuffer and attaches the provided texture(s) as color attachments. 
+     * Creates a framebuffer and attaches the provided texture(s) as color attachments.
      * This method is useful for setting up a framebuffer for rendering to one or more textures.
      * @param gl The WebGL2 rendering context.
      * @param textureIds The texture(s) to be attached as color attachments.
@@ -39,28 +39,42 @@ export class WebGlFrameBufferUtilities {
         for (let i = 0; i < textureIdsArray.length; i++) {
             const textureId = textureIdsArray[i];
 
-            if(textureId == null) {
-                throw new Error("Cannot bind texture to the frame buffer. Texture id not specified");
+            if (textureId == null) {
+                throw new Error(`WebGlFrameBufferUtilities.create: color attachment ${i} of '${framebufferLabel ?? "unlabeled"}' is null; every texture must be a WebGLTexture.`);
             }
 
-            // Bind the texture to the framebuffer, so we can render to it.
-            gl.bindTexture(gl.TEXTURE_2D, textureId);
-
-            // Connect the texture to the framebuffer.
-            gl.framebufferTexture2D(gl.FRAMEBUFFER,
-                gl.COLOR_ATTACHMENT0 + i,
-                gl.TEXTURE_2D,
-                textureId,
-                0);
+            this.setColorAttachment(gl, framebuffer, i, textureId);
         }
 
         // Check if the framebuffer is complete.
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE) {
             var error = gl.getError();
-            throw new Error("Framebuffer is not complete." + " WebGL error code: " + error);
+            throw new Error(`WebGlFrameBufferUtilities.create: framebuffer '${framebufferLabel ?? "unlabeled"}' is not complete. WebGL error code: ${error}.`);
         }
 
         return framebuffer;
+    }
+
+    /**
+     * Attaches a `TEXTURE_2D` (mip level 0) as color attachment `index` of the framebuffer. Leaves the framebuffer and texture bound.
+     * @param gl The WebGL2 rendering context.
+     * @param framebuffer The framebuffer.
+     * @param index The color attachment index (`COLOR_ATTACHMENT0 + index`).
+     * @param texture The texture to attach.
+     */
+    public setColorAttachment(gl: WebGL2RenderingContext, framebuffer: WebGLFramebuffer, index: number, texture: WebGLTexture): void {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+
+
+        // Bind the texture to the framebuffer, so we can render to it.
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+
+        // Connect the texture to the framebuffer.
+        gl.framebufferTexture2D(gl.FRAMEBUFFER,
+            gl.COLOR_ATTACHMENT0 + index,
+            gl.TEXTURE_2D,
+            texture,
+            0);
     }
 
     /**
@@ -73,14 +87,14 @@ export class WebGlFrameBufferUtilities {
      * @return The created framebuffer.
      */
     public createWithRenderBufferAsDepthBuffer(gl: WebGL2RenderingContext,
-        textureAttachment0: WebGLTexture,
-        depthAttachmentType: GLenum,
-        depthStencilRenderBuffer: WebGLRenderbuffer, label: string | null | undefined): WebGLFramebuffer {
+                                               textureAttachment0: WebGLTexture,
+                                               depthAttachmentType: GLenum,
+                                               depthStencilRenderBuffer: WebGLRenderbuffer, label: string | null | undefined): WebGLFramebuffer {
 
         if (depthAttachmentType != gl.DEPTH_ATTACHMENT
             && depthAttachmentType != gl.DEPTH_STENCIL_ATTACHMENT
             && depthAttachmentType != gl.STENCIL_ATTACHMENT) {
-            const msg = "Invalid depth attachment type + " + depthAttachmentType;
+            const msg = `WebGlFrameBufferUtilities.createWithRenderBufferAsDepthBuffer: invalid depth attachment type ${depthAttachmentType}; expected DEPTH_ATTACHMENT, DEPTH_STENCIL_ATTACHMENT or STENCIL_ATTACHMENT.`;
             throw new Error(msg);
         }
 
@@ -102,7 +116,7 @@ export class WebGlFrameBufferUtilities {
 
         // Check if the framebuffer is complete.
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE) {
-            const msg = "Framebuffer is not complete.";
+            const msg = `WebGlFrameBufferUtilities.createWithRenderBufferAsDepthBuffer: framebuffer '${label ?? "unlabeled"}' is not complete (status ${gl.checkFramebufferStatus(gl.FRAMEBUFFER)}).`;
             throw new Error(msg);
         }
 
@@ -119,7 +133,7 @@ export class WebGlFrameBufferUtilities {
     }
 
     /**
-     * Creates a framebuffer with texture being attached as color attachment 0 and depth render buffer.
+     * Creates a framebuffer with texture being attached as color attachment 0 and a depth/stencil texture.
      * @param gl The WebGL2 rendering context.
      * @param textureAttachment0 The texture to be attached as color attachment 0.
      * @param depthAttachmentType The type of the depth attachment, which can be DepthAttachment, DepthStencilAttachment or StencilAttachment.
@@ -128,14 +142,14 @@ export class WebGlFrameBufferUtilities {
      * @returns The created framebuffer.
      */
     public createWithRenderTextureAsDepthBuffer(gl: WebGL2RenderingContext,
-        textureAttachment0: WebGLTexture,
-        depthAttachmentType: GLenum,
-        depthStencilTexture: WebGLTexture,
-        label?: string): WebGLFramebuffer {
+                                                textureAttachment0: WebGLTexture,
+                                                depthAttachmentType: GLenum,
+                                                depthStencilTexture: WebGLTexture,
+                                                label?: string): WebGLFramebuffer {
         if (depthAttachmentType != gl.DEPTH_ATTACHMENT
             && depthAttachmentType != gl.DEPTH_STENCIL_ATTACHMENT
             && depthAttachmentType != gl.STENCIL_ATTACHMENT) {
-            const msg = "Invalid depth attachment type.";
+            const msg = `WebGlFrameBufferUtilities.createWithRenderTextureAsDepthBuffer: invalid depth attachment type ${depthAttachmentType}; expected DEPTH_ATTACHMENT, DEPTH_STENCIL_ATTACHMENT or STENCIL_ATTACHMENT.`;
             throw new Error(msg);
         }
 
@@ -158,7 +172,7 @@ export class WebGlFrameBufferUtilities {
 
         // Check if the framebuffer is complete.
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE) {
-            const msg = "Framebuffer is not complete.";
+            const msg = `WebGlFrameBufferUtilities.createWithRenderTextureAsDepthBuffer: framebuffer '${label ?? "unlabeled"}' is not complete (status ${gl.checkFramebufferStatus(gl.FRAMEBUFFER)}).`;
             throw new Error(msg);
         }
 
@@ -189,14 +203,14 @@ export class WebGlFrameBufferUtilities {
 
         var depthStencilAttachmentType = null;
         switch (format) {
-            case TextureFormat.DEPTH_32_FLOAT:
+            case TextureFormat.DEPTH32_FLOAT:
                 depthStencilAttachmentType = gl.DEPTH_ATTACHMENT;
                 break;
-            case TextureFormat.DEPTH_24_STENCIL_8:
+            case TextureFormat.DEPTH24_PLUS_STENCIL8:
                 depthStencilAttachmentType = gl.DEPTH_STENCIL_ATTACHMENT;
                 break;
             default:
-                throw new Error(`Unsupported depth/stencil texture format.`);
+                throw new Error(`WebGlFrameBufferUtilities.attachDepthStencilRenderBuffer: unsupported depth/stencil format ${format}; expected DEPTH32_FLOAT or DEPTH24_PLUS_STENCIL8.`);
         }
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
@@ -223,14 +237,14 @@ export class WebGlFrameBufferUtilities {
         textureFormat: TextureFormat): void {
         var depthStencilAttachmentType = null;
         switch (textureFormat) {
-            case TextureFormat.DEPTH_32_FLOAT:
+            case TextureFormat.DEPTH32_FLOAT:
                 depthStencilAttachmentType = gl.DEPTH_ATTACHMENT;
                 break;
-            case TextureFormat.DEPTH_24_STENCIL_8:
+            case TextureFormat.DEPTH24_PLUS_STENCIL8:
                 depthStencilAttachmentType = gl.DEPTH_STENCIL_ATTACHMENT;
                 break;
             default:
-                throw new Error(`Unsupported depth/stencil texture format.`);
+                throw new Error(`WebGlFrameBufferUtilities.attachDepthStencilTexture: unsupported depth/stencil format ${textureFormat}; expected DEPTH32_FLOAT or DEPTH24_PLUS_STENCIL8.`);
         }
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);

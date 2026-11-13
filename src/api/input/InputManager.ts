@@ -17,22 +17,34 @@ import {vec2} from "gl-matrix";
  */
 class TouchContact {
 
+    /** The touch identifier from the browser event. Defaults to `0`. */
     public id = 0;
+    /** Whether this slot tracks a finger. Defaults to `false`. */
     public inUse = false;
+    /** The current touch state. Defaults to {@link TouchLocationState.INVALID}. */
     public state = TouchLocationState.INVALID;
+    /** The current x position in viewport CSS pixels. Defaults to `0`. */
     public x = 0;
+    /** The current y position in viewport CSS pixels. Defaults to `0`. */
     public y = 0;
+    /** The current pressure, 0 to 1. Defaults to `0`. */
     public pressure = 0;
+    /** Whether the previous state is valid. Defaults to `false`. */
     public hasPrevious = false;
     /** Previous was captured for this frame. Later events must not overwrite it. */
     public hasFramePrevious = false;
+    /** The previous touch state. Defaults to {@link TouchLocationState.INVALID}. */
     public prevState = TouchLocationState.INVALID;
+    /** The previous x position. Defaults to `0`. */
     public prevX = 0;
+    /** The previous y position. Defaults to `0`. */
     public prevY = 0;
+    /** The previous pressure. Defaults to `0`. */
     public prevPressure = 0;
     /** Pressed and released before the press was published. The press is shown first. */
     public sameFrameReleased = false;
 
+    /** Returns the slot to the pool: marks it unused and resets its state, pressure and previous-frame flags. */
     public releaseSlot(): void {
         this.inUse = false;
         this.state = TouchLocationState.INVALID;
@@ -43,6 +55,9 @@ class TouchContact {
     }
 }
 
+/**
+ * The browser implementation of {@link IInputManager}: keyboard, mouse, touch and gamepad state, updated once per frame.
+ */
 export class InputManager implements IInputManager {
 
     private readonly _mouseButtonMap: { [key: number]: MouseButton } = {
@@ -132,7 +147,7 @@ export class InputManager implements IInputManager {
     /** @inheritDoc */
     public initialize(): void {
 
-        const canvas = this._framework.windowManager.canvas;
+        const canvas = this._framework.canvasManager.canvas;
         this._handleMouseEvents(canvas);
         this._handleTouchEvents(canvas);
     }

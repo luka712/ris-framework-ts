@@ -6,28 +6,27 @@ import {
     type IUniformBuffer,
     type IVertexBuffer
 } from "../../../api/index.ts";
-import {VertexBufferLayout} from "../../../core/rendering/vertex-buffer-layout";
-import type {WebGlUniformBuffer} from "../../buffers/WebGlUniformBuffer.ts";
-import {asWebGLTexture2D, asWebGLUniformBuffer} from "../../cast/cast";
+import { VertexBufferLayout } from "../../../core/rendering/vertex-buffer-layout";
+import type { WebGlUniformBuffer } from "../../buffers/WebGlUniformBuffer.ts";
+import { asWebGLTexture2D, asWebGLUniformBuffer } from "../../cast/cast";
 import WebGlShaderModule from "../../shader/WebGlShaderModule.ts";
-import {WebGlTexture2D} from "../../texture/WebGlTexture2D.ts";
-import {WebGlVertexBuffer} from '../../buffers/WebGlVertexBuffer.ts';
-import {AWebGlRenderPipeline} from "../AWebGlRenderPipeline.ts";
-import type {WebGLIndexBuffer} from "../../buffers/webgl-index-buffer";
-import {type IIndexBuffer, IndexBufferType} from "../../../api/index.ts";
-import type {WebGlSampler} from "../../sampler/webgl-sampler.ts";
+import { WebGlTexture2D } from "../../texture/WebGlTexture2D.ts";
+import { WebGlVertexBuffer } from '../../buffers/WebGlVertexBuffer.ts';
+import { AWebGlRenderPipeline } from "../AWebGlRenderPipeline.ts";
+import type { WebGLIndexBuffer } from "../../buffers/webgl-index-buffer";
+import { type IIndexBuffer, IndexBufferType } from "../../../api";
+import type { WebGlSampler } from "../../sampler/webgl-sampler.ts";
 import type {
     IInspectTextureMipsRenderPipeline
-} from "../../../api/index.ts";
+} from "../../../api";
+import { WebGlTextureFactory } from "../../texture/WebGlTextureFactory.ts";
 
-/**
- * The WebGL implementation of the sprite render pipeline.
- */
+/** The WebGL implementation of {@link IInspectTextureMipsRenderPipeline}. Uses the `inspect_texture_mips` GLSL shader. */
 export class WebGlInspectTextureMipsRenderPipeline extends AWebGlRenderPipeline implements IInspectTextureMipsRenderPipeline {
 
     private static readonly CAMERA_BINDING_POINT = 0;
-    private static readonly  MODEL_BINDING_POINT = 1;
-    private static readonly TEXTURE_CONSTANTS_BINDING_POINT = 2;
+    private static readonly MODEL_BINDING_POINT = 1;
+    private static readonly FRAGMENT_DATA_BINDING_POINT = 2;
 
     private _texture: WebGlTexture2D = null!;
     private _sampler?: WebGlSampler;
@@ -36,23 +35,25 @@ export class WebGlInspectTextureMipsRenderPipeline extends AWebGlRenderPipeline 
     private _textureConstantsBuffer: WebGlUniformBuffer;
     private _cameraBlockIndex: number = -1;
     private _modelBlockIndex: number = -1;
-    private  _textureConstantsBlockIndex : number = -1;
+    private _fragmentDataBlockIndex: number = -1;
     private _buffersArray: WebGLBuffer[] = [null!];
     private _lastVertexBuffer: WebGlVertexBuffer | null = null;
 
     /**
      * The constructor.
      * @param framework The framework.
-     * @param projectionViewBuffer The projection view buffer.
-     * @param modelBuffer The model buffer.
-     * @param textureConstantsBuffer The texture constants buffer.
+     * @param projectionViewBuffer The projection view buffer (std140 `mat4`).
+     * @param modelBuffer The model buffer (std140 `mat4`). Required.
+     * @param textureConstantsBuffer The fragment data buffer. See {@link fragmentDataBuffer}.
+     * @param primitiveState The primitive state. By default, the graphics device's default primitive state.
+     * @throws Error when `modelBuffer` is missing.
      */
     constructor(framework: IFramework,
-                projectionViewBuffer: IUniformBuffer,
-                modelBuffer: IUniformBuffer,
-                textureConstantsBuffer: IUniformBuffer,
-                primitiveState? : IPrimitiveState
-                ) {
+        projectionViewBuffer: IUniformBuffer,
+        modelBuffer: IUniformBuffer,
+        textureConstantsBuffer: IUniformBuffer,
+        primitiveState?: IPrimitiveState
+    ) {
         // Validated before super(), which touches WebGL.
         if (!modelBuffer) {
             throw new Error("WebGlInspectTextureMipsRenderPipeline: modelBuffer is required (the mesh's model buffer, std140 mat4).");
@@ -90,22 +91,22 @@ export class WebGlInspectTextureMipsRenderPipeline extends AWebGlRenderPipeline 
     }
 
     /** @inheritdoc */
-    public get textureConstantsBuffer(): IUniformBuffer {
+    public get fragmentDataBuffer(): IUniformBuffer {
         return this._textureConstantsBuffer;
     }
 
     /** @inheritdoc */
-    public set textureConstantsBuffer(value: IUniformBuffer) {
+    public set fragmentDataBuffer(value: IUniformBuffer) {
         this._textureConstantsBuffer = asWebGLUniformBuffer(value);
     }
 
     /** @inheritdoc */
-    public get spriteTexture(): ITexture2D  {
+    public get texture(): ITexture2D {
         return this._texture;
     }
 
     /** @inheritdoc */
-    public set spriteTexture(value: ITexture2D ) {
+    public set texture(value: ITexture2D) {
         this._texture = asWebGLTexture2D(value!);
     }
 
@@ -114,6 +115,7 @@ export class WebGlInspectTextureMipsRenderPipeline extends AWebGlRenderPipeline 
         return this._sampler;
     }
 
+    /** @inheritdoc */
     public set textureSampler(value: ISampler | undefined) {
         this._sampler = value as WebGlSampler | undefined;
     }
@@ -130,7 +132,7 @@ export class WebGlInspectTextureMipsRenderPipeline extends AWebGlRenderPipeline 
 
     private _createResources(): void {
         {
-            this._texture = WebGlTexture2D.getOrCreateDefault(this._framework);
+            this._texture = (this._framework.textureFactory as WebGlTextureFactory).getOrCreateDefaultTexture2D();
 
             this._cameraBlockIndex = this._gl.getUniformBlockIndex(this._program, "CameraBuffer");
             this._gl.uniformBlockBinding(this._program, this._cameraBlockIndex, WebGlInspectTextureMipsRenderPipeline.CAMERA_BINDING_POINT);
@@ -138,8 +140,8 @@ export class WebGlInspectTextureMipsRenderPipeline extends AWebGlRenderPipeline 
             this._modelBlockIndex = this._gl.getUniformBlockIndex(this._program, "ModelBuffer");
             this._gl.uniformBlockBinding(this._program, this._modelBlockIndex, WebGlInspectTextureMipsRenderPipeline.MODEL_BINDING_POINT);
 
-            this._textureConstantsBlockIndex = this._gl.getUniformBlockIndex(this._program, "TextureConstantsBuffer");
-            this._gl.uniformBlockBinding(this._program, this._textureConstantsBlockIndex, WebGlInspectTextureMipsRenderPipeline.TEXTURE_CONSTANTS_BINDING_POINT);
+            this._fragmentDataBlockIndex = this._gl.getUniformBlockIndex(this._program, "FragmentDataBuffer");
+            this._gl.uniformBlockBinding(this._program, this._fragmentDataBlockIndex, WebGlInspectTextureMipsRenderPipeline.FRAGMENT_DATA_BINDING_POINT);
         }
     }
 
@@ -187,7 +189,7 @@ export class WebGlInspectTextureMipsRenderPipeline extends AWebGlRenderPipeline 
             WebGlInspectTextureMipsRenderPipeline.MODEL_BINDING_POINT,
             this._modelBuffer.glBuffer!);
         this._gl.bindBufferBase(this._gl.UNIFORM_BUFFER,
-            WebGlInspectTextureMipsRenderPipeline.TEXTURE_CONSTANTS_BINDING_POINT,
+            WebGlInspectTextureMipsRenderPipeline.FRAGMENT_DATA_BINDING_POINT,
             this._textureConstantsBuffer.glBuffer!);
         this._gl.activeTexture(this._gl.TEXTURE0);
         this._gl.bindTexture(this._gl.TEXTURE_2D, this._texture!.glTexture);

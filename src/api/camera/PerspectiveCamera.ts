@@ -46,7 +46,7 @@ export class PerspectiveCamera implements ICamera {
 
     protected readonly _framework: IFramework;
     private readonly _lastWorld = mat4.fromValues(NaN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-    private readonly _positionData = [0, 0, 0, 0];
+    private readonly _positionData = new Float32Array(4);
 
     private _projectionMatrix = mat4.create();
     private _viewMatrix = mat4.create();
@@ -237,7 +237,7 @@ export class PerspectiveCamera implements ICamera {
     }
 
     /** The world position, std140 `vec3` (padded to 16 bytes). This is what {@link positionBuffer} holds. */
-    private _worldEye(): number[] {
+    private _worldEye(): Float32Array {
         const m = this.transform.modelMatrix;
         this._positionData[0] = m[12];
         this._positionData[1] = m[13];
@@ -272,9 +272,9 @@ export class PerspectiveCamera implements ICamera {
     /** @inheritDoc */
     public updateBuffers(): void {
         this._positionBuffer.update(this._worldEye());
-        this._projectionBuffer.update(this.projectionMatrix);
-        this._viewBuffer.update(this.viewMatrix);
-        this._projectionViewBuffer.update(this.projectionViewMatrix);
+        this._projectionBuffer.update(this.projectionMatrix as Float32Array);
+        this._viewBuffer.update(this.viewMatrix as Float32Array);
+        this._projectionViewBuffer.update(this.projectionViewMatrix as Float32Array);
     }
 
     /** @inheritDoc */

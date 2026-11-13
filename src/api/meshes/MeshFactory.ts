@@ -40,11 +40,11 @@ export class MeshFactory implements IMeshFactory {
     /** @inheritDoc */
     public createWithSubMeshes(geometry: IGeometry, subMeshes: SubMeshDescriptor[]): IRenderableMesh {
         if (subMeshes.length == 0) {
-            throw new Error("createWithSubMeshes needs at least one submesh.");
+            throw new Error("MeshFactory.createWithSubMeshes: subMeshes is empty; at least one submesh is required.");
         }
         const format = subMeshes[0].material.geometryFormat;
         if (subMeshes.some(s => s.material.geometryFormat != format)) {
-            throw new Error("All submesh materials must use the same geometry format, as they share one vertex buffer.");
+            throw new Error(`MeshFactory.createWithSubMeshes: all submesh materials must use the same geometry format, as they share one vertex buffer; submesh 0 uses ${format}, submesh ${subMeshes.findIndex(s => s.material.geometryFormat != format)} uses ${subMeshes.find(s => s.material.geometryFormat != format)!.material.geometryFormat}.`);
         }
 
         const mesh = new RenderableMesh(this._framework);
@@ -58,7 +58,7 @@ export class MeshFactory implements IMeshFactory {
     /** @inheritDoc */
     public createQuadMesh(_isUpdatable: boolean, _scale?: vec2): QuadMesh {
 
-        throw new Error("Meshes not implemented.");
+        throw new Error("MeshFactory.createQuadMesh: Meshes not implemented. Quad meshes are not implemented yet after the material refactor.");
         /*  const quadMesh = new QuadMesh(this._framework, isUpdatable, scale);
         quadMesh.initialize();
         return quadMesh;

@@ -118,7 +118,7 @@ export abstract class AWebGlRenderPipeline implements IRenderPipeline {
     public initialize(): void {
 
         if (!this.vertexBufferLayouts || this.vertexBufferLayouts.length === 0) {
-            throw new Error('At least one vertex buffer layout must be provided for the render pipeline.');
+            throw new Error(`AWebGlRenderPipeline.initialize (${this.constructor.name}): vertexBufferLayouts is empty; at least one vertex buffer layout must be provided for the render pipeline.`);
         }
 
         this._createVertexArrayObject();

@@ -10,6 +10,7 @@ import {
 } from "../../api/index.ts";
 import {WebGlUniformBuffer} from "./WebGlUniformBuffer.ts";
 
+/** The WebGL implementation of {@link IBufferFactory}. Every created buffer is already initialized. */
 export class WebGlBuffersFactory implements IBufferFactory {
 
     /**
@@ -35,8 +36,8 @@ export class WebGlBuffersFactory implements IBufferFactory {
 
     /** @inheritdoc */
     public createIndexBuffer(data: ArrayLike<number>, label?: string): IIndexBuffer {
-        const buffer = new WebGLIndexBuffer(this._framework, label);
-        buffer.initialize(data);
+        const buffer = new WebGLIndexBuffer(this._framework, data, label);
+        buffer.initialize();
         return buffer;
     }
 

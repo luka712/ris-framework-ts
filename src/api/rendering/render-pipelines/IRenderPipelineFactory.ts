@@ -2,10 +2,11 @@ import type { ITexture2D } from "../texture/ITexture2D.ts";
 import type { IMainRenderTargetRenderPipeline } from "./IMainRenderTargetRenderPipeline.ts";
 import type { IUniformBuffer } from "../buffers/IUniformBuffer.ts";
 import type { ISpriteRenderPipeline } from "./ISpriteRenderPipeline.ts";
-import type { IInspectTextureMipsRenderPipeline } from "./IInspectTextureMipsRenderPipeline.ts";
+import type { IInspectTextureMipsRenderPipeline } from "./inspect/IInspectTextureMipsRenderPipeline.ts";
 import type { IUnlitRenderPipeline } from "./IUnlitRenderPipeline.ts";
 import type { IPrimitiveState } from "../primitive/IPrimitiveState.ts";
 import type { IForwardBlinnPhongRenderPipeline } from "./IForwardBlinnPhongRenderPipeline.ts";
+import type {IInspectTextureArrayRenderPipeline} from "./inspect/IInspectTextureArrayRenderPipeline.ts";
 
 /** The descriptor for the forward Blinn-Phong render pipeline. */
 export interface ForwardBlinnPhongRenderPipelineDescriptor {
@@ -61,11 +62,19 @@ export interface IRenderPipelineFactory {
      * Creates the inspect texture mip level pipeline.
      * @param projectionViewBuffer - The projection view buffer.
      * @param modelBuffer - The world buffer.
-     * @param textureConstantsBuffer - The texture constants buffer.
-     * @returns The inspect texture mips render pipeline.
+     * @param fragmentDataBuffer - The fragment data buffer: one std140 float `[mipLevel]`, the mip level to sample.
+     * @returns The initialized inspect texture mips render pipeline (WebGL2 and WebGPU).
      */
-    createInspectTextureMipsRenderPipeline(projectionViewBuffer: IUniformBuffer, modelBuffer: IUniformBuffer, textureConstantsBuffer: IUniformBuffer): IInspectTextureMipsRenderPipeline;
+    createInspectTextureMipsRenderPipeline(projectionViewBuffer: IUniformBuffer, modelBuffer: IUniformBuffer, fragmentDataBuffer: IUniformBuffer): IInspectTextureMipsRenderPipeline;
 
+    /**
+     * Creates the inspect texture array pipeline.
+     * @param projectionViewBuffer - The projection view buffer.
+     * @param modelBuffer - The world buffer.
+     * @param fragmentDataBuffer - The fragment data buffer: std140 floats `[inspectLod, layer, mipLevel, padding]`.
+     * @returns The initialized inspect texture array render pipeline (WebGL2 and WebGPU).
+     */
+    createInspectTextureArrayRenderPipeline(projectionViewBuffer: IUniformBuffer, modelBuffer: IUniformBuffer, fragmentDataBuffer: IUniformBuffer): IInspectTextureArrayRenderPipeline;
 
     /**
      * Creates the unlit render pipeline.

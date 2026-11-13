@@ -1,53 +1,55 @@
-import {vec2} from "gl-matrix";
-import {type ISwapChain, SwapChainDescriptor, TextureFormat} from "../../api/index.ts";
-import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
-import {GpuTextureUsage, type GpuCanvasContext, type GpuTextureView} from "../WebGpuTypes.ts";
+import {WebGpuConverter} from "../utilities/WebGpuConverter.ts";
+import { vec2 } from "gl-matrix";
+import { type ISwapChain, type ISwapChainDescriptor, TextureFormat } from "../../api";
+import type { WebGpuGraphicsDevice } from "../WebGpuGraphicsDevice.ts";
+import { WebGpuUtilities } from "../utilities/WebGpuUtilities.ts";
 
 /**
  * The WebGPU swap chain, backed by the canvas' `webgpu` context.
  *
  * The canvas is configured as `rgba8unorm` instead of `navigator.gpu.getPreferredCanvasFormat()` (often `bgra8unorm`),
- * because the framework's {@link TextureFormat} has no BGRA format and the main render target uses the swap chain format.
+ * because the framework's {@link TextureFormat} has no BGRA format.
+ *
+ * The swap chain is always linear (RGBA8_UNORM), whatever the output color space: with sRGB output the renderer draws into the
+ * main render target through its RGBA8_UNORM_SRGB view (the hardware encodes on write), and the main render target pipeline
+ * copies the already encoded bytes through the RGBA8_UNORM view. Encoding here as well would encode twice.
  * @internal
  */
 export class WebGpuSwapChain implements ISwapChain {
 
-    private readonly _canvas: HTMLCanvasElement;
     private readonly _graphicsDevice: WebGpuGraphicsDevice;
-    private readonly _context: GpuCanvasContext;
+    private _context: GPUCanvasContext;
+    private _device: GPUDevice;
     private readonly _backBufferSize: vec2;
-    private _currentView: GpuTextureView | null = null;
+    private _currentView: GPUTextureView | null = null;
 
     /**
      * The constructor.
-     * @param canvas The canvas.
      * @param graphicsDevice The graphics device.
-     * @param _descriptor The swap chain descriptor. WebGPU canvases always present with FIFO.
+     * @param _descriptor The swap chain descriptor. WebGPU canvases always present with FIFO, and the output color space is handled by the main render target view.
      */
-    public constructor(canvas: HTMLCanvasElement, graphicsDevice: WebGpuGraphicsDevice, _descriptor?: SwapChainDescriptor) {
-        this._canvas = canvas;
+    public constructor(graphicsDevice: WebGpuGraphicsDevice, _descriptor: ISwapChainDescriptor) {
         this._graphicsDevice = graphicsDevice;
-        const context = canvas.getContext("webgpu" as "webgl2") as unknown as GpuCanvasContext | null;
-        if (!context) {
-            throw new Error("WebGPU canvas context is not available.");
-        }
-        this._context = context;
+        const canvas = graphicsDevice.canvasManager.canvas;
+        this._context = graphicsDevice.context;
+        this._device = graphicsDevice.device;
         this._backBufferSize = vec2.fromValues(canvas.width, canvas.height);
         this._configure();
     }
 
     private _configure(): void {
-        this._context.configure({
-            device: this._graphicsDevice.device,
-            format: "rgba8unorm",
-            usage: GpuTextureUsage.RENDER_ATTACHMENT,
-            alphaMode: this._graphicsDevice.alpha ? "premultiplied" : "opaque",
-        });
+
+        WebGpuUtilities.context.configure(
+            this._context,
+            this._device,
+            TextureFormat.RGBA8_UNORM,
+            [TextureFormat.RGBA8_UNORM],
+            this._graphicsDevice.alpha ? "premultiplied" : "opaque");
     }
 
-    /** @inheritDoc */
+    /** The format of the canvas texture views. Always {@link TextureFormat.RGBA8_UNORM} (see the class comment). */
     public get textureFormat(): TextureFormat {
-        return TextureFormat.RGBA_8_UNORM;
+        return TextureFormat.RGBA8_UNORM;
     }
 
     /** @inheritDoc */
@@ -58,9 +60,9 @@ export class WebGpuSwapChain implements ISwapChain {
     /**
      * The view of the current canvas texture. Acquired once per frame and released on {@link present}.
      */
-    public get currentTextureView(): GpuTextureView {
+    public get currentTextureView(): GPUTextureView {
         if (!this._currentView) {
-            this._currentView = this._context.getCurrentTexture().createView();
+            this._currentView = this._context.getCurrentTexture().createView({format: WebGpuConverter.convertTextureFormat(this.textureFormat)});
         }
         return this._currentView;
     }
@@ -71,8 +73,6 @@ export class WebGpuSwapChain implements ISwapChain {
             return;
         }
         this._currentView = null;
-        this._canvas.width = width;
-        this._canvas.height = height;
         this._backBufferSize[0] = width;
         this._backBufferSize[1] = height;
     }
@@ -81,8 +81,6 @@ export class WebGpuSwapChain implements ISwapChain {
     public present(): void {
         // The browser presents the canvas texture after the task; the next frame needs a fresh texture.
         this._currentView = null;
-        this._backBufferSize[0] = this._canvas.width;
-        this._backBufferSize[1] = this._canvas.height;
     }
 
     /** @inheritDoc */
