@@ -37,6 +37,7 @@ function createFramework() {
         },
         content: {loadShaderModule},
     } as any;
+    framework.textureFactory = new WebGpuTextureFactory(framework);
     return {framework, device, encoder, loadShaderModule};
 }
 
@@ -78,7 +79,7 @@ describe("WebGpuInspectTextureMipsRenderPipeline", () => {
 
         expect(encoder.setBindGroup.mock.calls.map(([group]) => group)).toEqual([0, 1, 2]);
         expect(encoder.drawIndexed).toHaveBeenCalledWith(6, 1, 0);
-        expect(pipeline.texture).toBe(WebGpuTexture2D.getOrCreateDefault(framework));
+        expect(pipeline.texture).toBe((framework.textureFactory as WebGpuTextureFactory).getOrCreateDefaultTexture2D());
 
         // The texture group binds the default texture's 2d view.
         const textureGroup = device.createBindGroup.mock.calls.find(([desc]) => String(desc.label).includes("texture group"))![0];

@@ -180,7 +180,7 @@ export abstract class ATexture2D implements ITexture2D {
     }
 
     /** @inheritdoc */
-    public get label(): string | undefined {
+    public get label(): string | undefined {
         return this._label;
     }
 

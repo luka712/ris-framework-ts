@@ -167,42 +167,4 @@ export class WebGpuTexture2DArray extends ATexture2DArray {
         const names = flags.filter(flag => (usage & flag) != 0).map(flag => TextureUsage[flag]);
         return names.length > 0 ? names.join(" | ") : "NONE";
     }
-
-    /** One default texture array per framework. */
-    private static readonly _defaultFilled = new WeakMap<IFramework, WebGpuTexture2DArray>();
-
-    /**
-     * Returns the framework's 1x1, one-layer white texture array, creating it on first use.
-     * Used when a pipeline has no texture array set.
-     * @param framework The framework.
-     * @returns The default texture array.
-     */
-    public static getOrCreateDefault(framework: IFramework): WebGpuTexture2DArray {
-        let texture = WebGpuTexture2DArray._defaultFilled.get(framework);
-        if (!texture || texture.state === State.DISPOSED) {
-            const desc: ITextureDescriptor = {
-                width: 1,
-                height: 1,
-                layers: 1,
-                dataArray: [[new Uint8Array([255, 255, 255, 255])]],
-                textureFormat: framework.renderer.preferredTextureFormat,
-                textureUsage: TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST,
-                label: "RisDefaultFilledTextureArray",
-            };
-            texture = new WebGpuTexture2DArray(framework, desc);
-            texture.initialize();
-            WebGpuTexture2DArray._defaultFilled.set(framework, texture);
-        }
-        return texture;
-    }
-
-    /**
-     * Disposes and forgets the framework's default texture array. Called from `Framework.dispose()`.
-     * @param framework The framework.
-     */
-    public static disposeDefault(framework: IFramework): void {
-        const texture = WebGpuTexture2DArray._defaultFilled.get(framework);
-        WebGpuTexture2DArray._defaultFilled.delete(framework);
-        texture?.dispose();
-    }
 }

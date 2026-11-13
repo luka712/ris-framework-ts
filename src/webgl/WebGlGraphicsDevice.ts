@@ -150,7 +150,12 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
         throw new Error("WebGlGraphicsDevice.frameEnd: Not implemented for WebGL2.");
     }
 
-    /** WebGL has nothing extra to release; the context goes away with the canvas. */
+    /**
+     * Loses the WebGL context right away instead of waiting for garbage collection.
+     * Browsers cap live WebGL contexts, so switching backends repeatedly would otherwise run out.
+     */
     protected _disposeBackend(): void {
+        this._gl?.getExtension("WEBGL_lose_context")?.loseContext();
+        this._gl = null!;
     }
 }

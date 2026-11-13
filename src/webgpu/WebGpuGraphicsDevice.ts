@@ -13,6 +13,7 @@ import {
     type ISwapChainDescriptor,
     type ICanvasManager,
     RenderingBackend,
+    State,
 } from "../api/index.ts";
 import { WebGpuGraphicsDeviceFeatures } from "./WebGpuGraphicsDeviceFeatures.ts";
 import { WebGPUInfo } from "./WebGpuInfo.ts";
@@ -117,9 +118,11 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
         }
 
         this._adapter = await WebGpuUtilities.adapter.requestAdapterAsync(this._descriptor.powerPreference);
+        this._throwIfDisposedDuringInitialize();
         this._features = new WebGpuGraphicsDeviceFeatures(this._adapter.features);
 
         this._device = await WebGpuUtilities.device.requestDeviceAsync(this._adapter, this._features.deviceRequiredFeatures, {}, "RisFramework WebGPU device");
+        this._throwIfDisposedDuringInitialize();
         this._gpuInfo = new WebGPUInfo(this._adapter, this._features);
         this.setupDebugCallback();
         await super.initializeAsync();
@@ -178,6 +181,20 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
     /** @inheritDoc */
     public popDebugGroup(): void {
         this.currentRenderPassEncoder?.popDebugGroup();
+    }
+
+    /**
+     * Called after each await in {@link initializeAsync}. When {@link dispose} ran meanwhile, destroys a device
+     * that was requested after dispose (so it does not leak) and stops initialization.
+     * @throws Error when the device was disposed during initialization.
+     */
+    private _throwIfDisposedDuringInitialize(): void {
+        if (this._state == State.CREATED) {
+            return;
+        }
+        this._device?.destroy();
+        this._device = null!;
+        throw new Error(`WebGpuGraphicsDevice.initializeAsync: the device was disposed during initialization (state ${State[this._state]}).`);
     }
 
     /** Disposes the swap chain and destroys the GPU device. */

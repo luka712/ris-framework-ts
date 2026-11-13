@@ -20,6 +20,7 @@ import type {WebGpuVertexBuffer} from "../../buffers/WebGpuVertexBuffer.ts";
 import type {WebGpuIndexBuffer} from "../../buffers/WebGpuIndexBuffer.ts";
 import type {WebGpuShaderModule} from "../../shader/WebGpuShaderModule.ts";
 import {WebGpuUtilities} from "../../utilities/WebGpuUtilities.ts";
+import { WebGpuTextureFactory } from "../../texture/WebGpuTextureFactory.ts";
 
 /**
  * The WebGPU implementation of {@link IInspectTextureArrayRenderPipeline}, mirroring the WebGL one.
@@ -118,7 +119,7 @@ export class WebGpuInspectTextureArrayRenderPipeline extends AWebGpuRenderPipeli
 
     /** @inheritDoc */
     public get texture(): ITexture2DArray {
-        return this._texture ?? WebGpuTexture2DArray.getOrCreateDefault(this._framework);
+        return this._texture ?? (this._framework.textureFactory as WebGpuTextureFactory).getOrCreateDefaultTexture2DArray();
     }
 
     /** @inheritDoc */
@@ -197,7 +198,7 @@ export class WebGpuInspectTextureArrayRenderPipeline extends AWebGpuRenderPipeli
     private _getTextureBindGroup(): GPUBindGroup {
         const texture = (this._texture && this._texture.textureState !== State.DISPOSED)
             ? this._texture
-            : WebGpuTexture2DArray.getOrCreateDefault(this._framework);
+            : (this._framework.textureFactory as WebGpuTextureFactory).getOrCreateDefaultTexture2DArray();
         const sampler = this._sampler ?? this._defaultTextureSampler;
         const key = `${texture.id}:${sampler.id}`;
         let bindGroup = this._textureBindGroups.get(key);

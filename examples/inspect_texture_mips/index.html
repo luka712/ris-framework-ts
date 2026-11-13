@@ -15,7 +15,11 @@
     <main>
       <p><a href="../">← Examples</a></p>
       <h1>Inspect texture mips</h1>
-      <p id="status">Creating mip levels…</p>
+      <p>
+        <label for="mip-level">Mip level</label>
+        <select id="mip-level" disabled></select>
+      </p>
+      <p id="status">Loading kodim23.ktx2…</p>
       <canvas id="game-canvas" width="800" height="600"></canvas>
     </main>
     <script type="module" src="./main.ts"></script>

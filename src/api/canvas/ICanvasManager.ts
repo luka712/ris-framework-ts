@@ -3,32 +3,26 @@ import {CanvasBounds} from "./CanvasBounds.ts";
 import {vec2} from "gl-matrix";
 
 /**
- * The interface for the window manager.
+ * Owns the canvas and the per-frame event loop.
  */
 export interface ICanvasManager extends IDisposable {
 
-    /**
-     * Gets the HTMLCanvasElement associated with this CanvasManager.
-     */
-    get canvas(): HTMLCanvasElement;
+    /** The canvas the framework renders to. */
+    readonly canvas: HTMLCanvasElement;
 
     /**
-     * If the window manager handles the swap chain.
+     * If the canvas manager handles the swap chain.
      * In some cases we don't want to handle the swap chain, for example, when embedding the framework into other applications,
      * such as Avalonia.
      * By default, it is true.
      */
     readonly handleSwapChain: boolean;
 
-    /**
-     * The client bounds or client window size.
-     */
+    /** The client bounds or client window size. */
     readonly canvasBounds: CanvasBounds;
 
-    /**
-     * Gets or sets the title of the window.
-     */
-    title: string;
+    /** If true event loop is running, false otherwise. */
+    readonly eventLoopRunning: boolean;
 
     /**
      * Adds a listener that runs on every frame, before the render listeners.
@@ -60,9 +54,9 @@ export interface ICanvasManager extends IDisposable {
      */
     removeOnResizeListener(event: (arg1: ICanvasManager, arg2: vec2) => void): void;
 
-    /**
-     * Runs the event loop.
-     */
+    /** Starts the event loop: runs one frame now, then one per animation frame. Does nothing when it is already running. */
     runEventLoop(): void;
 
+    /** Stops the event loop; no further frame runs until {@link runEventLoop} is called again. */
+    stopEventLoop(): void;
 }

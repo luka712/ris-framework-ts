@@ -119,45 +119,4 @@ export class WebGlTexture2D extends ATexture2D {
             listener(this);
         }
     }
-
-    /** One default texture per framework, so a new framework (and GL context) never gets a texture of an old one. */
-    private static readonly _defaultFilled = new WeakMap<IFramework, WebGlTexture2D>();
-
-    /**
-     * Creates a default 1x1 white texture if it doesn't already exist and returns it.
-     * This can be used as a placeholder texture when a texture is expected but not available.
-     * @param framework The framework instance.
-     * The texture belongs to that framework's GL context; each framework gets its own.
-     * @returns The default 1x1 white texture.
-     */
-    public static getOrCreateDefault(framework: IFramework): WebGlTexture2D {
-        let texture = WebGlTexture2D._defaultFilled.get(framework);
-        if (!texture || texture.state === State.DISPOSED) {
-
-            const desc: ITextureDescriptor = {
-                width: 1,
-                height: 1,
-                data: [new Uint8Array([255, 255, 255, 255])],
-                textureFormat: framework.renderer.preferredTextureFormat,
-                label: "RisDefaultFilledTexture",
-            };
-
-            texture = new WebGlTexture2D(framework, desc);
-            texture.initialize();
-            WebGlTexture2D._defaultFilled.set(framework, texture);
-        }
-
-        return texture;
-    }
-
-    /**
-     * Disposes and forgets the default texture of a framework. Called from `Framework.dispose()`.
-     * @param framework The framework instance.
-     */
-    public static disposeDefault(framework: IFramework): void {
-        const texture = WebGlTexture2D._defaultFilled.get(framework);
-        WebGlTexture2D._defaultFilled.delete(framework);
-        texture?.dispose();
-    }
-
 }

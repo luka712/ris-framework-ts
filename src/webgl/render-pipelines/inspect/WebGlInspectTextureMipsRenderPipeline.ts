@@ -19,6 +19,7 @@ import type { WebGlSampler } from "../../sampler/webgl-sampler.ts";
 import type {
     IInspectTextureMipsRenderPipeline
 } from "../../../api";
+import { WebGlTextureFactory } from "../../texture/WebGlTextureFactory.ts";
 
 /** The WebGL implementation of {@link IInspectTextureMipsRenderPipeline}. Uses the `inspect_texture_mips` GLSL shader. */
 export class WebGlInspectTextureMipsRenderPipeline extends AWebGlRenderPipeline implements IInspectTextureMipsRenderPipeline {
@@ -131,7 +132,7 @@ export class WebGlInspectTextureMipsRenderPipeline extends AWebGlRenderPipeline 
 
     private _createResources(): void {
         {
-            this._texture = WebGlTexture2D.getOrCreateDefault(this._framework);
+            this._texture = (this._framework.textureFactory as WebGlTextureFactory).getOrCreateDefaultTexture2D();
 
             this._cameraBlockIndex = this._gl.getUniformBlockIndex(this._program, "CameraBuffer");
             this._gl.uniformBlockBinding(this._program, this._cameraBlockIndex, WebGlInspectTextureMipsRenderPipeline.CAMERA_BINDING_POINT);

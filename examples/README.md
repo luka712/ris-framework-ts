@@ -5,7 +5,7 @@ Each example lives in its own folder with an `index.html` and `main.ts`, and imp
 | Example | What it shows |
 | --- | --- |
 | [`sprite_batch`](sprite_batch/) | Texture loading and drawing a single sprite with the sprite batch. |
-| [`inspect_texture_mips`](inspect_texture_mips/) | `textureFactory.createWithMipLevels` with a distinct colour per mip level, one quad per level with `InspectTextureMipsMaterial`, added to a `Scene` and drawn by `scene.render()` (WebGL and WebGPU). |
+| [`inspect_texture_mips`](inspect_texture_mips/) | `content.loadTexture2DAsync` with `kodim23.ktx2` (768×512, ETC1S, 8 mip levels from the file), drawn on one quad with a dropdown that picks the mip level, with `InspectTextureMipsMaterial`, added to a `Scene` and drawn by `scene.render()` (WebGL and WebGPU). |
 | [`texture_array_2d`](texture_array_2d/) | `content.loadTexture2DArrayAsync` with four 16×16 PNG layers, one quad per layer with `InspectTextureArrayMaterial`, added to a `Scene` and drawn by `scene.render()` (WebGL and WebGPU). |
 | [`unlit_mesh`](unlit_mesh/) | OBJ/MTL loading with `content.loadUnlitMeshAsync` (through `framework.objLoader`), added with `scene.add`, drawn by `scene.render()`, submeshes with one unlit material each, and a rotating perspective camera view. |
 | [`blinn_phong_mesh`](blinn_phong_mesh/) | ForwardBlinnPhongMaterial from the material factory, submeshes, loaded with `content.loadBlinnPhongMeshAsync` and added to a `Scene` holding the lights (ambient, directional and orbiting point lights with intensity), drawn by `scene.render()`. |

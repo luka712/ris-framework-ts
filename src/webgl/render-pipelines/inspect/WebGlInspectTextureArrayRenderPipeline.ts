@@ -17,6 +17,7 @@ import type { WebGlSampler } from "../../sampler/webgl-sampler.ts";
 import type {IInspectTextureArrayRenderPipeline} from "../../../api";
 import {WebGlTexture2DArray} from "../../texture/WebGlTexture2DArray.ts";
 import type {ITexture2DArray} from "../../../api/rendering/texture/ITexture2DArray.ts";
+import { WebGlTextureFactory } from "../../texture/WebGlTextureFactory.ts";
 
 /** The WebGL implementation of {@link IInspectTextureArrayRenderPipeline}. Uses the `inspect_texture_array` GLSL shader (`sampler2DArray`). */
 export class WebGlInspectTextureArrayRenderPipeline extends AWebGlRenderPipeline implements IInspectTextureArrayRenderPipeline {
@@ -129,7 +130,7 @@ export class WebGlInspectTextureArrayRenderPipeline extends AWebGlRenderPipeline
 
     private _createResources(): void {
         {
-            this._texture = WebGlTexture2DArray.getOrCreateDefault(this._framework);
+            this._texture = (this._framework.textureFactory as WebGlTextureFactory).getOrCreateDefaultTexture2DArray();
 
             this._cameraBlockIndex = this._gl.getUniformBlockIndex(this._program, "CameraBuffer");
             this._gl.uniformBlockBinding(this._program, this._cameraBlockIndex, WebGlInspectTextureArrayRenderPipeline.CAMERA_BINDING_POINT);

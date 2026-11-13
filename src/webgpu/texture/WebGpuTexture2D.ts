@@ -1,7 +1,6 @@
 import {
     type IFramework,
     State,
-    TextureUsage,
     TextureUtilities,
     type ITextureView2D,
     type ITextureDescriptor,
@@ -141,41 +140,5 @@ export class WebGpuTexture2D extends ATexture2D {
         for (const listener of this._disposedListeners.slice()) {
             listener(this);
         }
-    }
-
-    /** One default texture per framework. */
-    private static readonly _defaultFilled = new WeakMap<IFramework, WebGpuTexture2D>();
-
-    /**
-     * Returns the framework's 1x1 white texture, creating it on first use.
-     * Used when a pipeline has no texture set.
-     * @param framework The framework.
-     */
-    public static getOrCreateDefault(framework: IFramework): WebGpuTexture2D {
-        let texture = WebGpuTexture2D._defaultFilled.get(framework);
-        if (!texture || texture.state === State.DISPOSED) {
-            const desc: ITextureDescriptor = {
-                width: 1,
-                height: 1,
-                data: [new Uint8Array([255, 255, 255, 255])],
-                textureFormat: framework.renderer.preferredTextureFormat,
-                textureUsage: TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST,
-                label: "RisDefaultFilledTexture",
-            };
-            texture = new WebGpuTexture2D(framework, desc);
-            texture.initialize();
-            WebGpuTexture2D._defaultFilled.set(framework, texture);
-        }
-        return texture;
-    }
-
-    /**
-     * Disposes and forgets the framework's default texture. Called from `Framework.dispose()`.
-     * @param framework The framework.
-     */
-    public static disposeDefault(framework: IFramework): void {
-        const texture = WebGpuTexture2D._defaultFilled.get(framework);
-        WebGpuTexture2D._defaultFilled.delete(framework);
-        texture?.dispose();
     }
 }
