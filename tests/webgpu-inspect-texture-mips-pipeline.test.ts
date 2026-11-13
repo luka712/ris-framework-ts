@@ -58,13 +58,13 @@ describe("WebGpuInspectTextureMipsRenderPipeline", () => {
         expect(pipeline).toBeInstanceOf(WebGpuInspectTextureMipsRenderPipeline);
         expect(loadShaderModule).toHaveBeenCalledWith("inspect_texture_mips");
 
-        const layouts = device.createBindGroupLayout.mock.calls.map(([desc]) => desc.entries);
+        const layouts = device.createBindGroupLayout.mock.calls.map(([desc]) => [...desc.entries]);
         expect(layouts).toHaveLength(3);
         expect(layouts[1][0]).toMatchObject({binding: 0, texture: {sampleType: "float", viewDimension: "2d"}});
         expect(layouts[2][0]).toMatchObject({binding: 2, buffer: {type: "uniform"}});
 
         const pipelineDesc = device.createRenderPipeline.mock.calls[0][0];
-        expect(pipelineDesc.fragment!.targets[0]).toMatchObject({format: "rgba8unorm"});
+        expect([...pipelineDesc.fragment!.targets][0]).toMatchObject({format: "rgba8unorm"});
         expect(pipelineDesc.depthStencil).toMatchObject({format: "depth24plus-stencil8"});
     });
 

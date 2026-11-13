@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Framework } from "../src/Framework.ts";
 import { TextureFormat } from "../src/api/rendering/texture/TextureFormat.ts";
-import { WebGlTexture2D } from "../src/webgl/texture/WebGlTexture2D.ts";
 import {IFrameworkConfiguration} from "../src";
 import { WebGlTextureFactory } from "../src/webgl/texture/WebGlTextureFactory.ts";
 

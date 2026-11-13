@@ -1,6 +1,5 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {TextureFormat} from "../src/api/rendering/texture/TextureFormat";
-import {WebGpuTexture2DArray} from "../src/webgpu/texture/WebGpuTexture2DArray";
 import {WebGpuInspectTextureArrayRenderPipeline} from "../src/webgpu/render-pipelines/inspect/WebGpuInspectTextureArrayRenderPipeline";
 import {WebGpuRenderPipelineFactory} from "../src/webgpu/render-pipelines/WebGpuRenderPipelineFactory";
 import { WebGpuTextureFactory } from "../src/webgpu/texture/WebGpuTextureFactory.ts";
@@ -58,13 +57,13 @@ describe("WebGpuInspectTextureArrayRenderPipeline", () => {
         expect(pipeline).toBeInstanceOf(WebGpuInspectTextureArrayRenderPipeline);
         expect(loadShaderModule).toHaveBeenCalledWith("inspect_texture_array");
 
-        const layouts = device.createBindGroupLayout.mock.calls.map(([desc]) => desc.entries);
+        const layouts = device.createBindGroupLayout.mock.calls.map(([desc]) => [...desc.entries]);
         expect(layouts).toHaveLength(3);
         expect(layouts[1][0]).toMatchObject({binding: 0, texture: {sampleType: "float", viewDimension: "2d-array"}});
         expect(layouts[2][0]).toMatchObject({binding: 2, buffer: {type: "uniform"}});
 
         const pipelineDesc = device.createRenderPipeline.mock.calls[0][0];
-        expect(pipelineDesc.fragment!.targets[0]).toMatchObject({format: "rgba8unorm"});
+        expect([...pipelineDesc.fragment!.targets][0]).toMatchObject({format: "rgba8unorm"});
         expect(pipelineDesc.depthStencil).toMatchObject({format: "depth24plus-stencil8"});
     });
 
