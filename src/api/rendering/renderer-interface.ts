@@ -1,5 +1,4 @@
 import { vec2 } from "gl-matrix";
-import type {RenderingLimits} from "./rendering-limits.ts";
 import type { IRenderer} from "../index.ts";
 import type {TextureFormat} from "../index.ts";
 
