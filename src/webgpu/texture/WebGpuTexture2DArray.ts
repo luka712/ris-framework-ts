@@ -13,6 +13,7 @@ import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
 import {WebGpuConverter} from "../utilities/WebGpuConverter.ts";
 import {WebGpuTextureView} from "./WebGpuTextureView.ts";
 import {WebGpuUtilities} from "../utilities/WebGpuUtilities.ts";
+import {WebGpuMipmapUtilities} from "../utilities/WebGpuMipmapUtilities.ts";
 
 /**
  * The WebGPU 2D texture array: a `GPUTexture` with `dimension: "2d"` and `depthOrArrayLayers` set to the layer count,
@@ -21,7 +22,8 @@ import {WebGpuUtilities} from "../utilities/WebGpuUtilities.ts";
  * Every layer and mip level of {@link ITextureDescriptor.dataArray} is uploaded with `GPUQueue.writeTexture`
  * (`origin.z` is the layer). Supports `Uint8Array` mip levels (uncompressed, or block-compressed e.g. from KTX2)
  * and `HTMLImageElement` mip levels (uncompressed only; needs `COPY_DST` and `RENDER_ATTACHMENT` usage).
- * Mipmap generation is not implemented for WebGPU yet.
+ * With `generateMipmaps` and a single level of data, the full mip chain is rendered from level 0 with {@link WebGpuMipmapUtilities}
+ * (RGBA8_UNORM and RGBA8_UNORM_SRGB only; needs `TEXTURE_BINDING` and `RENDER_ATTACHMENT` usage).
  * @internal
  */
 export class WebGpuTexture2DArray extends ATexture2DArray {
@@ -65,8 +67,9 @@ export class WebGpuTexture2DArray extends ATexture2DArray {
     }
 
     /**
-     * Creates the GPU texture and uploads every layer and mip level.
-     * @throws Error when the texture is already initialized or disposed, mipmap generation is requested,
+     * Creates the GPU texture and uploads every layer and mip level, then generates the mip chain when requested.
+     * @throws Error when the texture is already initialized or disposed, mipmap generation is requested without
+     * `TEXTURE_BINDING | RENDER_ATTACHMENT` usage or for a format other than RGBA8_UNORM or RGBA8_UNORM_SRGB,
      * the usage lacks `COPY_DST` (or `RENDER_ATTACHMENT` for images) while there is data to upload,
      * or a compressed format is given images.
      */
@@ -74,8 +77,15 @@ export class WebGpuTexture2DArray extends ATexture2DArray {
         this._validateState();
 
         const name = this.label ?? this.id;
-        if (this._generateMipMaps) {
-            throw new Error(`WebGpuTexture2DArray.initialize: mipmap generation (generateMipmaps) is not implemented for WebGPU yet ('${name}'). Provide the mip levels per layer in ITextureDescriptor.dataArray instead.`);
+        // Mipmaps are rendered level by level, so the texture must be a render attachment and sampleable.
+        const mipmapUsage = TextureUsage.TEXTURE_BINDING | TextureUsage.RENDER_ATTACHMENT;
+        if (this._generateMipMaps && (this.textureUsage & mipmapUsage) != mipmapUsage) {
+            throw new Error(`WebGpuTexture2DArray.initialize: '${name}' requests mipmap generation, which renders each level and needs TextureUsage.TEXTURE_BINDING | RENDER_ATTACHMENT, ` +
+                `but its usage is ${WebGpuTexture2DArray._usageNames(this.textureUsage)}. Add them to ITextureDescriptor.textureUsage.`);
+        }
+        if (this._generateMipMaps && !WebGpuMipmapUtilities.SUPPORTED_FORMATS.includes(this.textureFormat)) {
+            throw new Error(`WebGpuTexture2DArray.initialize: '${name}' requests mipmap generation for ${this.textureFormat}; ` +
+                `mipmaps can only be generated for ${WebGpuMipmapUtilities.SUPPORTED_FORMATS.join(" and ")}.`);
         }
 
         const data = this._data;
@@ -112,7 +122,14 @@ export class WebGpuTexture2DArray extends ATexture2DArray {
                 this.textureUsage,
                 data,
                 this.label,
-                this.viewFormats);
+                this.viewFormats,
+                this._generateMipMaps ? TextureUtilities.mipLevels(this.size[0], this.size[1]) : TextureUtilities.maxMipLevels(data));
+
+        if (this._generateMipMaps) {
+            this._mipLevels = TextureUtilities.mipLevels(this.size[0], this.size[1]);
+            WebGpuUtilities.mipmap.generate2DArray(this._graphicsDevice.device, result.texture, this.textureFormat,
+                this.size[2], this._mipLevels, this.label);
+        }
 
         this._gpuTexture = result.texture;
         this._handle = this._gpuTexture;

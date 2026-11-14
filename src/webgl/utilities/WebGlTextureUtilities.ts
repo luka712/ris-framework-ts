@@ -192,7 +192,7 @@ export class WebGlTextureUtilities {
      * Values above 1 are not implemented yet and throw.
      * @param label The label for the texture. This can be used for debugging purposes to identify the texture in graphics debuggers.
      * @returns The created WebGL texture.
-     * @throws Error when `data` has more layer entries than `layers`.
+     * @throws Error when `data` has more layer entries than `layers`, or mipmap generation is requested for a format other than RGBA8_UNORM or RGBA8_UNORM_SRGB.
      */
     public createTexture2DArray(
         gl: WebGL2RenderingContext,
@@ -207,6 +207,12 @@ export class WebGlTextureUtilities {
         // Checked before any GL object is created.
         if (data && data.length > layers) {
             throw new Error(`WebGlTextureUtilities.createTexture2DArray: '${label ?? "unlabeled"}' has data for ${data.length} layers, but the texture array has ${layers} layers.`);
+        }
+        // generateMipmap needs a color-renderable, filterable format.
+        if (useMipMaps && TextureUtilities.maxMipLevels(data ?? undefined) <= 1
+            && textureFormat != TextureFormat.RGBA8_UNORM && textureFormat != TextureFormat.RGBA8_UNORM_SRGB) {
+            throw new Error(`WebGlTextureUtilities.createTexture2DArray: '${label ?? "unlabeled"}' requests mipmap generation for ${textureFormat}; ` +
+                `WebGL2 can only generate mipmaps here for RGBA8_UNORM and RGBA8_UNORM_SRGB.`);
         }
 
         const texture = gl.createTexture();
@@ -268,6 +274,135 @@ export class WebGlTextureUtilities {
         if (anisotropy > 1.0) {
             throw new Error(`WebGlTextureUtilities.createTexture2DArray: anisotropic filtering (anisotropy ${anisotropy}) is not implemented for WebGL2 yet.`);
             //OpenGLESUtilities.Anisotropy.SetAnisotropy(gl, texture, anisotropy);
+        }
+
+        return texture;
+    }
+
+    /**
+     * Creates a block-compressed 2D texture array (`TEXTURE_2D_ARRAY`) and uploads every given layer and mip level.
+     * Supports the BC (S3TC, BPTC), ETC2 and ASTC formats; the caller checks that the device supports the format.
+     * PVRTC can't be used: WebGL only allows it on `TEXTURE_2D`.
+     *
+     * When the base size is a whole number of blocks, the storage is allocated with `texStorage3D` and each layer is uploaded
+     * with `compressedTexSubImage3D`; layers or levels without data stay uninitialized.
+     * Otherwise (e.g. a 6x6 BC7 texture, which `texStorage3D` rejects) every level is uploaded with `compressedTexImage3D`,
+     * missing layers are zero-filled, and `TEXTURE_MAX_LEVEL` is set to the last level.
+     * The bytes of a level are counted in whole blocks: `ceil(width / blockWidth) * ceil(height / blockHeight) * bytesPerBlock` per layer.
+     * The mip level count is taken from `data` with {@link TextureUtilities.maxMipLevels}, as for uncompressed arrays.
+     * @param gl The WebGL rendering context.
+     * @param width The width of one layer in pixels. Must be greater than 0.
+     * @param height The height of one layer in pixels. Must be greater than 0.
+     * @param layers The number of layers. Must be greater than 0.
+     * @param blockSize The block size [width, height] in pixels.
+     * @param data The data per layer, per mip level (`data[layer][mipLevel]`). By default, null (one uninitialized mip level).
+     * It may have fewer entries than `layers`, but not more.
+     * @param textureFormat The compressed texture format.
+     * @param label The label, used by graphics debuggers and in error messages. By default, null.
+     * @returns The created WebGL texture.
+     * @throws Error when the format is not compressed or is PVRTC, `data` has more layer entries than `layers`,
+     * a level is not a Uint8Array or is shorter than its block size, or WebGL reports an error after the upload.
+     */
+    public createCompressedTexture2DArray(
+        gl: WebGL2RenderingContext,
+        width: number, height: number, layers: number,
+        blockSize: vec2,
+        data: Uint8Array[][] | null = null,
+        textureFormat: TextureFormat,
+        label: string | null = null,
+    ): WebGLTexture {
+
+        const name = label ?? "unlabeled";
+        // Checked before any GL object is created.
+        if (!TextureUtilities.isCompressedTextureFormat(textureFormat)) {
+            throw new Error(`WebGlTextureUtilities.createCompressedTexture2DArray: '${name}' has uncompressed format ${textureFormat}; use createTexture2DArray instead.`);
+        }
+        if (TextureUtilities.isPvrtcFormat(textureFormat)) {
+            throw new Error(`WebGlTextureUtilities.createCompressedTexture2DArray: '${name}' has format ${textureFormat}; ` +
+                `WebGL only supports PVRTC on TEXTURE_2D, not TEXTURE_2D_ARRAY. Use a 2D texture, or a BC, ETC2 or ASTC format for the array.`);
+        }
+        if (!(layers > 0)) {
+            throw new Error(`WebGlTextureUtilities.createCompressedTexture2DArray: '${name}' has ${layers} layers; the layer count must be greater than 0.`);
+        }
+        if (data && data.length > layers) {
+            throw new Error(`WebGlTextureUtilities.createCompressedTexture2DArray: '${name}' has data for ${data.length} layers, but the texture array has ${layers} layers.`);
+        }
+
+        const mipLevels = TextureUtilities.maxMipLevels(data ?? undefined);
+        // Bytes of one layer of each level, in whole blocks.
+        const levelByteLengths: number[] = [];
+        for (let level = 0; level < mipLevels; level++) {
+            levelByteLengths.push(TextureUtilities.getVRamSize(textureFormat, Math.max(1, width >> level), Math.max(1, height >> level)));
+        }
+        if (data) {
+            for (let layer = 0; layer < data.length; layer++) {
+                const levels = data[layer] ?? [];
+                for (let level = 0; level < levels.length; level++) {
+                    const levelData = levels[level];
+                    if (!(levelData instanceof Uint8Array)) {
+                        throw new Error(`WebGlTextureUtilities.createCompressedTexture2DArray: '${name}' layer ${layer} mip ${level} must be a Uint8Array; got ${(levelData as object)?.constructor?.name ?? levelData}.`);
+                    }
+                    if (levelData.byteLength < levelByteLengths[level]) {
+                        throw new Error(`WebGlTextureUtilities.createCompressedTexture2DArray: '${name}' layer ${layer} mip ${level} has ${levelData.byteLength} bytes; ` +
+                            `${Math.max(1, width >> level)}x${Math.max(1, height >> level)} ${textureFormat} needs ${levelByteLengths[level]} (whole ${blockSize[0]}x${blockSize[1]} blocks).`);
+                    }
+                }
+            }
+        }
+
+        const texture = gl.createTexture();
+        if (label != null) {
+            (texture as any).__SPECTOR_Metadata = {
+                name: label,
+            };
+        }
+
+        gl.bindTexture(gl.TEXTURE_2D_ARRAY, texture);
+        const internalFormat = WebGlConverter.convertInternalFormat(gl, textureFormat);
+        // Compressed data rows are not aligned to 4.
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+
+        const useTexStorage = width % blockSize[0] == 0 && height % blockSize[1] == 0;
+        if (useTexStorage) {
+            gl.texStorage3D(gl.TEXTURE_2D_ARRAY, mipLevels, internalFormat, width, height, layers);
+            if (data) {
+                for (let layer = 0; layer < data.length; layer++) {
+                    const levels = data[layer] ?? [];
+                    for (let level = 0; level < levels.length; level++) {
+                        const levelData = levels[level].subarray(0, levelByteLengths[level]);
+                        gl.compressedTexSubImage3D(gl.TEXTURE_2D_ARRAY, level, 0, 0, layer,
+                            Math.max(1, width >> level), Math.max(1, height >> level), 1,
+                            internalFormat, levelData);
+                    }
+                }
+            }
+        } else {
+            for (let level = 0; level < mipLevels; level++) {
+                const layerBytes = levelByteLengths[level];
+                // One buffer with every layer of this level; layers without data stay zero.
+                const levelData = new Uint8Array(layerBytes * layers);
+                for (let layer = 0; layer < (data?.length ?? 0); layer++) {
+                    const layerData = data![layer]?.[level];
+                    if (layerData) {
+                        levelData.set(layerData.subarray(0, layerBytes), layer * layerBytes);
+                    }
+                }
+                gl.compressedTexImage3D(gl.TEXTURE_2D_ARRAY, level, internalFormat,
+                    Math.max(1, width >> level), Math.max(1, height >> level), layers, 0, levelData);
+            }
+            // Mutable storage: limit sampling to the uploaded levels so the texture stays complete.
+            gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_BASE_LEVEL, 0);
+            gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAX_LEVEL, mipLevels - 1);
+        }
+
+        // Restore the default.
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+
+        const error = gl.getError();
+        if (error != gl.NO_ERROR) {
+            gl.deleteTexture(texture);
+            throw new Error(`WebGlTextureUtilities.createCompressedTexture2DArray: WebGL error ${WebGlUtilities.error.errorToStr(error)} while creating '${name}' ` +
+                `(${textureFormat}, ${width}x${height}, ${layers} layers, ${mipLevels} mip levels).`);
         }
 
         return texture;

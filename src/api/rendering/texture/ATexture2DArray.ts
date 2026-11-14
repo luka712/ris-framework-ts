@@ -53,7 +53,8 @@ export abstract class ATexture2DArray implements ITexture2DArray {
      * @param graphicsDevice The graphics device. Used to reject `viewFormats` when {@link IGraphicsDeviceFeatures.supportsTextureView} is false.
      * @param descriptor The texture descriptor. `textureFormat`, `width` and `height` are required and the size must be greater than `0`.
      * The layer count is `layers`, or the length of `dataArray` when `layers` is not set; it must be greater than `0`.
-     * @throws Error when `viewFormats` are given on a device without texture views, or when the format, size or layer count is missing.
+     * @throws Error when `viewFormats` are given on a device without texture views, when the format, size or layer count is missing,
+     * or when mipmap generation is requested for a block-compressed format without mip levels.
      */
     protected constructor(
         graphicsDevice: IGraphicsDevice,
@@ -89,6 +90,10 @@ export abstract class ATexture2DArray implements ITexture2DArray {
         this._data = descriptor.dataArray;
         this._mipLevels = TextureUtilities.maxMipLevels(this._data);
         this._generateMipMaps = (descriptor.generateMipmaps ?? false) && this._mipLevels <= 1;
+        if (this._generateMipMaps && TextureUtilities.isCompressedTextureFormat(descriptor.textureFormat)) {
+            throw new Error(`ATexture2DArray: '${descriptor.label ?? "unlabeled"}' requests mipmap generation for block-compressed format ${descriptor.textureFormat}; ` +
+                `mipmaps can't be generated on the GPU for compressed formats. Provide the mip levels in ITextureDescriptor.dataArray or set generateMipmaps to false.`);
+        }
         this._label = descriptor.label;
         this._blockSize = descriptor.blockSize ?? vec2.fromValues(1, 1);
 

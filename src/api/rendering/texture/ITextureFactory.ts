@@ -81,7 +81,7 @@ export interface ITextureFactory {
 
     /**
      * Creates a 2D texture array from image data. Every layer has the same size and format.
-     * Mipmap generation (`generateMipMaps`) is not implemented for WebGPU yet (throws); pass the mip levels in `data` instead.
+     * Mipmap generation (`generateMipMaps`) works for RGBA8_UNORM and RGBA8_UNORM_SRGB on WebGL2 and WebGPU; on WebGPU it needs `TEXTURE_BINDING | RENDER_ATTACHMENT` usage.
      * On WebGPU, uploading data needs `COPY_DST` usage, and `HTMLImageElement` data also needs `RENDER_ATTACHMENT`.
      * @param width - The width of one layer in pixels. Must be greater than 0.
      * @param height - The height of one layer in pixels. Must be greater than 0.
@@ -119,14 +119,21 @@ export interface ITextureFactory {
     /**
      * Create a 2D texture array from a KTX2 file: one array layer per KTX2 layer, each with all mip levels.
      * The format and color space are picked the same way as {@link createFromKtx2}.
-     * Compressed texture arrays are not implemented for WebGL2 yet (throws). WebGPU supports them, block-compressed formats included.
+     * Block-compressed formats are kept on WebGL2 and WebGPU when the device supports them (BC, ETC2 and ASTC; PVRTC arrays throw on WebGL2).
+     *
+     * Mipmaps: a file with more than one level uses its own levels. For a single-level file in an uncompressed format
+     * (including Basis data transcoded to RGBA8), the full mip chain is generated on the GPU unless `generateMipmaps` is false.
+     * A single-level block-compressed file keeps one level, as compressed formats can't be rendered to; passing `generateMipmaps` true then throws.
      * @param ktxTexture - The ktx2 texture. Transcoded in place when it holds Basis Universal data.
      * @param layers - The number of layers in the file. Must be greater than 0. A non-array KTX2 file has 1.
      * @param textureFormat - The desired texture format. By default, TextureFormat.UNDEFINED, which picks the format from the GPU features.
      * @param colorSpace - The color space override. By default, null, which follows the file.
      * @param label - The label. By default, the file path of the ktx2 texture.
+     * @param generateMipmaps - Whether to generate mipmaps for a single-level file. By default, undefined: generate them for uncompressed formats only.
+     * `true` also asks for them for compressed formats (throws); `false` never generates them.
      * @returns The initialized texture array.
-     * @throws Error when `layers` is not greater than 0, or the final texture format is not supported by the graphics device.
+     * @throws Error when `layers` is not greater than 0, the final texture format is not supported by the graphics device (or is PVRTC on WebGL2),
+     * or `generateMipmaps` is true for a single-level block-compressed file.
      */
-    createTexture2DArrayFromKtx2(ktxTexture: IKtx2Texture, layers: number, textureFormat?: TextureFormat, colorSpace?: ColorSpace | null, label?: string): ITexture2DArray;
+    createTexture2DArrayFromKtx2(ktxTexture: IKtx2Texture, layers: number, textureFormat?: TextureFormat, colorSpace?: ColorSpace | null, label?: string, generateMipmaps?: boolean): ITexture2DArray;
 }

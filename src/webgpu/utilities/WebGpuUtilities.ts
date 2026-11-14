@@ -13,6 +13,7 @@ import {WebGpuBindGroupLayoutEntryUtilities} from "./WebGpuBindGroupLayoutEntryU
 import {WebGpuPipelineLayoutUtilities} from "./WebGpuPipelineLayoutUtilities.ts";
 import {WebGpuRenderPipelineUtilities} from "./WebGpuRenderPipelineUtilities.ts";
 import {WebGpuCommandEncoderUtilities} from "./WebGpuCommandEncoderUtilities.ts";
+import {WebGpuMipmapUtilities} from "./WebGpuMipmapUtilities.ts";
 import type {IWebGpuLogger} from "./WebGpuLogger.ts";
 
 /** The utilities for WebGPU. */
@@ -30,6 +31,7 @@ export class WebGpuUtilities {
     WebGpuUtilities.bindGroupLayout.logger = logger;
     WebGpuUtilities.pipelineLayout.logger = logger;
     WebGpuUtilities.renderPipeline.logger = logger;
+    WebGpuUtilities.mipmap.logger = logger;
   }
 
   /** The instance utilities. */
@@ -76,4 +78,7 @@ export class WebGpuUtilities {
 
   /** The command encoder utilities. */
   public static readonly commandEncoder = new WebGpuCommandEncoderUtilities();
+
+  /** The mipmap generation utilities. */
+  public static readonly mipmap = new WebGpuMipmapUtilities();
 }

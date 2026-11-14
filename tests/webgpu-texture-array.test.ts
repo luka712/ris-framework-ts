@@ -119,7 +119,7 @@ describe("WebGpuTexture2DArray", () => {
         expect(size).toMatchObject({width: 8, height: 8});
     });
 
-    it("throws with a clear message when there is data but no COPY_DST, or when mipmap generation is requested", () => {
+    it("throws with a clear message when there is data but no COPY_DST, or mipmap generation lacks RENDER_ATTACHMENT", () => {
         const {framework} = createFramework();
         const noCopyDst = new WebGpuTexture2DArray(framework, {
             width: 1, height: 1, dataArray: [[new Uint8Array(4)]],
@@ -134,7 +134,7 @@ describe("WebGpuTexture2DArray", () => {
             textureFormat: TextureFormat.RGBA8_UNORM,
             generateMipmaps: true,
         });
-        expect(() => mips.initialize()).toThrow(/mipmap generation.*not implemented for WebGPU/);
+        expect(() => mips.initialize()).toThrow(/requests mipmap generation, which renders each level and needs TextureUsage\.TEXTURE_BINDING \| RENDER_ATTACHMENT/);
     });
 
     it("destroys the GPU texture and raises the disposed listeners once", () => {
