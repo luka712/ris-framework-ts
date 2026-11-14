@@ -52,8 +52,9 @@ fn main_fs(input : VertexOutput) -> @location(0) vec4<f32>
 {
     let layer = i32(fragmentData.layer);
     // textureSample needs uniform control flow, so both are sampled and the result is selected.
+    // inspectLod > 0.5 samples at mipLevel (matches the GLSL inspect shader); otherwise implicit LOD.
     if(fragmentData.inspectLod > 0.5) {
-        return textureSample(textureArray, textureSampler, input.texCoord, layer) * input.color;
+        return textureSampleLevel(textureArray, textureSampler, input.texCoord, layer, fragmentData.mipLevel) * input.color;
     }
-    return textureSampleLevel(textureArray, textureSampler, input.texCoord, layer, fragmentData.mipLevel);
+    return textureSample(textureArray, textureSampler, input.texCoord, layer) * input.color;
 }

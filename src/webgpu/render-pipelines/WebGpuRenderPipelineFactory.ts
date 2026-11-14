@@ -11,15 +11,17 @@ import type {
     ITexture2D,
     IUniformBuffer,
     IUnlitRenderPipeline,
+    IUnlitTextureArrayRenderPipeline,
 } from "../../api/index.ts";
 import {WebGpuMainRenderTargetRenderPipeline} from "./WebGpuMainRenderTargetRenderPipeline.ts";
 import {WebGpuUnlitRenderPipeline} from "./material/WebGpuUnlitRenderPipeline.ts";
+import {WebGpuUnlitTextureArrayRenderPipeline} from "./material/WebGpuUnlitTextureArrayRenderPipeline.ts";
 import {WebGpuSpriteRenderPipeline} from "./sprite/WebGpuSpriteRenderPipeline.ts";
 import {WebGpuInspectTextureArrayRenderPipeline} from "./inspect/WebGpuInspectTextureArrayRenderPipeline.ts";
 import {WebGpuInspectTextureMipsRenderPipeline} from "./inspect/WebGpuInspectTextureMipsRenderPipeline.ts";
 
 /**
- * The WebGPU render pipeline factory. Implements the main render target, unlit, sprite, inspect texture mips and inspect texture array pipelines.
+ * The WebGPU render pipeline factory. Implements the main render target, unlit, unlit texture array, sprite, inspect texture mips and inspect texture array pipelines.
  * @internal
  */
 export class WebGpuRenderPipelineFactory implements IRenderPipelineFactory {
@@ -49,6 +51,16 @@ export class WebGpuRenderPipelineFactory implements IRenderPipelineFactory {
                                      materialBuffer: IUniformBuffer,
                                      primitiveState?: IPrimitiveState): IUnlitRenderPipeline {
         const pipeline = new WebGpuUnlitRenderPipeline(this._framework, projectionViewBuffer, modelBuffer, materialBuffer, primitiveState);
+        pipeline.initialize();
+        return pipeline;
+    }
+
+    /** @inheritDoc */
+    public createUnlitTextureArrayRenderPipeline(projectionViewBuffer: IUniformBuffer,
+                                                 modelBuffer: IUniformBuffer,
+                                                 materialBuffer: IUniformBuffer,
+                                                 primitiveState?: IPrimitiveState): IUnlitTextureArrayRenderPipeline {
+        const pipeline = new WebGpuUnlitTextureArrayRenderPipeline(this._framework, projectionViewBuffer, modelBuffer, materialBuffer, primitiveState);
         pipeline.initialize();
         return pipeline;
     }

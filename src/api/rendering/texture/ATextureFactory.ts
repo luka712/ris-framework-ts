@@ -154,7 +154,7 @@ export abstract class ATextureFactory implements ITextureFactory {
     }
 
     /** @inheritDoc */
-    public createTexture2DArrayFromKtx2(ktxTexture: IKtx2Texture, layers: number, textureFormat = TextureFormat.UNDEFINED, colorSpace: ColorSpace | null = null, label?: string): ITexture2DArray {
+    public createTexture2DArrayFromKtx2(ktxTexture: IKtx2Texture, layers: number, textureFormat = TextureFormat.UNDEFINED, colorSpace: ColorSpace | null = null, label?: string, generateMipmaps?: boolean): ITexture2DArray {
 
         label = label ?? ktxTexture.filePath;
         if (!(layers > 0)) {
@@ -162,6 +162,16 @@ export abstract class ATextureFactory implements ITextureFactory {
         }
 
         const resolved = this._resolveKtx2Format(ktxTexture, textureFormat, colorSpace, "createTexture2DArrayFromKtx2");
+
+        // Mipmaps are only generated for a single-level file. Block-compressed data can't be rendered to, so it keeps one level,
+        // unless the caller explicitly asked for mipmaps.
+        const singleLevel = ktxTexture.numLevels <= 1;
+        const compressed = TextureUtilities.isCompressedTextureFormat(resolved.textureFormat);
+        if (generateMipmaps === true && singleLevel && compressed) {
+            throw new Error(`ATextureFactory.createTexture2DArrayFromKtx2: '${label ?? "unlabeled"}' has 1 mip level in block-compressed format ${resolved.textureFormat}; ` +
+                `mipmaps can't be generated on the GPU for compressed formats. Store the mip levels in the KTX2 file, pick an uncompressed textureFormat, or pass generateMipmaps false.`);
+        }
+        const generate = (generateMipmaps ?? true) && singleLevel && !compressed;
 
         // One entry per layer, each with every mip level.
         const dataArray: Uint8Array[][] = [];
@@ -180,7 +190,9 @@ export abstract class ATextureFactory implements ITextureFactory {
             dataArray,
             textureFormat: resolved.textureFormat,
             blockSize: resolved.blockSize,
-            textureUsage: TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST,
+            // Generated mip levels are rendered from the previous level, which needs RENDER_ATTACHMENT where the backend uses usage flags.
+            textureUsage: TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST | (generate ? TextureUsage.RENDER_ATTACHMENT : 0),
+            generateMipmaps: generate,
             label,
         };
 

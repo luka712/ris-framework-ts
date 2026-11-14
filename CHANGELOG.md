@@ -24,6 +24,9 @@ Compared with 0.3.0.
 - 2D texture arrays on WebGL and WebGPU: `createTexture2DArray`, `createTexture2DArrayFromKtx2` and `content.loadTexture2DArrayAsync`.
 - `createWithMipLevels` for 2D textures with your own mip levels.
 - `InspectTextureArrayMaterial`, and WebGPU support for `InspectTextureMipsMaterial`.
+- `UnlitTextureArrayMaterial` (`materialFactory.createUnlitTextureArrayMaterial()`): an unlit material that samples one `layer` of a texture array.
+- Compressed texture arrays on WebGL2 (BC, ETC2 and ASTC when supported; PVRTC throws).
+- Mipmap generation for RGBA8 texture arrays on WebGPU, and in `createTexture2DArrayFromKtx2` for single-level uncompressed files (`generateMipmaps` parameter).
 - `graphicsDevice.state` lifecycle, plus `supportedTextureFormats` and `supportsTextureFormat()` on device features.
 - `#include` in GLSL and WGSL shader modules.
 - `texture_array_2d` and `inspect_texture_mips` examples.

@@ -8,6 +8,7 @@ import inspectTextureArrayVS from "../../../shaders/glsl/inspect/inspect_texture
 import inspectTextureArrayFS from "../../../shaders/glsl/inspect/inspect_texture_array_fs.glsl?raw";
 import unlitMaterialVS from "../../../shaders/glsl/unlit_material_vs.glsl?raw";
 import unlitMaterialFS from "../../../shaders/glsl/unlit_material_fs.glsl?raw";
+import unlitTextureArrayMaterialFS from "../../../shaders/glsl/unlit_texture_array_material_fs.glsl?raw";
 import forwardBlinnPhongVS from "../../../shaders/glsl/forward_blinn_phong_material_vs.glsl?raw";
 import forwardBlinnPhongFS from "../../../shaders/glsl/forward_blinn_phong_material_fs.glsl?raw";
 import colorConversion from "../../../shaders/glsl/modules/color_conversion.glsl?raw";
@@ -75,6 +76,13 @@ export const GlslShaderModuleContent : {[id: string]: InternalShader} = {
         "reflection": {}
     },
 
+    // Shares the unlit vertex shader; the fragment shader samples a sampler2DArray.
+    unlit_texture_array_material: {
+        vertex: unlitMaterialVS,
+        fragment: unlitTextureArrayMaterialFS,
+        reflection: {}
+    },
+
     "forward_blinn_phong_material": {
         "vertex": forwardBlinnPhongVS,
         "fragment": forwardBlinnPhongFS,
@@ -90,10 +98,13 @@ export const GlslShaderModuleContent : {[id: string]: InternalShader} = {
 
 import mainFrameBuffer from "../../../shaders/wgsl/main_frame_buffer.wgsl?raw";
 import unlitMaterial from "../../../shaders/wgsl/unlit_material.wgsl?raw";
+import unlitTextureArrayMaterial from "../../../shaders/wgsl/unlit_texture_array_material.wgsl?raw";
+import meshVertexWgsl from "../../../shaders/wgsl/modules/mesh_vertex.wgsl?raw";
 import forwardBlinnPhongMaterial from "../../../shaders/wgsl/forward_blinn_phong_material.wgsl?raw";
 import sprite from "../../../shaders/wgsl/sprite.wgsl?raw";
 import inspectTextureMips from "../../../shaders/wgsl/inspect/inspect_texture_mips.wgsl?raw";
 import inspectTextureArrayWgsl from "../../../shaders/wgsl/inspect/inspect_texture_array.wgsl?raw";
+import generateMipmapsWgsl from "../../../shaders/wgsl/utilities/generate_mipmaps.wgsl?raw";
 import colorConversionWgsl from "../../../shaders/wgsl/modules/color_conversion.wgsl?raw";
 
 /**
@@ -109,14 +120,22 @@ export const WgslShaderModuleContent: { [id: string]: InternalShader } = {
     unlit_material: {
         shader: unlitMaterial
     },
+    unlit_texture_array_material: { shader: unlitTextureArrayMaterial },
     forward_blinn_phong_material: { shader: forwardBlinnPhongMaterial },
     sprite: { shader: sprite },
     inspect_texture_mips: { shader: inspectTextureMips },
     inspect_texture_array: { shader: inspectTextureArrayWgsl },
+    // Used by WebGpuMipmapUtilities, not by a render pipeline.
+    generate_mipmaps: { shader: generateMipmapsWgsl },
     color_conversion: {
         path: "modules/color_conversion.wgsl",
         shader: colorConversionWgsl,
         reflection: {}
-    }
+    },
+    mesh_vertex: {
+        path: "modules/mesh_vertex.wgsl",
+        shader: meshVertexWgsl,
+        reflection: {}
+    },
 
 };

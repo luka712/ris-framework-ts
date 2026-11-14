@@ -7,12 +7,14 @@ import type {
     ISpriteRenderPipeline, ITexture2D,
     IUniformBuffer,
     IUnlitRenderPipeline,
+    IUnlitTextureArrayRenderPipeline,
     IForwardBlinnPhongRenderPipeline,
     ForwardBlinnPhongRenderPipelineDescriptor,
 } from "../../api";
 import {WebGlInspectTextureMipsRenderPipeline} from "./inspect/WebGlInspectTextureMipsRenderPipeline.ts";
 import {WebGlInspectTextureArrayRenderPipeline} from "./inspect/WebGlInspectTextureArrayRenderPipeline.ts";
 import {WebGlUnlitRenderPipeline} from "./material/WebGlUnlitRenderPipeline.ts";
+import {WebGlUnlitTextureArrayRenderPipeline} from "./material/WebGlUnlitTextureArrayRenderPipeline.ts";
 import {WebGlForwardBlinnPhongRenderPipeline} from "./material/WebGlBlinnPhongRenderPipeline.ts";
 import type { IInspectTextureArrayRenderPipeline } from "../../api/rendering/render-pipelines/inspect/IInspectTextureArrayRenderPipeline.ts";
 
@@ -39,6 +41,18 @@ export class WebGlRenderPipelineFactory implements IRenderPipelineFactory {
         const pipeline = new WebGlUnlitRenderPipeline(this._framework,
             projectionViewBuffer, modelBuffer, materialBuffer, primitiveState
             );
+        pipeline.initialize();
+        return pipeline;
+    }
+
+    /** @inheritDoc */
+    public createUnlitTextureArrayRenderPipeline(projectionViewBuffer: IUniformBuffer,
+                                                 modelBuffer: IUniformBuffer,
+                                                 materialBuffer: IUniformBuffer,
+                                                 primitiveState?: IPrimitiveState
+                                                 ): IUnlitTextureArrayRenderPipeline {
+        const pipeline = new WebGlUnlitTextureArrayRenderPipeline(this._framework,
+            projectionViewBuffer, modelBuffer, materialBuffer, primitiveState);
         pipeline.initialize();
         return pipeline;
     }

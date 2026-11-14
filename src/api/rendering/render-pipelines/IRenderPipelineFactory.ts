@@ -7,6 +7,7 @@ import type { IUnlitRenderPipeline } from "./IUnlitRenderPipeline.ts";
 import type { IPrimitiveState } from "../primitive/IPrimitiveState.ts";
 import type { IForwardBlinnPhongRenderPipeline } from "./IForwardBlinnPhongRenderPipeline.ts";
 import type {IInspectTextureArrayRenderPipeline} from "./inspect/IInspectTextureArrayRenderPipeline.ts";
+import type {IUnlitTextureArrayRenderPipeline} from "./IUnlitTextureArrayRenderPipeline.ts";
 
 /** The descriptor for the forward Blinn-Phong render pipeline. */
 export interface ForwardBlinnPhongRenderPipelineDescriptor {
@@ -89,6 +90,21 @@ export interface IRenderPipelineFactory {
                               materialBuffer: IUniformBuffer,
                               primitiveState?: IPrimitiveState
                               ): IUnlitRenderPipeline;
+
+    /**
+     * Creates the unlit render pipeline for a 2D texture array. Works on WebGL2 and WebGPU.
+     * @param projectionViewBuffer - The projection view buffer (std140 `mat4`).
+     * @param modelBuffer - The model buffer (std140 `mat4`). Required.
+     * @param materialBuffer - The material buffer: std140 floats `[r, g, b, a, layer, padding, padding, padding]`.
+     * @param primitiveState - The primitive state. By default, the graphics device's default primitive state.
+     * @returns The initialized unlit texture array render pipeline.
+     * @throws Error when `modelBuffer` is missing.
+     */
+    createUnlitTextureArrayRenderPipeline(projectionViewBuffer: IUniformBuffer,
+                                          modelBuffer: IUniformBuffer,
+                                          materialBuffer: IUniformBuffer,
+                                          primitiveState?: IPrimitiveState
+                                          ): IUnlitTextureArrayRenderPipeline;
 
     /**
      * Creates the forward Blinn-Phong render pipeline.

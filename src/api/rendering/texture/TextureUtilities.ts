@@ -234,6 +234,19 @@ export class TextureUtilities {
     private static readonly _srgbFormats: TextureFormat[] = Object.values(TextureUtilities._srgbVariant);
 
     /**
+     * Checks whether a format is one of the PVRTC 1 formats.
+     * WebGL only allows them on `TEXTURE_2D`, and they need power-of-two square sizes.
+     * @param format The texture format.
+     * @returns True for `PVRTC1_RGBA_4BPP_UNORM`, `PVRTC1_RGB_4BPP_UNORM`, `PVRTC1_RGBA_2BPP_UNORM` and `PVRTC1_RGB_2BPP_UNORM`.
+     */
+    public static isPvrtcFormat(format: TextureFormat): boolean {
+        return format == TextureFormat.PVRTC1_RGBA_4BPP_UNORM
+            || format == TextureFormat.PVRTC1_RGB_4BPP_UNORM
+            || format == TextureFormat.PVRTC1_RGBA_2BPP_UNORM
+            || format == TextureFormat.PVRTC1_RGB_2BPP_UNORM;
+    }
+
+    /**
      * Checks if the given texture format is a compressed texture format.
      * @param format - The texture format to check.
      * @returns true if a texture format is a compressed texture format.

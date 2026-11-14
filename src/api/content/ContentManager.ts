@@ -189,7 +189,8 @@ export class ContentManager implements IContentManager {
                     layers,
                     textureDescriptor?.textureFormat,
                     textureDescriptor?.preferredColorSpace,
-                    textureDescriptor?.label ?? filePath);
+                    textureDescriptor?.label ?? filePath,
+                    textureDescriptor?.generateMipmaps);
             } finally {
                 if (contentConfig?.keepDataCached !== true) {
                     ktx2Texture.delete();

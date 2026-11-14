@@ -11,6 +11,7 @@ import {
     type IFramework,
     type ITexture2DArray,
     type InspectTextureArrayMaterial,
+    type UnlitTextureArrayMaterial,
 } from "../../src";
 
 import layer0Url from "./assets/layer0_red_cross.png?url";
@@ -48,17 +49,29 @@ runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
             texture = loaded;
             scene = new Scene(framework);
             for (let layer = 0; layer < layers; layer++) {
-                const material: InspectTextureArrayMaterial = framework.materialFactory.createInspectTextureArrayMaterial();
-                material.texture = texture;
-                material.layer = layer;
-                const mesh = new RenderableMesh(framework, material);
-                mesh.setGeometry(framework.geometryBuilder.quadGeometry(vec2.fromValues(0.42, 0.42)));
-                mesh.transform.position[0] = -0.72 + layer * 0.48;
-                scene.add(mesh);
+                // Top row: the inspect material.
+                const inspectMaterial: InspectTextureArrayMaterial = framework.materialFactory.createInspectTextureArrayMaterial();
+                inspectMaterial.texture = texture;
+                inspectMaterial.layer = layer;
+                const inspectMesh = new RenderableMesh(framework, inspectMaterial);
+                inspectMesh.setGeometry(framework.geometryBuilder.quadGeometry(vec2.fromValues(0.42, 0.42)));
+                inspectMesh.transform.position[0] = -0.72 + layer * 0.48;
+                inspectMesh.transform.position[1] = 0.26;
+                scene.add(inspectMesh);
+
+                // Bottom row: the unlit texture array material.
+                const unlitMaterial: UnlitTextureArrayMaterial = framework.materialFactory.createUnlitTextureArrayMaterial();
+                unlitMaterial.diffuseTexture = texture;
+                unlitMaterial.layer = layer;
+                const unlitMesh = new RenderableMesh(framework, unlitMaterial);
+                unlitMesh.setGeometry(framework.geometryBuilder.quadGeometry(vec2.fromValues(0.42, 0.42)));
+                unlitMesh.transform.position[0] = -0.72 + layer * 0.48;
+                unlitMesh.transform.position[1] = -0.26;
+                scene.add(unlitMesh);
             }
 
             const backendName = backend === RenderingBackend.WEB_GPU ? "WebGPU" : "WebGL";
-            status.textContent = `${backendName} texture array: ${layers} PNG layers (16×16), one quad each.`;
+            status.textContent = `${backendName} texture array: ${layers} PNG layers (16×16). Top: InspectTextureArrayMaterial, bottom: UnlitTextureArrayMaterial.`;
         } catch (error) {
             if (!isCurrent()) {
                 return;
