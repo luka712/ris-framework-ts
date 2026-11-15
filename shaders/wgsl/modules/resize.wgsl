@@ -9,13 +9,11 @@
 /// @param srcTexture The source texture view.
 /// @param srcPos The source-space position (unrounded texel coord).
 /// @param srcSize The source view size in pixels.
-/// @param srgb 1 when the texture stores sRGB values (decode after load), otherwise 0.
 /// @returns The sampled texel color (linear when `srgb` is 1).
 fn resize_nearest(
     srcTexture: texture_2d<f32>,
     srcPos: vec2<f32>,
-    srcSize: vec2<f32>,
-    srgb: f32
+    srcSize: vec2<f32>
 ) -> vec4<f32> {
     let coord = vec2<i32>(floor(srcPos + vec2<f32>(0.5)));
     let clampedCoord = clamp(
@@ -24,8 +22,5 @@ fn resize_nearest(
         vec2<i32>(srcSize) - vec2<i32>(1)
     );
     var color = textureLoad(srcTexture, clampedCoord, 0);
-    if (srgb >= 0.5) {
-        color = vec4<f32>(srgbToLinear(color.rgb), color.a);
-    }
     return color;
 }

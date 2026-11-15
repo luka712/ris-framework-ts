@@ -48,10 +48,6 @@ export abstract class ARenderer implements IRenderer {
     protected _renderConfiguration: IRendererConfiguration;
 
     /** @inheritdoc */
-    public readonly renderPassQueue: IRenderPass[] = [];
-
-
-    /** @inheritdoc */
     public get graphicsDevice(): IGraphicsDevice {
         return this._graphicsDevice;
     }
@@ -189,8 +185,9 @@ export abstract class ARenderer implements IRenderer {
         let colorAttachment = new RenderPassColorAttachment();
         colorAttachment.swapChain = this._swapChain;
         colorAttachment.clearColor = Color.transparent();
-        this._swapChainRenderPass = this._createRenderPass({
+        this._swapChainRenderPass = this.createRenderPass({
             colorAttachments: [colorAttachment],
+            label: "Swapchain Pass"
         });
 
         this._setupMainRenderPass();
@@ -251,8 +248,9 @@ export abstract class ARenderer implements IRenderer {
         const renderPassDesc: IRenderPassDescriptor = {
             colorAttachments: [this._createMainColorAttachment()],
             depthStencilAttachment,
+            label: "Main Render Pass"
         };
-        this._mainRenderTargetRenderPass = this._createRenderPass(renderPassDesc);
+        this._mainRenderTargetRenderPass = this.createRenderPass(renderPassDesc);
         this._mainRenderPassDirty = false;
     }
 
@@ -280,18 +278,8 @@ export abstract class ARenderer implements IRenderer {
         this._swapChainRequiresResize = false;
     }
 
-    /**
-     * Creates a backend render pass without queueing it.
-     * @param descriptor The render pass descriptor.
-     */
-    protected abstract _createRenderPass(descriptor: IRenderPassDescriptor): IRenderPass;
-
     /** @inheritdoc */
-    public createRenderPass(descriptor: IRenderPassDescriptor): IRenderPass {
-        const pass = this._createRenderPass(descriptor);
-        this.renderPassQueue.push(pass);
-        return pass;
-    }
+    public abstract createRenderPass(descriptor: IRenderPassDescriptor): IRenderPass;
 
     /** @inheritdoc */
     public beginRenderPass(): void {
@@ -302,13 +290,7 @@ export abstract class ARenderer implements IRenderer {
     public endRenderPass(): void {
         this._mainRenderTargetRenderPass!.endPass();
 
-        while (this.renderPassQueue.length > 0) {
-            const pass = this.renderPassQueue.shift()!;
-            pass.submit();
-        }
-
         this._handleResizing();
-
         this._swapChainRenderPass!.beginPass();
         this._mainRenderTargetPipeline!.render();
         this._swapChainRenderPass!.endPass();

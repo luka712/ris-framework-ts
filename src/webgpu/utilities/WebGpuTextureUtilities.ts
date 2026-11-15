@@ -37,7 +37,7 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
         size: vec2,
         format: TextureFormat,
         usage: TextureUsage,
-        data?: Uint8Array[] | HTMLImageElement[],
+        data?: Uint8Array[],
         mipLevelCount: number = 1,
         sampleCount: number = 1,
         label?: string,
@@ -57,17 +57,12 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
         }));
 
         if (data && data.length > 0) {
-            if (typeof HTMLImageElement !== "undefined" && data[0] instanceof HTMLImageElement) {
-                this.writeImagesToTexture(device.queue, tex, data as HTMLImageElement[]);
-            }
-            else {
-                const bytesPerPixel = TextureUtilities.getVRamSize(format, 1, 1);
-                const levels = data as Uint8Array[];
-                for (let level = 0; level < levels.length; level++) {
-                    const width = Math.max(1, size[0] >> level);
-                    const height = Math.max(1, size[1] >> level);
-                    this.writeToTexture(device.queue, tex, vec2.fromValues(width, height), levels[level], bytesPerPixel, level);
-                }
+            const bytesPerPixel = TextureUtilities.getVRamSize(format, 1, 1);
+            const levels = data as Uint8Array[];
+            for (let level = 0; level < levels.length; level++) {
+                const width = Math.max(1, size[0] >> level);
+                const height = Math.max(1, size[1] >> level);
+                this.writeToTexture(device.queue, tex, vec2.fromValues(width, height), levels[level], bytesPerPixel, level);
             }
         }
 
@@ -418,32 +413,6 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
             data as ArrayBufferView<ArrayBuffer>,
             dataLayout,
             extent);
-    }
-
-    /**
-     * Copies the images arranged as mip levels to the texture. Image `i` goes to mip level `i`.
-     * The texture needs `COPY_DST` and `RENDER_ATTACHMENT` usage.
-     * @param queue The queue.
-     * @param texture The texture.
-     * @param imagesPerMip The image per mip.
-     */
-    public writeImagesToTexture(queue: GPUQueue, texture: GPUTexture, imagesPerMip: HTMLImageElement[]): void {
-
-        for (let i = 0; i < imagesPerMip.length; i++) {
-            const image = imagesPerMip[i];
-            const source: GPUCopyExternalImageSourceInfo = {
-                source: image,
-            };
-            const dest: GPUCopyExternalImageDestInfo = {
-                texture,
-                mipLevel: i
-            };
-            const size: GPUExtent3DStrict = {
-                width: image.width,
-                height: image.height
-            }
-            queue.copyExternalImageToTexture(source, dest, size);
-        }
     }
 
     /**

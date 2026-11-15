@@ -17,6 +17,7 @@
 struct DownsampleParams {
     srcSize: vec2<f32>,
     dstSize: vec2<f32>,
+    // If 1 we are using srgb source
     srgb: f32, // 0 = linear, 1 = sRGB
 };
 
@@ -42,16 +43,13 @@ fn main(
     }
 
     // Map destination pixel center to source coordinates.
-    let srcPos =
-        (vec2<f32>(dstCoord) + vec2<f32>(0.5)) *
-        params.srcSize /
-        params.dstSize -
-        vec2<f32>(0.5);
+    let scale = params.srcSize / params.dstSize;
+    let srcPos = (vec2<f32>(dstCoord) + 0.5) * scale - 0.5;
 
-    var color = resize_nearest(srcTexture, srcPos, params.srcSize, params.srgb);
+    var color = resize_nearest(srcTexture, srcPos, params.srcSize);
 
     if (params.srgb >= 0.5) {
-        color = vec4<f32>(linearToSrgb(color.rgb), color.a);
+        color = vec4<f32>(srgbToLinear(color.rgb), color.a);
     }
 
     textureStore(

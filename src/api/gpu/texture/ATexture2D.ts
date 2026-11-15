@@ -38,7 +38,7 @@ export abstract class ATexture2D implements ITexture2D {
     /** The number of mip levels: the length of {@link _data}, or `1` without data. Backends update it when mipmaps are generated. */
     protected _mipLevels: number;
     /** The data per mip level, from {@link ITextureDescriptor.data}. */
-    protected _data?: Uint8Array[] | HTMLImageElement[];
+    protected _data?: Uint8Array[];
     /** The block size of a compressed format, from {@link ITextureDescriptor.blockSize}. Defaults to `[1, 1]`. */
     protected _blockSize: vec2;
     /** The label, from {@link ITextureDescriptor.label}. */
@@ -62,7 +62,7 @@ export abstract class ATexture2D implements ITexture2D {
         this.textureUsage = descriptor.textureUsage ?? (TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST);
         this._baseSize = vec2.fromValues(descriptor.width ?? 0, descriptor.height ?? 0);
         this._data = descriptor.data;
-        this._mipLevels = this._data?.length ?? 1;
+        this._mipLevels = descriptor.mipmapLevels ?? this._data?.length ?? 1;
         this._generateMipmaps = (descriptor?.generateMipmaps && this._mipLevels == 1) ? true : false;
         this._label = descriptor.label;
         this._blockSize = descriptor.blockSize ?? vec2.fromValues(1, 1);

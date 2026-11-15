@@ -108,13 +108,6 @@ export interface IRenderer {
     readonly mainRenderPass: IRenderPass;
 
     /**
-     * Queued custom render passes, filled by {@link createRenderPass}.
-     * They run after the main render pass.
-     * @internal
-     */
-    readonly renderPassQueue: Array<IRenderPass>;
-
-    /**
      * Creates a render pass and queues it to run after the main render pass.
      * @param descriptor The render pass descriptor. When no command encoder is set, the main encoder is used.
      * @public

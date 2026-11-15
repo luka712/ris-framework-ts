@@ -9,10 +9,10 @@ import {
     type ITextureDescriptor,
     TextureFormat,
 } from "../../api/index.ts";
-import {ATexture2DArray} from "../../api/gpu/texture/ATexture2DArray.ts";
-import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
-import {WebGpuTextureView} from "./WebGpuTextureView.ts";
-import {WebGpuUtilities} from "../utilities/WebGpuUtilities.ts";
+import { ATexture2DArray } from "../../api/gpu/texture/ATexture2DArray.ts";
+import type { WebGpuGraphicsDevice } from "../WebGpuGraphicsDevice.ts";
+import { WebGpuTextureView } from "./WebGpuTextureView.ts";
+import { WebGpuUtilities } from "../utilities/WebGpuUtilities.ts";
 
 /**
  * The WebGPU 2D texture array: a `GPUTexture` with `dimension: "2d"` and `depthOrArrayLayers` set to the layer count,
@@ -93,23 +93,6 @@ export class WebGpuTexture2DArray extends ATexture2DArray {
             if (this.textureFormat == TextureFormat.RGBA8_UNORM_SRGB && !this.viewFormats.includes(TextureFormat.RGBA8_UNORM)) {
                 this.viewFormats.push(TextureFormat.RGBA8_UNORM);
             }
-        }
-
-        const hasData = !!data && data.some(levels => !!levels && levels.length > 0);
-        const hasImages = hasData && typeof HTMLImageElement !== "undefined"
-            && data!.some(levels => !!levels && levels[0] instanceof HTMLImageElement);
-
-        if (hasData && (this.textureUsage & TextureUsage.COPY_DST) == 0) {
-            throw new Error(`WebGpuTexture2DArray.initialize: '${name}' has data to upload, but its usage (${WebGpuTexture2DArray._usageNames(this.textureUsage)}) has no TextureUsage.COPY_DST. Add COPY_DST to ITextureDescriptor.textureUsage.`);
-        }
-        if (hasImages && TextureUtilities.isCompressedTextureFormat(this.textureFormat)) {
-            throw new Error(`WebGpuTexture2DArray.initialize: compressed format ${this.textureFormat} needs Uint8Array data, not images ('${name}').`);
-        }
-        if (hasImages && (this.textureUsage & TextureUsage.RENDER_ATTACHMENT) == 0) {
-            throw new Error(`WebGpuTexture2DArray.initialize: '${name}' uploads images with copyExternalImageToTexture, which needs TextureUsage.RENDER_ATTACHMENT, but its usage is ${WebGpuTexture2DArray._usageNames(this.textureUsage)}. Add RENDER_ATTACHMENT to ITextureDescriptor.textureUsage.`);
-        }
-        if (this._generateMipMaps && (this.textureUsage & TextureUsage.STORAGE_BINDING) == 0) {
-            throw new Error(`WebGpuTexture2DArray.initialize: '${name}' requested mipmap generation, but its usage (${WebGpuTexture2DArray._usageNames(this.textureUsage)}) has no TextureUsage.STORAGE_BINDING. STORAGE_BINDING is required for mipmap generation.`);
         }
 
         const result = TextureUtilities.isCompressedTextureFormat(this.textureFormat)
@@ -235,14 +218,4 @@ export class WebGpuTexture2DArray extends ATexture2DArray {
         }
     }
 
-    /**
-     * Formats texture usage flags for error messages, e.g. `TEXTURE_BINDING | COPY_DST`.
-     * @param usage The usage flags.
-     * @returns The flag names joined with ` | `, or `NONE`.
-     */
-    private static _usageNames(usage: TextureUsage): string {
-        const flags = [TextureUsage.COPY_SRC, TextureUsage.COPY_DST, TextureUsage.TEXTURE_BINDING, TextureUsage.STORAGE_BINDING, TextureUsage.RENDER_ATTACHMENT];
-        const names = flags.filter(flag => (usage & flag) != 0).map(flag => TextureUsage[flag]);
-        return names.length > 0 ? names.join(" | ") : "NONE";
-    }
 }

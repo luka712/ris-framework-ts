@@ -8,7 +8,7 @@ export class RawImageData implements IDisposable {
     /**
      * The image data per mip level.
      */
-    private _data?: Array<number[] | HTMLImageElement | ArrayBufferView>;
+    private _data?: Array<number[] | ArrayBufferView>;
 
     /**
      * The constructor.
@@ -17,7 +17,7 @@ export class RawImageData implements IDisposable {
      * @param baseHeight The image height.
      * @param channels The number of channels in the image.
      */
-    public constructor(data: Array<number[] | HTMLImageElement | ArrayBufferView>,
+    public constructor(data: Array<number[] | ArrayBufferView>,
                        public readonly baseWidth: number,
                        public readonly baseHeight: number,
                        public readonly channels: number) {
@@ -36,7 +36,7 @@ export class RawImageData implements IDisposable {
      * @param mipLevel - The mip level.
      * @returns The data.
      */
-    public getData(mipLevel: number): number[] | HTMLImageElement | ArrayBufferView {
+    public getData(mipLevel: number): number[] | ArrayBufferView {
         return this._data![mipLevel];
     }
 

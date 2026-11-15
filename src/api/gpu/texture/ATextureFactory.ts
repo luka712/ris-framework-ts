@@ -222,22 +222,16 @@ export abstract class ATextureFactory implements ITextureFactory {
             textureFormat = this._framework.renderer.preferredTextureFormat;
         }
 
-        let textureUsage = descriptor.textureUsage;
-        if (textureUsage === undefined) {
-            textureUsage = TextureUsage.COPY_DST | TextureUsage.TEXTURE_BINDING;
-            const isImage = typeof HTMLImageElement !== "undefined" && descriptor.data?.[0] instanceof HTMLImageElement;
-            if (isImage) {
-                textureUsage |= TextureUsage.RENDER_ATTACHMENT;
-            }
-        }
-
+        const textureUsage = descriptor.textureUsage ?? TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST;
+        const generateMipmaps = descriptor.generateMipmaps ? true : false;
+ 
         const desc: ITextureDescriptor = {
             ...descriptor,
             width,
             height,
             textureFormat,
             textureUsage,
-            generateMipmaps: descriptor.generateMipmaps ?? false,
+            generateMipmaps
         };
 
         return this._createAndInitializeTexture(desc);
@@ -283,24 +277,14 @@ export abstract class ATextureFactory implements ITextureFactory {
             throw new Error(`ATextureFactory.createTexture2DArray: '${label ?? "unlabeled"}' has size ${width}x${height} with ${layer} layers; width, height and layer must be greater than 0.`);
         }
 
-        const generate = generateMipmaps ?? false;
-        const isImage = typeof HTMLImageElement !== "undefined"
-            && data.some(levels => !!levels && levels.some(level => level instanceof HTMLImageElement));
-        let resolvedUsage = usage;
-        if (resolvedUsage === undefined) {
-            resolvedUsage = TextureUsage.COPY_DST | TextureUsage.TEXTURE_BINDING;
-            if (isImage) {
-                resolvedUsage |= TextureUsage.RENDER_ATTACHMENT;
-            }
-        }
         const desc: ITextureDescriptor = {
             width,
             height,
             layers: layer,
             dataArray: data,
             textureFormat,
-            textureUsage: resolvedUsage,
-            generateMipmaps: generate,
+            textureUsage: usage ,
+            generateMipmaps: generateMipmaps,
             label: label ?? undefined,
         };
 

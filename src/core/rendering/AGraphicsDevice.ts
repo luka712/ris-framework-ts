@@ -142,6 +142,7 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     public async initializeAsync(): Promise<void> {
         this._validateState("AGraphicsDevice.initializeAsync");
         this._mainCommandEncoder = this.createCommandEncoder("MainCommandEncoder");
+        this._mainCommandEncoder.start();
         this._defaultTextureSampler = this.configureAndCreateDefaultSampler();
         this._defaultBlendState = this.createBlendState(new BlendStateDescriptor());
         this._defaultPrimitiveState = this.createPrimitiveState();

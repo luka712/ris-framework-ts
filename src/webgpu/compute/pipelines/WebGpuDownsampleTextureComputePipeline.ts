@@ -117,7 +117,7 @@ export class WebGpuDownsampleTextureComputePipeline extends AWebGpuComputePipeli
 
         const bindGroup = WebGpuUtilities.bindGroup.create(this._graphicsDevice.device, this._bindGroupLayout, [
             { binding: 0, resource: source.nativeObject as GPUTextureView },
-            { binding: 1, resource: target.nativeObject as GPUTextureView },
+            { binding: 1, resource: target.nativeObject as GPUTextureView},
             { binding: 2, resource: { buffer: (this._uniformBuffer as WebGpuUniformBuffer).gpuBuffer } },
         ]);
 

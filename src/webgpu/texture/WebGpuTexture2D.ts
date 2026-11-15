@@ -8,13 +8,11 @@ import {
     type ITextureViewDescriptor,
     type ITextureDescriptor,
     TextureFormat,
-    type IGpuCommandEncoder,
 } from "../../api/index.ts";
 import { ATexture2D } from "../../api/gpu/texture/ATexture2D.ts";
 import type { WebGpuGraphicsDevice } from "../WebGpuGraphicsDevice.ts";
 import { WebGpuTextureView } from "./WebGpuTextureView.ts";
 import { WebGpuUtilities } from "../utilities/WebGpuUtilities.ts";
-import { WebGpuComputeContext } from "../compute/WebGpuComputeContext.ts";
 import { WebGpuDownsampleTextureComputePipeline } from "../compute/pipelines/WebGpuDownsampleTextureComputePipeline.ts";
 import type { WebGpuCommandEncoder } from "../WebGpuCommandEncoder.ts";
 import { ValidationUtilities } from "../../api/validation/ValidationUtilities.ts";
@@ -111,6 +109,7 @@ export class WebGpuTexture2D extends ATexture2D {
             this._gpuTexture = result.texture;
         }
         else {
+
             this._gpuTexture = WebGpuUtilities.texture.create(
                 device,
                 this._baseSize,
@@ -125,7 +124,7 @@ export class WebGpuTexture2D extends ATexture2D {
         this._handle = this._gpuTexture;
 
         if (this._generateMipmaps) {
-            this._fillMipmaps();
+            this._framework.dispatcher.addNextUpdateFrameAction(() => this._fillMipmaps());
         }
 
         let width = this.size[0];
@@ -155,8 +154,6 @@ export class WebGpuTexture2D extends ATexture2D {
      */
     private _fillMipmaps(): void {
 
-        debugger;
-
         // We need encoder to encode commands that needs to be done.
         const encoder = this._graphicsDevice.createCommandEncoder("FillMipmaps Encoder");
         encoder.start();
@@ -165,25 +162,23 @@ export class WebGpuTexture2D extends ATexture2D {
             label: "Downsample Pass"
         });
 
+
         // Create staging texture optionally.
-        let stagingTexture: WebGpuTexture2D | null = null;
-        if (!(this.textureUsage & TextureUsage.STORAGE_BINDING)) {
-            stagingTexture = this._framework.textureFactory.create({
-                commandEncoder: encoder,
-                width: this.size[0],
-                height: this.size[1],
-                label: "StagingTexture",
-                textureUsage: TextureUsage.COPY_SRC | TextureUsage.STORAGE_BINDING | TextureUsage.TEXTURE_BINDING,
-                generateMipmaps: true
-            }) as WebGpuTexture2D;
-        }
+        let stagingTexture = this._framework.textureFactory.create({
+            commandEncoder: encoder,
+            width: this.size[0],
+            height: this.size[1],
+            label: "StagingTexture",
+            textureFormat: TextureFormat.RGBA8_UNORM,
+            textureUsage: TextureUsage.STORAGE_BINDING | TextureUsage.COPY_SRC,
+            mipmapLevels: this.mipLevels
+        }) as WebGpuTexture2D;
+
 
         const workgroupSize = 8;
-        const srgb = this.textureFormat == TextureFormat.RGBA8_UNORM_SRGB;
-        const context = this._framework.computeContext as WebGpuComputeContext;
 
         const source = this._createTextureView({
-            viewFormat: TextureFormat.RGBA8_UNORM,
+            viewFormat: this.textureFormat,
             baseMipLevel: 0,
             mipLevelCount: 1,
         });
@@ -191,15 +186,15 @@ export class WebGpuTexture2D extends ATexture2D {
         // Begin compute pass.
         downsampleComputePass.beginPass();
 
-        for (let i = 1; i < this.mipLevels; i++) {
+        for (let i = 0; i < this.mipLevels; i++) {
 
             const desc: ITextureViewDescriptor = {
                 viewFormat: TextureFormat.RGBA8_UNORM,
-                baseMipLevel: i,
                 mipLevelCount: 1,
+                baseMipLevel: i,
             };
 
-            const destination = stagingTexture ? stagingTexture.createView(desc) : this.createView(desc);
+            const destination = stagingTexture.createView(desc);
             const pipeline = this._framework.computePipelineFactory!.createDownsampleTexturePipeline(source, destination) as WebGpuDownsampleTextureComputePipeline;
             encoder.queueDispose(pipeline);
 
@@ -207,7 +202,6 @@ export class WebGpuTexture2D extends ATexture2D {
                 Math.ceil(destination.size[0] / workgroupSize),
                 Math.ceil(destination.size[1] / workgroupSize),
                 1);
-            context.queueDispose(pipeline);
         }
 
         // End pass. It can be disposed when ended.
@@ -218,25 +212,27 @@ export class WebGpuTexture2D extends ATexture2D {
         encoder.submit();
         encoder.dispose();
 
-        if (stagingTexture) {
-            const commandEncoder = this._graphicsDevice.createCommandEncoder("GenerateMipmapsCopyBack") as WebGpuCommandEncoder;
+        const commandEncoder = this._graphicsDevice.createCommandEncoder("GenerateMipmapsCopyBack") as WebGpuCommandEncoder;
+        commandEncoder.start();
 
-            for (let i = 1; i < this.mipLevels; i++) {
+        for (let i = 1; i < this.mipLevels; i++) {
 
-                const width = this.size[0] << i;
-                const height = this.size[1] << i;
+            const width = this.size[0] >> i;
+            const height = this.size[1] >> i;
 
-                commandEncoder.gpuCommandEncoder?.copyTextureToTexture(
-                    { texture: this.gpuTexture, mipLevel: i },
-                    { texture: stagingTexture.gpuTexture, mipLevel: i },
-                    {
-                        width,
-                        height,
-                        depthOrArrayLayers: 1
-                    })
-            }
-            commandEncoder.queueDispose(stagingTexture);
+            // TODO: would be nice to capture this as a method of higher level command encoder.
+            commandEncoder.gpuCommandEncoder!.copyTextureToTexture(
+                { texture: stagingTexture.gpuTexture, mipLevel: i },
+                { texture: this.gpuTexture, mipLevel: i },
+                {
+                    width,
+                    height,
+                    depthOrArrayLayers: 1
+                })
         }
+
+        commandEncoder.queueDispose(stagingTexture);
+        commandEncoder.submit();
     }
 
     /** @inheritDoc */

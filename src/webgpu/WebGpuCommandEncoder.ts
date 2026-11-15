@@ -48,7 +48,6 @@ export class WebGpuCommandEncoder implements IGpuCommandEncoder {
     /** @inheritdoc */
     public submit(): void {
         if (!this.gpuCommandEncoder) {
-            debugger;
             console.warn(`No active encoder found for GpuCommandEncoder ${this.label}.`);
             return;
         }

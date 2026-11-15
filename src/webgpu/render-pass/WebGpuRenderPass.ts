@@ -39,7 +39,11 @@ export class WebGpuRenderPass implements IRenderPass {
 
         // Own copy, so setColorAttachment does not change the caller's descriptor.
         this._colorAttachments = descriptor.colorAttachments.slice();
+        this.label = this._descriptor.label;
     }
+
+    /** @inheritdoc */
+    public readonly label?: string;
 
     /**
      * The underlying WebGPU render pass encoder.
@@ -133,13 +137,6 @@ export class WebGpuRenderPass implements IRenderPass {
         this.gpuRenderPassEncoder.end();
     }
 
-    /** @inheritDoc */
-    public submit(): void {
-        if (this._commandEncoder === this._graphicsDevice.mainCommandEncoder) {
-            return;
-        }
-        this._commandEncoder.submit();
-    }
 
     /** @inheritDoc */
     public pushDebugGroup(label: string): void {
@@ -153,6 +150,6 @@ export class WebGpuRenderPass implements IRenderPass {
 
     /** @inheritDoc */
     public dispose(): void {
-        this.endPass();
+        this.gpuRenderPassEncoder = null!;
     }
 }

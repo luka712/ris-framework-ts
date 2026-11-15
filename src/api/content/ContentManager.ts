@@ -114,7 +114,7 @@ export class ContentManager implements IContentManager {
 
         const imageLoader = this._framework.imageLoader;
         const data = await imageLoader.loadAsync(path, contentConfig?.keepDataCached);
-
+        
         return this._framework.textureFactory.create({
             width: data.baseWidth,
             height: data.baseHeight,

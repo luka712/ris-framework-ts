@@ -68,13 +68,19 @@ export interface ITextureDescriptor {
      * The data per mip level for a 2d texture.
      * By default, it is undefined.
      */
-    data?: Uint8Array[] | HTMLImageElement[];
+    data?: Uint8Array[];
 
     /**
      * The data per layer, per mip level for a 2D texture array (`dataArray[layer][mipLevel]`). Ignored by 2D textures.
      * By default, it is undefined.
      */
-    dataArray?: Uint8Array[][] | HTMLImageElement[][];
+    dataArray?: Uint8Array[][];
+
+    /**
+     * If defined, creates texture with given number of mipmap levels.
+     * Overrides generateMipmaps or level count from data.
+     */
+    mipmapLevels?: number;
 
     /**
      * Should mipmaps be generated.

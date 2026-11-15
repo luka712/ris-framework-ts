@@ -1,5 +1,5 @@
-import {ARenderer} from "../core/rendering/ARenderer.ts";
-import {type IFramework, type IGraphicsDevice, type IRenderPass, type IRenderPassDescriptor, type IRendererConfiguration} from "../api/index.ts";
+import { ARenderer } from "../core/rendering/ARenderer.ts";
+import { type IFramework, type IGraphicsDevice, type IRenderPass, type IRenderPassDescriptor, type IRendererConfiguration } from "../api/index.ts";
 import type { WebGpuGraphicsDevice } from "./WebGpuGraphicsDevice.ts";
 import { WebGpuRenderPass } from "./render-pass/WebGpuRenderPass.ts";
 
@@ -21,7 +21,7 @@ export class WebGpuRenderer extends ARenderer {
     }
 
     /** @inheritdoc */
-    protected _createRenderPass(descriptor: IRenderPassDescriptor): IRenderPass {
+    public createRenderPass(descriptor: IRenderPassDescriptor): IRenderPass {
         const desc = descriptor ? { ...descriptor } : {};
         return new WebGpuRenderPass(this.graphicsDevice as WebGpuGraphicsDevice, desc);
     }

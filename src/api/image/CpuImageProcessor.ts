@@ -1,6 +1,6 @@
 import type { IImageProcessor } from "./IImageProcessor.ts";
-import {RawImageData} from "./RawImageData.ts";
-import {vec2} from "gl-matrix";
+import { RawImageData } from "./RawImageData.ts";
+import { vec2 } from "gl-matrix";
 
 /**
  * The default CPU-based image processor.
@@ -17,7 +17,8 @@ export class CpuImageProcessor implements IImageProcessor {
 
         if (data instanceof HTMLImageElement) {
             const htmlImage = await this._resizeHTMLImageAsync(data, vec2);
-            return new RawImageData([htmlImage], htmlImage.width, htmlImage.height, image.channels);
+            const bytes = this.getBytesFromHtmlImage(htmlImage);
+            return new RawImageData([bytes], htmlImage.width, htmlImage.height, image.channels);
         } else {
             throw new Error("CpuImageProcessor.resizeAsync: Not implemented. Only HTMLImageElement data can be resized; got raw bytes.");
         }
@@ -63,13 +64,13 @@ export class CpuImageProcessor implements IImageProcessor {
 
                 if (data instanceof HTMLImageElement) {
                     const htmlImage = await this._resizeHTMLImageAsync(data, resize);
-                    resultData.push(htmlImage);
+                    resultData.push(this.getBytesFromHtmlImage(htmlImage));
                 } else {
                     throw new Error("CpuImageProcessor.generateMipmapsAsync: Not implemented. Only HTMLImageElement data can be downscaled; got raw bytes.");
                 }
             }
         } else {
-            for(let i = 0; i < levels; i++) {
+            for (let i = 0; i < levels; i++) {
 
                 w = Math.floor(w / 2);
                 h = Math.floor(h / 2);
@@ -79,7 +80,7 @@ export class CpuImageProcessor implements IImageProcessor {
 
                 if (data instanceof HTMLImageElement) {
                     const htmlImage = await this._resizeHTMLImageAsync(data, resize);
-                    resultData.push(htmlImage);
+                    resultData.push(this.getBytesFromHtmlImage(htmlImage));
                 } else {
                     throw new Error("CpuImageProcessor.generateMipmapsAsync: Not implemented. Only HTMLImageElement data can be downscaled; got raw bytes.");
                 }
