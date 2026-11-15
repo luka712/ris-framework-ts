@@ -1,4 +1,4 @@
-import {runWithBackendSwitcher} from "../shared/backendSwitcher.ts";
+import { runWithBackendSwitcher } from "../shared/backendSwitcher.ts";
 import {
     Color,
     Framework,
@@ -8,8 +8,8 @@ import {
     TextureSamplerFilteringPreset,
 } from "../../src/index.ts";
 // Kodak test image kodim23 (parrots), resized to 512×341. See README.md for source and license.
-import parrotsUrl from "./assets/kodim23_etc1s.ktx2?url";
-import {OutputColorSpace} from "../../src/api/rendering/enums.ts";
+import parrotsUrl from "./assets/kodim23.png?url";
+import { OutputColorSpace } from "../../src/api/gpu/rendering/enums.ts";
 
 const status = document.querySelector<HTMLParagraphElement>("#status")!;
 const outputButton = document.querySelector<HTMLButtonElement>("#output-color-space")!;
@@ -22,7 +22,7 @@ let currentFramework: IFramework | undefined;
 
 // The swap chain is not part of the public API; WebGPU's graphics device exposes it, WebGL always presents to an RGBA8 framebuffer.
 const swapChainFormat = (framework: IFramework): string =>
-    (framework.graphicsDevice as unknown as {swapChain?: {textureFormat: string} | null}).swapChain?.textureFormat ?? "RGBA8_UNORM (WebGL default framebuffer)";
+    (framework.graphicsDevice as unknown as { swapChain?: { textureFormat: string } | null }).swapChain?.textureFormat ?? "RGBA8_UNORM (WebGL default framebuffer)";
 
 const logOutput = (framework: IFramework) => {
     console.log(`[sprite_batch] output color space: ${framework.renderer.outputColorSpace}, `
@@ -52,11 +52,11 @@ outputButton.addEventListener("click", () => {
 });
 updateOutputUi();
 
-runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
+runWithBackendSwitcher("#game-canvas", ({ canvas, backend, isCurrent }) => {
     const framework: IFramework = new Framework({
         canvas,
-        renderingBackend: backend,
-        textureFiltering: TextureSamplerFilteringPreset.BILINEAR,
+        gpuBackend: backend,
+        textureFiltering: TextureSamplerFilteringPreset.TRILINEAR,
         outputColorSpace,
     });
     currentFramework = framework;
@@ -67,14 +67,16 @@ runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
 
     framework.addOnLoadContentListener(async () => {
         try {
-            parrots = await framework.content.loadTexture2DAsync(parrotsUrl);
+            parrots = await framework.content.loadTexture2DAsync(parrotsUrl, {
+                generateMipmaps: true
+            });
             drawRect.width = parrots.size[0];
             drawRect.height = parrots.size[1];
             // TextureFormat is a string enum, so the value is the enum name.
-            console.log(`[sprite_batch] kodim23_etc1s.ktx2: format ${parrots.textureFormat}, `
+            console.log(`[sprite_batch] kodim23.ktx2: format ${parrots.textureFormat}, `
                 + `size ${parrots.size[0]}×${parrots.size[1]}`);
             logOutput(framework);
-            status.textContent = `Loaded kodim23_etc1s.ktx2 (${parrots.size[0]}×${parrots.size[1]}, ${parrots.textureFormat}).`;
+            status.textContent = `Loaded kodim23.ktx2 (${parrots.size[0]}×${parrots.size[1]}, ${parrots.textureFormat}).`;
         } catch (error) {
             if (!isCurrent()) {
                 return;

@@ -1,11 +1,11 @@
-import {RenderingBackend, type IFramework} from "../../src";
+import {GpuBackend, type IFramework} from "../../src";
 
 /** What an example's setup receives for one run. */
 export interface ExampleContext {
     /** A fresh canvas for this run (a canvas cannot switch between WebGL and WebGPU contexts). */
     readonly canvas: HTMLCanvasElement;
-    /** The requested backend. Pass it as `renderingBackend` to the framework configuration. */
-    readonly backend: RenderingBackend;
+    /** The requested backend. Pass it as `gpuBackend` to the framework configuration. */
+    readonly backend: GpuBackend;
     /** False once the user switched backends; async work of an old run should stop touching the page. */
     isCurrent(): boolean;
 }
@@ -22,13 +22,13 @@ export interface ExampleRun {
 
 const QUERY_KEY = "backend";
 
-function readBackend(): RenderingBackend {
-    return new URLSearchParams(location.search).get(QUERY_KEY) === "webgpu" ? RenderingBackend.WEB_GPU : RenderingBackend.WEB_GL;
+function readBackend(): GpuBackend {
+    return new URLSearchParams(location.search).get(QUERY_KEY) === "webgpu" ? GpuBackend.WEB_GPU : GpuBackend.WEB_GL;
 }
 
-function writeBackend(backend: RenderingBackend): void {
+function writeBackend(backend: GpuBackend): void {
     const url = new URL(location.href);
-    if (backend === RenderingBackend.WEB_GPU) {
+    if (backend === GpuBackend.WEB_GPU) {
         url.searchParams.set(QUERY_KEY, "webgpu");
     } else {
         url.searchParams.delete(QUERY_KEY);
@@ -36,7 +36,7 @@ function writeBackend(backend: RenderingBackend): void {
     history.replaceState(null, "", url);
 }
 
-const backendName = (backend: RenderingBackend) => backend === RenderingBackend.WEB_GPU ? "WebGPU" : "WebGL";
+const backendName = (backend: GpuBackend) => backend === GpuBackend.WEB_GPU ? "WebGPU" : "WebGL";
 
 /**
  * Runs an example with the backend from `?backend=webgpu` (WebGL otherwise) and adds a button that switches backends.
@@ -60,7 +60,7 @@ export function runWithBackendSwitcher(canvasSelector: string, setup: (context: 
     canvas.before(bar);
 
     const updateUi = (started: boolean) => {
-        const other = backend === RenderingBackend.WEB_GPU ? RenderingBackend.WEB_GL : RenderingBackend.WEB_GPU;
+        const other = backend === GpuBackend.WEB_GPU ? GpuBackend.WEB_GL : GpuBackend.WEB_GPU;
         button.textContent = `Switch to ${backendName(other)}`;
         label.textContent = started ? `Backend: ${backendName(backend)}` : `Starting ${backendName(backend)}…`;
     };
@@ -107,7 +107,7 @@ export function runWithBackendSwitcher(canvasSelector: string, setup: (context: 
 
     button.addEventListener("click", () => {
         stop();
-        backend = backend === RenderingBackend.WEB_GPU ? RenderingBackend.WEB_GL : RenderingBackend.WEB_GPU;
+        backend = backend === GpuBackend.WEB_GPU ? GpuBackend.WEB_GL : GpuBackend.WEB_GPU;
         writeBackend(backend);
         void start();
     });

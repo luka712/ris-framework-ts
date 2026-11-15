@@ -136,7 +136,8 @@ export class WebGlLightsBuffer implements LightsBuffer {
             return;
         }
 
-        this._buffer.update(this._data);
+        this._buffer.write(this._data);
+        this._buffer.update();
         for (let i = 0; i < this._data.length; i++) {
             this._uploaded[i] = this._data[i];
         }

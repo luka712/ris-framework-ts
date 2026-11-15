@@ -1,18 +1,20 @@
-import {BlendStateDescriptor} from "./blending/blend-state-descriptor";
-import {TextureSamplerFilteringPreset} from "./enums";
-import {SamplerDescriptor} from "./sampler/sampler-descriptor";
+import { BlendStateDescriptor } from "./blending/blend-state-descriptor";
+import { TextureSamplerFilteringPreset } from "./enums";
+import { SamplerDescriptor } from "./sampler/sampler-descriptor";
 import {
     type IGPUInfo,
     type IGraphicsDeviceFeatures,
     type ISampler,
     type IBlendState,
     type IPrimitiveState,
-    type IGraphicsDevice, type ISwapChainDescriptor, type RenderPassDescriptor, SamplerFilter, MipMapSamplerFilter,
-    type ISwapChain, type IRenderPass, type IPrimitiveStateDescriptor,
-    type RenderingBackend,
+    type IGraphicsDevice, type ISwapChainDescriptor, SamplerFilter, MipMapSamplerFilter,
+    type ISwapChain, type IRenderPass, type IComputePass, type IPrimitiveStateDescriptor,
+    type GpuBackend,
+    type GpuLimits,
     State
 } from "../../api/index.ts";
-import {PowerPreferenceType} from "../../api/rendering/PowerPreference.ts";
+import { PowerPreferenceType } from "../../api/gpu/PowerPreference.ts";
+import type { IGpuCommandEncoder } from "../../api/gpu/IGpuCommandEncoder.ts";
 
 /**
  * The descriptor for the graphics device. This is used to configure the graphics device during initialization.
@@ -46,7 +48,15 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     protected _defaultTextureSampler: ISampler = null!;
     protected _defaultBlendState: IBlendState = null!;
     protected _defaultPrimitiveState: IPrimitiveState = null!;
+    protected _limits: GpuLimits | null = null;
     protected _state: State = State.CREATED;
+    protected _mainCommandEncoder: IGpuCommandEncoder = null!;
+
+    /** @inheritdoc */
+    public currentRenderPass: IRenderPass | null = null;
+
+    /** @inheritdoc */
+    public currentComputePass: IComputePass | null = null;
 
     /**
      * The constructor.
@@ -57,7 +67,12 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     }
 
     /** @inheritdoc */
-    abstract readonly api: RenderingBackend;
+    public get mainCommandEncoder(): IGpuCommandEncoder {
+        return this._mainCommandEncoder;
+    }
+
+    /** @inheritdoc */
+    abstract readonly api: GpuBackend;
 
     /** @inheritdoc */
     public get state(): State {
@@ -65,10 +80,21 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     }
 
     /** @inheritdoc */
-    abstract readonly features : IGraphicsDeviceFeatures;
+    abstract readonly features: IGraphicsDeviceFeatures;
 
     /** @inheritdoc */
     abstract readonly gpuInfo: IGPUInfo;
+
+    /**
+     * The GPU limits, populated by the backend during {@link initializeAsync}.
+     * @throws Error when the device is not initialized.
+     */
+    public get limits(): GpuLimits {
+        if (!this._limits) {
+            throw new Error(`${this.constructor.name}.limits: the graphics device is not initialized.`);
+        }
+        return this._limits;
+    }
 
     /** @inheritdoc */
     public get defaultTextureSampler(): ISampler {
@@ -115,6 +141,7 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
      */
     public async initializeAsync(): Promise<void> {
         this._validateState("AGraphicsDevice.initializeAsync");
+        this._mainCommandEncoder = this.createCommandEncoder("MainCommandEncoder");
         this._defaultTextureSampler = this.configureAndCreateDefaultSampler();
         this._defaultBlendState = this.createBlendState(new BlendStateDescriptor());
         this._defaultPrimitiveState = this.createPrimitiveState();
@@ -122,13 +149,13 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     }
 
     /** @inheritdoc */
+    public abstract createCommandEncoder(label?: string): IGpuCommandEncoder;
+
+    /** @inheritdoc */
     public abstract createSwapChain(canvas: HTMLCanvasElement, swapChainDescriptor: ISwapChainDescriptor): ISwapChain;
 
     /** @inheritdoc */
     public abstract createSampler(descriptor?: SamplerDescriptor): ISampler;
-
-    /** @inheritdoc */
-    public abstract createRenderPass(descriptor: RenderPassDescriptor): IRenderPass;
 
     /** @inheritdoc */
     public abstract createBlendState(descriptor: BlendStateDescriptor): IBlendState;
@@ -140,7 +167,14 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     public abstract setupDebugCallback(): void;
 
     /** @inheritDoc */
-    public abstract frameEnd(): void;
+    public frameStart(): void {
+        this._mainCommandEncoder.start();
+    }
+
+    /** @inheritDoc */
+    public frameEnd(): void {
+        this._mainCommandEncoder.submit();
+    }
 
     /** @inheritDoc */
     public abstract pushDebugGroup(groupName: string): void;

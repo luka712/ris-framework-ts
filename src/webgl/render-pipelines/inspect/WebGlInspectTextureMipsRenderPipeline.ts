@@ -21,7 +21,7 @@ import type {
 } from "../../../api";
 import { WebGlTextureFactory } from "../../texture/WebGlTextureFactory.ts";
 
-/** The WebGL implementation of {@link IInspectTextureMipsRenderPipeline}. Uses the `inspect_texture_mips` GLSL shader. */
+/** {@link IInspectTextureMipsRenderPipeline} for WebGL. Uses the `inspect_texture_mips` GLSL shader. */
 export class WebGlInspectTextureMipsRenderPipeline extends AWebGlRenderPipeline implements IInspectTextureMipsRenderPipeline {
 
     private static readonly CAMERA_BINDING_POINT = 0;

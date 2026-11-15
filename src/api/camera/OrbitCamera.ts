@@ -1,5 +1,5 @@
 import {vec3, mat4, vec2} from "gl-matrix";
-import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
+import type { IUniformBuffer } from "../gpu/buffers/IUniformBuffer.ts";
 import {PerspectiveCamera} from "./PerspectiveCamera.ts";
 import type { IInputManager } from "../input/IInputManager.ts";
 import {MathHelper} from "../utilities/MathHelper.ts";

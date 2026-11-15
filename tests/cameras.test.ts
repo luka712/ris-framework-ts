@@ -132,9 +132,9 @@ describe("OrthographicCamera", () => {
     }
 
     it("has a std140 eye position buffer that is updated and disposed", () => {
-        const buffers: { label?: string; data: number[]; update: ReturnType<typeof vi.fn>; dispose: ReturnType<typeof vi.fn> }[] = [];
+        const buffers: { label?: string; data: number[]; write: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn>; dispose: ReturnType<typeof vi.fn> }[] = [];
         const fw = { bufferFactory: { createUniformBuffer: vi.fn((data: ArrayLike<number>, _usage: unknown, label?: string) => {
-            const buffer = { label, data: Array.from(data), update: vi.fn(), dispose: vi.fn() };
+            const buffer = { label, data: Array.from(data), write: vi.fn(), update: vi.fn(), dispose: vi.fn() };
             buffers.push(buffer);
             return buffer;
         }) } } as unknown as IFramework;
@@ -146,7 +146,8 @@ describe("OrthographicCamera", () => {
 
         vec3.set(camera.transform.position, 1, 2, 3);
         camera.updateBuffers();
-        expect(Array.from(position.update.mock.calls[0][0] as number[])).toEqual([1, 2, 3, 0]);
+        expect(Array.from(position.write.mock.calls[0][0] as number[])).toEqual([1, 2, 3, 0]);
+        expect(position.update).toHaveBeenCalledOnce();
 
         camera.dispose();
         expect(position.dispose).toHaveBeenCalledOnce();

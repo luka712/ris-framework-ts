@@ -1,4 +1,4 @@
-import {type IGPUInfo, RenderingBackend, TextureFormat, TextureUtilities} from "../api/index.ts";
+import {type IGPUInfo, GpuBackend, TextureFormat, TextureUtilities} from "../api/index.ts";
 import type {WebGpuGraphicsDeviceFeatures} from "./WebGpuGraphicsDeviceFeatures.ts";
 
 /**
@@ -17,9 +17,9 @@ export class WebGPUInfo implements IGPUInfo {
         this.name = info?.description || info?.device || info?.architecture || "Unknown";
         this.vendor = info?.vendor || "Unknown";
         this.apiVersion = "WebGPU";
-        this.api = RenderingBackend.WEB_GPU;
+        this.api = GpuBackend.WEB_GPU;
         // The native API behind WebGPU (Vulkan, Metal, D3D12) is hidden from the page.
-        this.underlyingBackend = RenderingBackend.DEFAULT;
+        this.underlyingBackend = GpuBackend.DEFAULT;
 
         // Features are read from the device (only requested features are enabled), so this lists what can be created.
         const formats = features.supportedTextureFormats
@@ -37,10 +37,10 @@ export class WebGPUInfo implements IGPUInfo {
     public readonly apiVersion: string;
 
     /** @inheritDoc */
-    public readonly api: RenderingBackend;
+    public readonly api: GpuBackend;
 
     /** @inheritDoc */
-    public readonly underlyingBackend: RenderingBackend;
+    public readonly underlyingBackend: GpuBackend;
 
     /** @inheritDoc */
     public readonly supportedCompressedTextureFormats: TextureFormat[];

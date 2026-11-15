@@ -1,12 +1,13 @@
-import {RenderingBackend} from "./rendering/RenderingBackend.ts";
+import {GpuBackend} from "./gpu/GpuBackend.ts";
 import type { ISpriteBatch } from "./sprites/ISpriteBatch.ts";
-import type { IRenderer } from "./rendering/IRenderer.ts";
-import type { IGraphicsDevice } from "./rendering/IGraphicsDevice.ts";
-import type { IRenderPipelineFactory } from "./rendering/render-pipelines/IRenderPipelineFactory.ts";
-import type { IBufferFactory } from "./rendering/buffers/IBufferFactory.ts";
+import type { IRenderer } from "./gpu/rendering/IRenderer.ts";
+import type { IGraphicsDevice } from "./gpu/IGraphicsDevice.ts";
+import type { IComputeContext } from "./gpu/compute/IComputeContext.ts";
+import type { IRenderPipelineFactory } from "./gpu/rendering/render-pipelines/IRenderPipelineFactory.ts";
+import type { IBufferFactory } from "./gpu/buffers/IBufferFactory.ts";
 import type { IGeometryBuilder } from "./geometry/IGeometryBuilder.ts";
 import type { ICameraFactory } from "./camera/ICameraFactory.ts";
-import type { ITextureFactory } from "./rendering/texture/ITextureFactory.ts";
+import type { ITextureFactory } from "./gpu/texture/ITextureFactory.ts";
 import type { ObjLoader } from "./loaders/ObjLoader.ts";
 import type { IContentManager } from "./content/IContentManager.ts";
 import type { IImageLoader } from "./loaders/IImageLoader.ts";
@@ -22,8 +23,10 @@ import type { IKtx2Factory } from "ris-ktx2";
 import type { IDisposable } from "./core/IDisposable.ts";
 import type {vec2} from "gl-matrix";
 import type {TextureSamplerFilteringPreset} from "../core/rendering/enums.ts";
-import type {PowerPreferenceType} from "./rendering/PowerPreference.ts";
-import type {OutputColorSpace} from "./rendering/enums.ts";
+import type {PowerPreferenceType} from "./gpu/PowerPreference.ts";
+import type {OutputColorSpace} from "./gpu/rendering/enums.ts";
+import type { IComputePipelineFactory } from "./gpu/compute/pipelines/IComputePipelineFactory.ts";
+import type { IDispatcher } from "./dispatcher/IDispatcher.ts";
 
 
 /**
@@ -60,11 +63,11 @@ export class IFrameworkConfiguration {
     powerPreference ?: PowerPreferenceType;
 
     /**
-     * The rendering backend. Defaults to WebGL.
+     * The GPU backend. Defaults to WebGL.
      * WebGPU requires `Framework.initializeAsync()`. There is no fallback: when `navigator.gpu` is missing
      * or no device is available, initialization throws.
      */
-    renderingBackend?: RenderingBackend;
+    gpuBackend?: GpuBackend;
 }
 
 /** The framework interface. */
@@ -87,9 +90,14 @@ export interface IFramework extends IDisposable {
     readonly renderer: IRenderer;
 
     /**
-     * The graphics device used by the framework.
+     * The graphics device.
      */
     readonly graphicsDevice: IGraphicsDevice;
+
+    /**
+     * The compute context. null on WebGL (compute not supported).
+     */
+    readonly computeContext: IComputeContext | null;
 
     /**
      * The pipeline factory.
@@ -98,6 +106,12 @@ export interface IFramework extends IDisposable {
      * and can be thought of as a material or renderer.
      */
     readonly renderPipelineFactory: IRenderPipelineFactory;
+
+    /**
+     * The compute pipeline factory.
+     * <code>null</code> if rendering API does not support compute shaders.
+     */
+    readonly computePipelineFactory?: IComputePipelineFactory;
 
     /**
      * The buffer factory, responsible for creating GPU memory buffers.
@@ -145,9 +159,7 @@ export interface IFramework extends IDisposable {
      */
     readonly lightsFactory: AmbientLightFactory;
 
-    /**
-     * The time manager.
-     */
+    /** The time manager. */
     readonly timeManager: ITimeManager;
 
     /** The input manager. */
@@ -158,6 +170,9 @@ export interface IFramework extends IDisposable {
 
     /** The image processor. */
     readonly imageProcessor: IImageProcessor;
+
+    /** The dispatcher which can schedule actions to execute in future frames. */
+    readonly dispatcher: IDispatcher;
 
     /**
      * Called right after the framework is initialized and before the render loop starts.

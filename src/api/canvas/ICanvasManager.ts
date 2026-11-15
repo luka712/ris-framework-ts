@@ -3,7 +3,7 @@ import {CanvasBounds} from "./CanvasBounds.ts";
 import {vec2} from "gl-matrix";
 
 /**
- * Owns the canvas and the per-frame event loop.
+ * The canvas and the per-frame event loop.
  */
 export interface ICanvasManager extends IDisposable {
 

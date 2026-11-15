@@ -1,14 +1,14 @@
 import type {IRenderableMesh} from "../meshes/IRenderableMesh.ts";
-import type { ITexture2D } from "../rendering/texture/ITexture2D.ts";
-import type { IInspectTextureMipsRenderPipeline } from "../rendering/render-pipelines/inspect/IInspectTextureMipsRenderPipeline.ts";
-import type { ISampler } from "../rendering/sampler/ISampler.ts";
+import type { ITexture2D } from "../gpu/texture/ITexture2D.ts";
+import type { IInspectTextureMipsRenderPipeline } from "../gpu/rendering/render-pipelines/inspect/IInspectTextureMipsRenderPipeline.ts";
+import type { ISampler } from "../gpu/sampler/ISampler.ts";
 import {mat4} from "gl-matrix";
 import {GeometryFormat} from "../geometry/GeometryFormat.ts";
-import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
-import type { IIndexBuffer } from "../rendering/buffers/IIndexBuffer.ts";
-import type { IVertexBuffer } from "../rendering/buffers/IVertexBuffer.ts";
+import type { IUniformBuffer } from "../gpu/buffers/IUniformBuffer.ts";
+import type { IIndexBuffer } from "../gpu/buffers/IIndexBuffer.ts";
+import type { IVertexBuffer } from "../gpu/buffers/IVertexBuffer.ts";
 import type { IFramework } from "../IFramework.ts";
-import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
+import {BufferUsage} from "../gpu/buffers/BufferUsage.ts";
 
 /**
  * Material for inspecting the mip levels of a 2D texture: samples the texture with `textureLod` at {@link mipLevel}.
@@ -133,7 +133,8 @@ export class InspectTextureMipsMaterial {
     public beforeRender(): void {
         if (this._mipLevel[0] != this.mipLevel) {
             this._mipLevel[0] = this.mipLevel;
-            this._fragmentDataBuffer.update(this._mipLevel);
+            this._fragmentDataBuffer.write(this._mipLevel);
+            this._fragmentDataBuffer.update();
         }
     }
 

@@ -17,8 +17,8 @@ export type SceneItem = IRenderableMesh | SceneMesh | ISceneObject | AmbientLigh
 /**
  * The scene. Lights and cameras given a scene in their constructor add themselves through {@link add};
  * meshes are added with `scene.add(mesh)` (wrapped in a {@link SceneMesh}, which owns the mesh's materials).
- * Like C#, the scene keeps the light lists and hands its active ambient light and the lists themselves (not copies)
- * to every lights material in {@link update}; each material owns and uploads its own lights buffer. Call {@link update} once per frame and {@link render} in the render listener.
+ * {@link update} gives every lights material the scene's active ambient light and light lists (the same arrays, not copies);
+ * each material uploads its own lights buffer. Call {@link update} once per frame and {@link render} in the render listener.
  */
 export class Scene implements IDisposable {
 

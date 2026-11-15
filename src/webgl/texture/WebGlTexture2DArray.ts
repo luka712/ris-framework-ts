@@ -2,11 +2,12 @@ import {WebGlUtilities} from "../utilities/WebGlUtilities.ts";
 import {
     type IFramework, State,
     type ITextureView2D,
+    type ITextureViewDescriptor,
     TextureUtilities,
-    type ITextureDescriptor, TextureFormat,
+    type ITextureDescriptor,
 } from "../../api";
 import type {WebGlGraphicsDevice} from "../WebGlGraphicsDevice.ts";
-import {ATexture2DArray} from "../../api/rendering/texture/ATexture2DArray.ts";
+import {ATexture2DArray} from "../../api/gpu/texture/ATexture2DArray.ts";
 
 /**
  * WebGL2 2D texture array (`TEXTURE_2D_ARRAY`, sampled as `sampler2DArray`).
@@ -31,7 +32,7 @@ export class WebGlTexture2DArray extends ATexture2DArray {
         framework: IFramework,
         textureDescriptor: ITextureDescriptor
     ) {
-        const graphicsDevice = framework.renderer.graphicsDevice as WebGlGraphicsDevice;
+        const graphicsDevice = framework.graphicsDevice as WebGlGraphicsDevice;
         super(graphicsDevice, textureDescriptor);
         this._graphicsDevice = graphicsDevice;
         this.gl = this._graphicsDevice.gl!;
@@ -110,7 +111,7 @@ export class WebGlTexture2DArray extends ATexture2DArray {
      * WebGL2 does not support texture views. Always throws.
      * @inheritdoc
      */
-    protected _createTextureView(_textureFormat: TextureFormat): ITextureView2D {
+    protected _createTextureView(_descriptor: ITextureViewDescriptor): ITextureView2D {
         throw new Error(
             `WebGL2 does not support texture views (graphicsDevice.features.supportsTextureView is false). ` +
             `Use the texture directly (WebGlTexture2DArray.glTexture).`

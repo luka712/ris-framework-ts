@@ -1,27 +1,26 @@
-import type {ITempRenderer} from "../../api/rendering/renderer-interface.ts";
 import type {vec2} from "gl-matrix";
-import type {RenderingLimits} from "../../api/rendering/rendering-limits.ts";
 import {
     Color,
     type ICanvasManager,
     type IFramework,
     type IGraphicsDevice,
     type IMainRenderTargetRenderPipeline,
+    type IRenderer,
     type IRendererConfiguration,
     type IRenderPass,
+    type IRenderPassDescriptor,
     type ISwapChain,
     type ISwapChainDescriptor,
     type ITexture2D,
     OutputColorSpace,
-    RenderingBackend,
     RenderPassColorAttachment,
     RenderPassDepthStencilAttachment,
-    RenderPassDescriptor,
+    State,
     TextureFormat,
     TextureUsage
 } from "../../api";
 
-export abstract class ARenderer implements ITempRenderer {
+export abstract class ARenderer implements IRenderer {
 
     protected readonly _framework: IFramework;
 
@@ -31,7 +30,7 @@ export abstract class ARenderer implements ITempRenderer {
     protected _resizeListeners: ((sender: any, size: vec2) => void)[] = [];
 
     private readonly _canvasManager: ICanvasManager;
-    private _graphicsDevice: IGraphicsDevice = null!;
+    private readonly _graphicsDevice: IGraphicsDevice;
     private _preferredDepthStencilFormat: TextureFormat = TextureFormat.DEPTH24_PLUS_STENCIL8;
     private readonly _currentBackBufferSize: vec2 = [0, 0];
     private _swapChainRequiresResize: boolean = false;
@@ -48,10 +47,18 @@ export abstract class ARenderer implements ITempRenderer {
     protected _mainRenderTargetPipeline?: IMainRenderTargetRenderPipeline;
     protected _renderConfiguration: IRendererConfiguration;
 
+    /** @inheritdoc */
+    public readonly renderPassQueue: IRenderPass[] = [];
+
 
     /** @inheritdoc */
     public get graphicsDevice(): IGraphicsDevice {
         return this._graphicsDevice;
+    }
+
+    /** @inheritdoc */
+    public get mainRenderPass(): IRenderPass {
+        return this._mainRenderTargetRenderPass!;
     }
 
     /** @inheritdoc */
@@ -63,11 +70,6 @@ export abstract class ARenderer implements ITempRenderer {
     public set clearColor(color: Color) {
         this._clearColor = color;
         this._mainRenderPassDirty = true;
-    }
-
-    /** The rendering limits. Not implemented yet; always throws. */
-    public get limits(): RenderingLimits | null {
-        throw new Error("ARenderer.limits: Not implemented.");
     }
 
     /** @inheritdoc */
@@ -124,25 +126,29 @@ export abstract class ARenderer implements ITempRenderer {
         }
     }
 
-    /** @inheritdoc */
+    /**
+     * Whether the back buffer size matches the swap chain size.
+     * If true, the renderer uses the swap chain size, overriding {@link backBufferSize}.
+     * By default, false.
+     */
     public backBufferMatchesSwapChain: boolean = false;
+
 
     /**
      * The constructor.
      * @param framework The framework.
      * @param configuration The renderer configuration.
+     * @param graphicsDevice The graphics device.
      */
-    protected constructor(framework: IFramework, configuration: IRendererConfiguration) {
+    protected constructor(framework: IFramework, configuration: IRendererConfiguration, graphicsDevice: IGraphicsDevice) {
         this._framework = framework;
         this._renderConfiguration = configuration;
+        this._graphicsDevice = graphicsDevice;
         this._canvasManager = framework.canvasManager;
         this._currentBackBufferSize[0] = this._canvasManager.canvas.width;
         this._currentBackBufferSize[1] = this._canvasManager.canvas.height;
         this._outputColorSpace = configuration.outputColorSpace;
     }
-
-    /** The rendering backend. Defaults to {@link RenderingBackend.WEB_GL}; backends override it. */
-    backend: RenderingBackend = RenderingBackend.WEB_GL;
 
     /** @inheritDoc */
     public addOnResizedListener(event: (sender: any, e: vec2) => void): void {
@@ -157,27 +163,15 @@ export abstract class ARenderer implements ITempRenderer {
         }
     }
 
-    /** Compute passes are not implemented yet; always throws. */
-    beginComputePass(): void {
-        throw new Error("ARenderer.beginComputePass: compute passes are not implemented.");
-    }
-    /** Compute passes are not implemented yet; always throws. */
-    endComputePass(): void {
-        throw new Error("ARenderer.endComputePass: compute passes are not implemented.");
-    }
-
     /**
-     * Creates the graphics device for the renderer.
-     *  This is an abstract method that must be implemented by subclasses to provide the specific graphics device implementation for the renderer.
-     * @returns The graphics device for the renderer.
+     * Creates the swap chain. The graphics device must already have been initialized by the framework.
+     * @inheritdoc
      */
-    protected abstract createGraphicsDevice(): IGraphicsDevice;
-
-    /** @inheritdoc */
     public async initializeAsync(): Promise<void> {
-
-        this._graphicsDevice = this.createGraphicsDevice();
-        await this._graphicsDevice.initializeAsync();
+        if (this._graphicsDevice.state != State.INITIALIZED) {
+            throw new Error(`ARenderer.initializeAsync: the graphics device is ${State[this._graphicsDevice.state]}; ` +
+                `Framework must initialize the device before the renderer.`);
+        }
 
         const swapchainDescriptor: ISwapChainDescriptor = {
             desiredOutputColorSpace: this._outputColorSpace,
@@ -187,7 +181,6 @@ export abstract class ARenderer implements ITempRenderer {
             this._canvasManager.canvas,
             swapchainDescriptor);
         // TODO: RESIZE EVENT
-
     }
 
     /** @inheritdoc */
@@ -196,7 +189,7 @@ export abstract class ARenderer implements ITempRenderer {
         let colorAttachment = new RenderPassColorAttachment();
         colorAttachment.swapChain = this._swapChain;
         colorAttachment.clearColor = Color.transparent();
-        this._swapChainRenderPass = this._graphicsDevice.createRenderPass({
+        this._swapChainRenderPass = this._createRenderPass({
             colorAttachments: [colorAttachment],
         });
 
@@ -253,11 +246,13 @@ export abstract class ARenderer implements ITempRenderer {
 
     private _createMainRenderPass(): void {
         this._mainRenderTargetRenderPass?.dispose();
-        const renderPassDesc = new RenderPassDescriptor();
-        renderPassDesc.colorAttachments = [this._createMainColorAttachment()];
-        renderPassDesc.depthStencilAttachment = new RenderPassDepthStencilAttachment();
-        renderPassDesc.depthStencilAttachment.texture = this._depthStencilBuffer;
-        this._mainRenderTargetRenderPass = this._graphicsDevice.createRenderPass(renderPassDesc);
+        const depthStencilAttachment = new RenderPassDepthStencilAttachment();
+        depthStencilAttachment.texture = this._depthStencilBuffer;
+        const renderPassDesc: IRenderPassDescriptor = {
+            colorAttachments: [this._createMainColorAttachment()],
+            depthStencilAttachment,
+        };
+        this._mainRenderTargetRenderPass = this._createRenderPass(renderPassDesc);
         this._mainRenderPassDirty = false;
     }
 
@@ -285,6 +280,19 @@ export abstract class ARenderer implements ITempRenderer {
         this._swapChainRequiresResize = false;
     }
 
+    /**
+     * Creates a backend render pass without queueing it.
+     * @param descriptor The render pass descriptor.
+     */
+    protected abstract _createRenderPass(descriptor: IRenderPassDescriptor): IRenderPass;
+
+    /** @inheritdoc */
+    public createRenderPass(descriptor: IRenderPassDescriptor): IRenderPass {
+        const pass = this._createRenderPass(descriptor);
+        this.renderPassQueue.push(pass);
+        return pass;
+    }
+
     /** @inheritdoc */
     public beginRenderPass(): void {
         this._mainRenderTargetRenderPass!.beginPass();
@@ -293,6 +301,11 @@ export abstract class ARenderer implements ITempRenderer {
     /** @inheritdoc */
     public endRenderPass(): void {
         this._mainRenderTargetRenderPass!.endPass();
+
+        while (this.renderPassQueue.length > 0) {
+            const pass = this.renderPassQueue.shift()!;
+            pass.submit();
+        }
 
         this._handleResizing();
 

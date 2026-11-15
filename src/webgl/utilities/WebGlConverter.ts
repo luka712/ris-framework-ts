@@ -1,5 +1,5 @@
 import {WebGlConstants} from "./WebGlConstants.ts";
-import {Culling} from "../../api/rendering/enums.ts";
+import {Culling} from "../../api/gpu/rendering/enums.ts";
 import {BlendFactor, BlendOperation} from "../../core/rendering/blending/enums";
 import {VertexFormat} from "../../api/geometry/VertexFormat.ts";
 import {

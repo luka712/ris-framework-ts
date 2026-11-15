@@ -12,11 +12,11 @@ import {ObjGeometryMapper} from "./ObjGeometryMapper.ts";
 export type ObjMaterialFactory = (subMesh: ObjSubMesh) => IMaterial;
 
 /**
- * Loads OBJ (Wavefront) models into renderable meshes (C# `ObjLoader`). Available as `framework.objLoader`.
+ * Loads OBJ (Wavefront) models into renderable meshes. Available as `framework.objLoader`.
  *
  * The returned root mesh has no material and owns the vertex and index buffers; each `usemtl` range is a sub mesh
  * with its own material (ranges with the same material name share one material instance).
- * Vertex colours are white, the materials carry the colour. Parsing is done by the engine-independent {@link ObjParser}.
+ * Vertex colours are white, the materials carry the colour. Parsing is done by {@link ObjParser}.
  * @public
  */
 export class ObjLoader {
@@ -35,7 +35,7 @@ export class ObjLoader {
     }
 
     /**
-     * Parses an .obj file (and its .mtl files) into plain data. Creates no GPU resources (C# `ObjLoader.Parse`).
+     * Parses an .obj file (and its .mtl files) into plain data. Creates no GPU resources.
      * @param path The .obj URL.
      * @param options Optional: how to resolve `mtllib` names, or skip materials.
      * @returns The model.

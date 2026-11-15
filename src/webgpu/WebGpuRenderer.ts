@@ -1,10 +1,11 @@
 import {ARenderer} from "../core/rendering/ARenderer.ts";
-import {type IFramework, type IGraphicsDevice, type IRendererConfiguration, RenderingBackend} from "../api/index.ts";
-import {WebGpuGraphicsDevice} from "./WebGpuGraphicsDevice.ts";
+import {type IFramework, type IGraphicsDevice, type IRenderPass, type IRenderPassDescriptor, type IRendererConfiguration} from "../api/index.ts";
+import type { WebGpuGraphicsDevice } from "./WebGpuGraphicsDevice.ts";
+import { WebGpuRenderPass } from "./render-pass/WebGpuRenderPass.ts";
 
 /**
- * The WebGPU renderer. WebGPU hands out the adapter and device asynchronously; the graphics device
- * requests them in its `initializeAsync()`, called from {@link initializeAsync}.
+ * The WebGPU renderer.
+ * The framework creates the {@link IGraphicsDevice} and initializes it before {@link initializeAsync}.
  * @internal
  */
 export class WebGpuRenderer extends ARenderer {
@@ -13,19 +14,15 @@ export class WebGpuRenderer extends ARenderer {
      * The constructor.
      * @param framework The framework.
      * @param renderConfiguration The renderer configuration.
+     * @param graphicsDevice The graphics device.
      */
-    public constructor(framework: IFramework, renderConfiguration: IRendererConfiguration) {
-        super(framework, renderConfiguration);
-        this.backend = RenderingBackend.WEB_GPU;
+    public constructor(framework: IFramework, renderConfiguration: IRendererConfiguration, graphicsDevice: IGraphicsDevice) {
+        super(framework, renderConfiguration, graphicsDevice);
     }
 
-
-    /** @inheritDoc */
-    protected createGraphicsDevice(): IGraphicsDevice {
-        return new WebGpuGraphicsDevice(this._framework.canvasManager, {
-            samplerFilteringPreset: this._renderConfiguration.textureFiltering,
-            alpha: this._renderConfiguration.alpha,
-            powerPreference: this._renderConfiguration.powerPreference,
-        });
+    /** @inheritdoc */
+    protected _createRenderPass(descriptor: IRenderPassDescriptor): IRenderPass {
+        const desc = descriptor ? { ...descriptor } : {};
+        return new WebGpuRenderPass(this.graphicsDevice as WebGpuGraphicsDevice, desc);
     }
 }

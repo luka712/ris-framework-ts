@@ -6,13 +6,13 @@ import {
     type IRenderPass,
     LoadAction,
     RenderPassColorAttachment, RenderPassDepthStencilAttachment,
-    RenderPassDescriptor,
+    type IRenderPassDescriptor,
     StoreAction,
     TextureFormat
 } from "../../api"
 
 /**
- * The WebGL implementation of the IRenderPass interface.
+ * A WebGL render pass.
  */
 export class WebGlRenderPass implements IRenderPass {
 
@@ -38,7 +38,7 @@ export class WebGlRenderPass implements IRenderPass {
      * @param graphicsDevice The graphics device.
      * @param descriptor The render pass descriptor.
      */
-    public constructor(graphicsDevice: WebGlGraphicsDevice, descriptor: RenderPassDescriptor) {
+    public constructor(graphicsDevice: WebGlGraphicsDevice, descriptor: IRenderPassDescriptor) {
         this._gl = graphicsDevice.gl;
 
         this._setupFrameBuffer(descriptor.colorAttachments ?? []);
@@ -245,4 +245,17 @@ export class WebGlRenderPass implements IRenderPass {
             this._depthStencilRenderBuffer = null;
         }
     }
+
+    /** @inheritDoc */
+    public pushDebugGroup(_label: string): void {
+    }
+
+    /** @inheritDoc */
+    public popDebugGroup(): void {
+    }
+
+    /** @inheritDoc */
+    public submit(): void {
+    }
+
 }

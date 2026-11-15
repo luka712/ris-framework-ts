@@ -19,7 +19,7 @@ import type {WebGlSampler} from "../../sampler/webgl-sampler.ts";
 import { WebGlTextureFactory } from "../../texture/WebGlTextureFactory.ts";
 
 /**
- * The WebGL implementation of the sprite render pipeline.
+ * A WebGL unlit render pipeline.
  */
 export class WebGlUnlitRenderPipeline extends AWebGlRenderPipeline implements IUnlitRenderPipeline {
 

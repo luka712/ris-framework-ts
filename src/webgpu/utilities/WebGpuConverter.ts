@@ -10,6 +10,7 @@ import {
     StoreAction,
     TextureFormat,
     TextureUsage,
+    TextureViewDimension,
     VertexStepMode,
     type IVertexBufferLayout,
 } from "../../api/index.ts";
@@ -177,6 +178,26 @@ export class WebGpuConverter {
     /** Whether the format is a depth (or depth-stencil) format. */
     public static isDepthFormat(format: TextureFormat): boolean {
         return format === TextureFormat.DEPTH24_PLUS_STENCIL8 || format === TextureFormat.DEPTH32_FLOAT;
+    }
+
+    /** Converts a texture view dimension. Throws for dimensions the WebGPU backend does not support. */
+    public static convertTextureViewDimension(dimension: TextureViewDimension): GPUTextureViewDimension {
+        switch (dimension) {
+            case TextureViewDimension.DIMENSION1D:
+                return "1d";
+            case TextureViewDimension.DIMENSION_2D:
+                return "2d";
+            case TextureViewDimension.DIMENSION_2D_ARRAY:
+                return "2d-array";
+            case TextureViewDimension.DIMENSIONCUBE:
+                return "cube";
+            case TextureViewDimension.DIMENSIONCUBEARRAY:
+                return "cube-array";
+            case TextureViewDimension.DIMENSION3D:
+                return "3d";
+            default:
+                throw new Error(`WebGpuConverter.convertTextureViewDimension: texture view dimension ${dimension} is not implemented for WebGPU.`);
+        }
     }
 
     /** Converts a load action. WebGPU has no "don't care", so `UNDEFINED` clears. */

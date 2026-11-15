@@ -9,6 +9,7 @@ import { AGraphicsDeviceFeatures } from "../core/rendering/AGraphicsDeviceFeatur
  */
 export class WebGpuGraphicsDeviceFeatures extends AGraphicsDeviceFeatures {
 
+
     private readonly _features: GPUSupportedFeatures;
 
     /**
@@ -56,5 +57,10 @@ export class WebGpuGraphicsDeviceFeatures extends AGraphicsDeviceFeatures {
      */
     protected override _getUncompressedTextureFormats(): TextureFormat[] {
         return [...super._getUncompressedTextureFormats(), TextureFormat.R32_FLOAT];
+    }
+
+    /** @inheritdoc */
+    public get supportComputePipeline(): boolean {
+        return true;
     }
 }

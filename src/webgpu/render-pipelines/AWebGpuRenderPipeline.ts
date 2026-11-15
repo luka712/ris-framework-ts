@@ -37,7 +37,7 @@ export abstract class AWebGpuRenderPipeline implements IRenderPipeline {
      */
     protected constructor(framework: IFramework, primitiveState?: IPrimitiveState) {
         this._framework = framework;
-        this._graphicsDevice = framework.renderer.graphicsDevice as WebGpuGraphicsDevice;
+        this._graphicsDevice = framework.graphicsDevice as WebGpuGraphicsDevice;
         this._blendState = this._graphicsDevice.defaultBlendState as WebGpuBlendState;
         this._defaultTextureSampler = this._graphicsDevice.defaultTextureSampler as WebGpuSampler;
         this.primitiveState = (primitiveState ?? this._graphicsDevice.defaultPrimitiveState) as WebGpuPrimitiveState;

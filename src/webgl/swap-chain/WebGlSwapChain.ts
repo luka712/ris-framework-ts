@@ -3,7 +3,7 @@ import {type IGraphicsDevice, type ISwapChain, TextureFormat} from "../../api";
 import type {WebGlGraphicsDevice} from "../WebGlGraphicsDevice.ts";
 
 /**
- * The WebGL implementation of the ISwapChain interface, which manages the swap chain for rendering operations in a WebGL context.
+ * A WebGL swap chain.
  */
 export class WebGlSwapChain implements ISwapChain {
 

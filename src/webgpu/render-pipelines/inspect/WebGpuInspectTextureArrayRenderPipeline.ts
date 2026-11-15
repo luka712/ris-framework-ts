@@ -10,7 +10,7 @@ import {
     State,
     TextureFormat,
 } from "../../../api/index.ts";
-import type {ITexture2DArray} from "../../../api/rendering/texture/ITexture2DArray.ts";
+import type {ITexture2DArray} from "../../../api/gpu/texture/ITexture2DArray.ts";
 import {VertexBufferLayout} from "../../../core/rendering/vertex-buffer-layout.ts";
 import {AWebGpuRenderPipeline} from "../AWebGpuRenderPipeline.ts";
 import {WebGpuTexture2DArray} from "../../texture/WebGpuTexture2DArray.ts";
@@ -23,7 +23,7 @@ import {WebGpuUtilities} from "../../utilities/WebGpuUtilities.ts";
 import { WebGpuTextureFactory } from "../../texture/WebGpuTextureFactory.ts";
 
 /**
- * The WebGPU implementation of {@link IInspectTextureArrayRenderPipeline}, mirroring the WebGL one.
+ * {@link IInspectTextureArrayRenderPipeline} for WebGPU.
  * Uses the `inspect_texture_array` WGSL shader (`texture_2d_array<f32>`, sampled through a `2d-array` view).
  *
  * Group 0: projection-view (0), model (1), vertex. Group 1: texture array (0), sampler (1), fragment.
@@ -161,7 +161,7 @@ export class WebGpuInspectTextureArrayRenderPipeline extends AWebGpuRenderPipeli
         // The main render target is always linear RGBA8_UNORM; the blit encodes to sRGB.
         this._createGpuPipeline(
             `${shaderId} pipeline`,
-            module.gpuShaderModule,
+            module.shader!,
             [this._cameraGroupLayout, this._textureGroupLayout, this._fragmentGroupLayout],
             TextureFormat.RGBA8_UNORM,
             this._framework.renderer.preferredDepthStencilFormat);

@@ -5,24 +5,24 @@ import {
     type IBlendState,
     type IGPUInfo,
     type IPrimitiveState,
-    type IRenderPass,
     type ISampler,
     type ISwapChain,
     type IPrimitiveStateDescriptor,
-    RenderPassDescriptor,
     type ISwapChainDescriptor,
     type ICanvasManager,
-    RenderingBackend,
+    GpuBackend,
+    GpuLimits,
     State,
 } from "../api/index.ts";
 import { WebGpuGraphicsDeviceFeatures } from "./WebGpuGraphicsDeviceFeatures.ts";
 import { WebGPUInfo } from "./WebGpuInfo.ts";
 import { WebGpuSwapChain } from "./swap-chain/WebGpuSwapChain.ts";
 import { WebGpuSampler } from "./sampler/WebGpuSampler.ts";
-import { WebGpuRenderPass } from "./render-pass/WebGpuRenderPass.ts";
 import { WebGpuBlendState } from "./blending/WebGpuBlendState.ts";
 import { WebGpuPrimitiveState } from "./primitive/WebGpuPrimitiveState.ts";
 import { WebGpuUtilities } from "./utilities/WebGpuUtilities.ts";
+import type { IGpuCommandEncoder } from "../api/gpu/IGpuCommandEncoder.ts";
+import { WebGpuCommandEncoder } from "./WebGpuCommandEncoder.ts";
 
 /**
  * The WebGPU graphics device. It requests its own adapter and device in {@link initializeAsync},
@@ -31,8 +31,9 @@ import { WebGpuUtilities } from "./utilities/WebGpuUtilities.ts";
  */
 export class WebGpuGraphicsDevice extends AGraphicsDevice {
 
+
     /** @inheritdoc */
-    public readonly api = RenderingBackend.WEB_GPU;
+    public readonly api = GpuBackend.WEB_GPU;
 
     private readonly _canvasManager: ICanvasManager;
     private _context: GPUCanvasContext = null!;
@@ -42,15 +43,14 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
     private _gpuInfo: WebGPUInfo = null!;
     private _swapChain: WebGpuSwapChain | null = null;
 
-    /**
-     * The render pass encoder of the pass that is currently open, or null between passes.
-     * Set by {@link WebGpuRenderPass.beginPass}, like `currentRenderPassEncoder` in the C# device.
-     */
-    public currentRenderPassEncoder: GPURenderPassEncoder | null = null;
+    /** The render pass encoder of the pass that is currently open, or null between passes. */
+    private _currentRenderPassEncoder: GPURenderPassEncoder | null = null;
 
+    /** The compute pass encoder of the pass that is currently open, or null between passes. */
+    private _currentComputePassEncoder: GPUComputePassEncoder | null = null;
 
     /**
-     * The constructor. Call {@link initializeAsync} before use (done by `ARenderer.initializeAsync()`).
+     * The constructor. Call {@link initializeAsync} before use (done by `Framework.initializeAsync()`).
      * @param canvasManager The canvas manager.
      * @param descriptor The device descriptor.
 
@@ -102,11 +102,68 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
 
     /** The current render pass encoder. Throws when no pass is open. */
     public get renderPassEncoder(): GPURenderPassEncoder {
-        if (!this.currentRenderPassEncoder) {
+        if (!this._currentRenderPassEncoder) {
             throw new Error("WebGpuGraphicsDevice: no render pass is open. Draw calls must happen between beginRenderPass and endRenderPass.");
         }
-        return this.currentRenderPassEncoder;
+        return this._currentRenderPassEncoder;
     }
+
+    /**
+     * The current compute pass encoder. Throws when no pass is open.
+     * @ai-generated
+     */
+    public get computePassEncoder(): GPUComputePassEncoder {
+        if (!this._currentComputePassEncoder) {
+            throw new Error("WebGpuGraphicsDevice: no compute pass is open. Compute work must happen between beginComputePass and endComputePass.");
+        }
+        return this._currentComputePassEncoder;
+    }
+
+    /**
+     * Sets the current compute pass encoder when a compute pass begins.
+     * @internal
+     * @ai-generated
+     */
+    public setComputePassEncoder(encoder: GPUComputePassEncoder): void {
+        this._currentComputePassEncoder = encoder;
+    }
+
+    /**
+     * Ends and clears the current compute pass encoder.
+     * @internal
+     * @ai-generated
+     */
+    public endComputePassEncoder(): void {
+        if (this._currentComputePassEncoder) {
+            this._currentComputePassEncoder.end();
+            this._currentComputePassEncoder = null;
+        }
+    }
+
+    /**
+     * Sets the current render pass encoder when a render pass begins.
+     * @internal
+     */
+    public setRenderPassEncoder(encoder: GPURenderPassEncoder): void {
+        this._currentRenderPassEncoder = encoder;
+    }
+
+    /**
+     * Ends and clears the current render pass encoder.
+     * @internal
+     */
+    public endRenderPassEncoder(): void {
+        if (this._currentRenderPassEncoder) {
+            this._currentRenderPassEncoder.end();
+            this._currentRenderPassEncoder = null;
+        }
+    }
+
+    /** @inheritdoc */
+    public createCommandEncoder(label?: string): IGpuCommandEncoder {
+        return new WebGpuCommandEncoder(this, label);
+    }
+
 
     /** @inheritDoc */
     public async initializeAsync(): Promise<void> {
@@ -123,6 +180,7 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
 
         this._device = await WebGpuUtilities.device.requestDeviceAsync(this._adapter, this._features.deviceRequiredFeatures, {}, "RisFramework WebGPU device");
         this._throwIfDisposedDuringInitialize();
+        this._limits = GpuLimits.fromWebGpuDevice(this._device);
         this._gpuInfo = new WebGPUInfo(this._adapter, this._features);
         this.setupDebugCallback();
         await super.initializeAsync();
@@ -139,11 +197,6 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
     /** @inheritDoc */
     public createSampler(descriptor?: SamplerDescriptor): ISampler {
         return new WebGpuSampler(this, descriptor);
-    }
-
-    /** @inheritDoc */
-    public createRenderPass(descriptor: RenderPassDescriptor): IRenderPass {
-        return new WebGpuRenderPass(this, descriptor);
     }
 
     /** @inheritDoc */
@@ -169,18 +222,13 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
     }
 
     /** @inheritDoc */
-    public frameEnd(): void {
-        // Command buffers are submitted at the end of every render pass, so nothing is pending here.
-    }
+    public pushDebugGroup(_groupName: string): void {
 
-    /** @inheritDoc */
-    public pushDebugGroup(groupName: string): void {
-        this.currentRenderPassEncoder?.pushDebugGroup(groupName);
     }
 
     /** @inheritDoc */
     public popDebugGroup(): void {
-        this.currentRenderPassEncoder?.popDebugGroup();
+        this._currentRenderPassEncoder?.popDebugGroup();
     }
 
     /**

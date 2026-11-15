@@ -1,39 +1,42 @@
 import {
     type IRenderPass,
+    type IRenderPassDescriptor,
     LoadAction,
     type RenderPassColorAttachment,
-    type RenderPassDescriptor,
     StoreAction,
 } from "../../api/index.ts";
 import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
 import {WebGpuConverter} from "../utilities/WebGpuConverter.ts";
 import {WebGpuTexture2D} from "../texture/WebGpuTexture2D.ts";
 import type {WebGpuSwapChain} from "../swap-chain/WebGpuSwapChain.ts";
-import {WebGpuUtilities} from "../utilities/WebGpuUtilities.ts";
+import type { WebGpuCommandEncoder } from "../WebGpuCommandEncoder.ts";
 
 /**
- * The WebGPU render pass. `beginPass` creates a command encoder and begins a render pass,
- * `endPass` ends it and submits the command buffer, like the C# `WebGPURenderPass`.
+ * The WebGPU render pass. Uses the descriptor's command encoder, or the device's main encoder.
+ * {@link endPass} ends the GPU pass; {@link submit} submits a custom encoder only.
  * @internal
  */
 export class WebGpuRenderPass implements IRenderPass {
 
     private readonly _graphicsDevice: WebGpuGraphicsDevice;
-    private readonly _descriptor: RenderPassDescriptor;
+    private readonly _descriptor: IRenderPassDescriptor;
     private readonly _colorAttachments: RenderPassColorAttachment[];
-    private _commandEncoder: GPUCommandEncoder | null = null;
+    private _commandEncoder: WebGpuCommandEncoder;
 
     /**
      * The constructor.
      * @param graphicsDevice The graphics device.
      * @param descriptor The render pass descriptor.
      */
-    public constructor(graphicsDevice: WebGpuGraphicsDevice, descriptor: RenderPassDescriptor) {
+    public constructor(graphicsDevice: WebGpuGraphicsDevice, descriptor: IRenderPassDescriptor) {
         this._graphicsDevice = graphicsDevice;
         this._descriptor = descriptor;
         if (!descriptor.colorAttachments || descriptor.colorAttachments.length === 0) {
             throw new Error("WebGpuRenderPass: at least one color attachment is required.");
         }
+
+        this._commandEncoder = (this._descriptor.commandEncoder ?? graphicsDevice.mainCommandEncoder) as WebGpuCommandEncoder;
+
         // Own copy, so setColorAttachment does not change the caller's descriptor.
         this._colorAttachments = descriptor.colorAttachments.slice();
     }
@@ -115,31 +118,41 @@ export class WebGpuRenderPass implements IRenderPass {
 
     /** @inheritDoc */
     public beginPass(): void {
-        if (this._commandEncoder) {
-            throw new Error("WebGpuRenderPass: the pass is already open.");
+        this._commandEncoder.start();
+        const encoder = this._commandEncoder.gpuCommandEncoder;
+        if (!encoder) {
+            throw new Error("WebGpuRenderPass: the command encoder is not started.");
         }
-        const device = this._graphicsDevice.device;
-        this._commandEncoder = WebGpuUtilities.commandEncoder.create(device, this._descriptor.label);
-        this._graphicsDevice.currentRenderPassEncoder = this._commandEncoder.beginRenderPass(this._buildDescriptor());
+        this._graphicsDevice.setRenderPassEncoder(encoder.beginRenderPass(this._buildDescriptor()));
+        this._graphicsDevice.currentRenderPass = this;
     }
 
     /** @inheritDoc */
     public endPass(): void {
-        if (!this._commandEncoder) {
+        this._graphicsDevice.endRenderPassEncoder();
+        this._graphicsDevice.currentRenderPass = null;
+    }
+
+    /** @inheritDoc */
+    public submit(): void {
+        if (this._commandEncoder === this._graphicsDevice.mainCommandEncoder) {
             return;
         }
-        this._graphicsDevice.currentRenderPassEncoder?.end();
-        this._graphicsDevice.currentRenderPassEncoder = null;
-        WebGpuUtilities.commandEncoder.submit(this._graphicsDevice.device, this._commandEncoder);
-        this._commandEncoder = null;
+        this._commandEncoder.submit();
+    }
+
+    /** @inheritDoc */
+    public pushDebugGroup(label: string): void {
+        this._graphicsDevice.renderPassEncoder.pushDebugGroup(label);
+    }
+
+    /** @inheritDoc */
+    public popDebugGroup(): void {
+        this._graphicsDevice.renderPassEncoder.popDebugGroup();
     }
 
     /** @inheritDoc */
     public dispose(): void {
-        if (this._commandEncoder) {
-            this._graphicsDevice.currentRenderPassEncoder?.end();
-            this._graphicsDevice.currentRenderPassEncoder = null;
-            this._commandEncoder = null;
-        }
+        this.endPass();
     }
 }

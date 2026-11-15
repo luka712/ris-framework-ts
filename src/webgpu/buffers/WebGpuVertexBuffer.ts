@@ -28,7 +28,7 @@ export class WebGpuVertexBuffer implements IVertexBuffer {
                        private readonly _bufferUsage: BufferUsage,
                        private readonly _label?: string) {
 
-        this._graphicsDevice = framework.renderer.graphicsDevice as WebGpuGraphicsDevice;
+        this._graphicsDevice = framework.graphicsDevice as WebGpuGraphicsDevice;
         if (typeof dataOrVertexCount === "number") {
             this._vertexCount = dataOrVertexCount;
             this._byteSize = dataOrVertexCount * this._byteStride;

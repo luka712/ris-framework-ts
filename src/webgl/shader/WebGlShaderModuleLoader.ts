@@ -18,7 +18,7 @@ export function shaderModuleCacheKey(id: string, keyValueDictionary?: {[id: stri
 }
 
 /**
- * The content WebGL implementation of ShaderContentModule.
+ * A WebGL shader module loader.
  */
 export class WebGlShaderModuleLoader {
     private readonly _shaderModules: Map<string, WebGlShaderModule> = new Map<string, WebGlShaderModule>();

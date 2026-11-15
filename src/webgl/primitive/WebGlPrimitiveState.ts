@@ -9,7 +9,7 @@ import {resolvePrimitiveStateDescriptor} from "../../core/rendering/primitive/Pr
 import { WebGlConverter } from "../utilities/WebGlConverter.ts";
 
 /**
-* The WebGL implementation of a primitive state.
+* A WebGL primitive state.
 */
 export class WebGlPrimitiveState implements IPrimitiveState {
     private readonly _cullingEnabled: boolean;

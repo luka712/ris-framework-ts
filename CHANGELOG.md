@@ -18,6 +18,11 @@ Compared with 0.3.0.
 - `TextureFormat` members use wgpu-style names, for example `RGBA8_UNORM` instead of `RGBA_8_UNORM`.
 - `ITextureView` is now `ITextureView2D`; texture views are not supported on WebGL2 (check `features.supportsTextureView`).
 - `SwapChainDescriptor` is now the `ISwapChainDescriptor` interface.
+- `renderer.backend` and `renderer.limits` are removed; use `graphicsDevice.api` and `graphicsDevice.limits` (`GpuLimits`). `beginComputePass` and `endComputePass` are removed from the renderer.
+- `IGraphicsDevice.createRenderPass` is moved to `IRenderer.createRenderPass`. The renderer also has `mainRenderPass`; queued custom render passes run after the main pass.
+- `RenderingBackend` is now `GpuBackend`, and the `renderingBackend` option is now `gpuBackend`.
+- `IUniformBuffer.update(data, offset?, length?)` is replaced by `write(data, offset?, length?)` and `writeSingle(value, offset)`, which only fill the buffer's CPU-side copy, and `update()`, which uploads it to the GPU. Offsets and lengths are in floats, not bytes.
+- On WebGPU, mipmap generation (`generateMipmaps` / `useMipmap`) requires `TextureUsage.STORAGE_BINDING` in the usage the caller passes; missing the flag throws. `createFromKtx2` and `createTexture2DArrayFromKtx2` default `generateMipmaps` to false.
 
 ### Added
 
@@ -26,7 +31,15 @@ Compared with 0.3.0.
 - `InspectTextureArrayMaterial`, and WebGPU support for `InspectTextureMipsMaterial`.
 - `UnlitTextureArrayMaterial` (`materialFactory.createUnlitTextureArrayMaterial()`): an unlit material that samples one `layer` of a texture array.
 - Compressed texture arrays on WebGL2 (BC, ETC2 and ASTC when supported; PVRTC throws).
-- Mipmap generation for RGBA8 texture arrays on WebGPU, and in `createTexture2DArrayFromKtx2` for single-level uncompressed files (`generateMipmaps` parameter).
+- Mipmap generation for RGBA8 and RGBA8 sRGB textures and texture arrays, and in `createTexture2DArrayFromKtx2` / `createFromKtx2` for single-level uncompressed files when `generateMipmaps` is true (false by default). On WebGPU, the usage must include `STORAGE_BINDING`. sRGB is filtered in linear space. Other formats throw.
+- `graphicsDevice.limits` (`GpuLimits`): max 2D/3D texture size, array layers, uniform buffer size and anisotropy.
+- `framework.graphicsDevice`.
+- `framework.computeContext` (`IComputeContext`; `null` on WebGL), plus `IComputePass` and `IComputePassDescriptor`. `IComputeContext` has `mainComputePass`, `createComputePass` and `frameEnd`. Queued custom compute passes run after the main compute pass.
+- `IRenderer.mainRenderPass` and `createRenderPass`. Custom render passes run after the main render pass.
+- `graphicsDevice.mainCommandEncoder`, `createCommandEncoder`, `frameStart` and `frameEnd`. Pass descriptors can take a `commandEncoder`; otherwise the main encoder is used.
+- `framework.computePipelineFactory` (`IComputePipelineFactory`; omitted on WebGL) with `createDownsampleTexturePipeline` (source and destination are `ITextureView2D`; the pipeline's `target` is that destination).
+- `ITextureViewDescriptor` sets `dimension` and can set `baseMipLevel`, `mipLevelCount`, `baseArrayLayer` and `arrayLayerCount`. `createView(descriptor)` creates a view of a mip or layer. `ITextureView2D.size` is the view's pixel size.
+- `IDownsampleTextureComputePipeline` (`source`, `target`; extends `IComputePipeline` with `initialize`, `dispatch`, `dispatchWorkgroup` and `frameEnd`).
 - `graphicsDevice.state` lifecycle, plus `supportedTextureFormats` and `supportsTextureFormat()` on device features.
 - `#include` in GLSL and WGSL shader modules.
 - `texture_array_2d` and `inspect_texture_mips` examples.
@@ -36,6 +49,7 @@ Compared with 0.3.0.
 - Requires `ris-ktx2` ^0.3.0-dev.18.
 - KTX2 textures use the color space stored in the file unless one is passed.
 - Texture factories validate data sizes and give clearer error messages.
+- Default usage for 2D images (`loadTexture2DAsync` and `textureFactory.create`) is `TEXTURE_BINDING | COPY_DST | RENDER_ATTACHMENT`. On WebGPU, missing flags throw.
 
 ### Fixed
 

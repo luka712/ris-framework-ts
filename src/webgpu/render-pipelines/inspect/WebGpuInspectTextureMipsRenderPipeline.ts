@@ -23,7 +23,7 @@ import {WebGpuUtilities} from "../../utilities/WebGpuUtilities.ts";
 import { WebGpuTextureFactory } from "../../texture/WebGpuTextureFactory.ts";
 
 /**
- * The WebGPU implementation of {@link IInspectTextureMipsRenderPipeline}, mirroring the WebGL one.
+ * {@link IInspectTextureMipsRenderPipeline} for WebGPU.
  * Uses the `inspect_texture_mips` WGSL shader (`texture_2d<f32>` sampled with `textureSampleLevel` at the fragment data's mip level).
  *
  * Group 0: projection-view (0), model (1), vertex. Group 1: texture (0), sampler (1), fragment.
@@ -161,7 +161,7 @@ export class WebGpuInspectTextureMipsRenderPipeline extends AWebGpuRenderPipelin
         // The main render target is always linear RGBA8_UNORM; the blit encodes to sRGB.
         this._createGpuPipeline(
             `${shaderId} pipeline`,
-            module.gpuShaderModule,
+            module.shader!,
             [this._cameraGroupLayout, this._textureGroupLayout, this._fragmentGroupLayout],
             TextureFormat.RGBA8_UNORM,
             this._framework.renderer.preferredDepthStencilFormat);

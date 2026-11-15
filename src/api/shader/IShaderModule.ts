@@ -1,6 +1,9 @@
 import type { IContent } from "../content/IContent.ts";
 import {ShaderStage} from "./ShaderStage.ts";
 
+
+export const MODULE_INCLUDE_KEYWORD = "#include";
+
 /**
  * The shader module.
  This is the main interface for shaders.

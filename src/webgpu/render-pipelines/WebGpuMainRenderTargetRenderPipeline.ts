@@ -77,7 +77,6 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
 
     public set flipY(value: boolean) {
         this._fragmentData[0] = value ? 1 : 0;
-        this._fragmentDataBuffer?.update(this._fragmentData, 0, 1);
     }
 
     /**
@@ -91,7 +90,6 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
     public set outputColorSpace(value: OutputColorSpace) {
         this._outputColorSpace = value;
         this._fragmentData[1] = value == OutputColorSpace.SRGB ? 1 : 0;
-        this._fragmentDataBuffer?.update(this._fragmentData, 1, 1);
     }
 
     /**
@@ -103,7 +101,6 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
 
     public set gamma(value: number) {
         this._fragmentData[2] = value;
-        this._fragmentDataBuffer?.update(this._fragmentData, 2, 1);
     }
 
     /** @inheritDoc */
@@ -134,7 +131,7 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
         // Drawn in the swap chain pass, which has no depth attachment. Target the swap chain format (always linear UNORM).
         this._createGpuPipeline(
             "Main Frame Buffer Render Pipeline",
-            module.gpuShaderModule,
+            module.shader!,
             [this._bindGroupLayout],
             this._graphicsDevice.swapChain?.textureFormat ?? TextureFormat.RGBA8_UNORM);
     }
@@ -162,6 +159,8 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
         if (!this._gpuPipeline) {
             return;
         }
+        this._fragmentDataBuffer!.write(this._fragmentData);
+        this._fragmentDataBuffer!.update();
         const encoder = this._graphicsDevice.renderPassEncoder;
         encoder.setPipeline(this._gpuPipeline);
         encoder.setVertexBuffer(0, this._vertexBuffer.gpuBuffer, 0, this._vertexBuffer.byteSize);

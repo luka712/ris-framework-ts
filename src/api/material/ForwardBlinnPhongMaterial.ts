@@ -1,14 +1,14 @@
 import type {IRenderableMesh} from "../meshes/IRenderableMesh.ts";
-import type {ITexture2D} from "../rendering/texture/ITexture2D.ts";
-import type {ISampler} from "../rendering/sampler/ISampler.ts";
+import type {ITexture2D} from "../gpu/texture/ITexture2D.ts";
+import type {ISampler} from "../gpu/sampler/ISampler.ts";
 import {GeometryFormat} from "../geometry/GeometryFormat.ts";
-import type {IUniformBuffer} from "../rendering/buffers/IUniformBuffer.ts";
-import type {IIndexBuffer} from "../rendering/buffers/IIndexBuffer.ts";
-import type {IVertexBuffer} from "../rendering/buffers/IVertexBuffer.ts";
+import type {IUniformBuffer} from "../gpu/buffers/IUniformBuffer.ts";
+import type {IIndexBuffer} from "../gpu/buffers/IIndexBuffer.ts";
+import type {IVertexBuffer} from "../gpu/buffers/IVertexBuffer.ts";
 import type {IFramework} from "../IFramework.ts";
-import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
+import {BufferUsage} from "../gpu/buffers/BufferUsage.ts";
 import {Color} from "../data/Color.ts";
-import type {IPrimitiveState} from "../rendering/primitive/IPrimitiveState.ts";
+import type {IPrimitiveState} from "../gpu/rendering/primitive/IPrimitiveState.ts";
 import type {ICamera} from "../camera/ICamera.ts";
 import type {LightsBuffer} from "../lights/LightsBuffer.ts";
 import type {AmbientLight} from "../lights/AmbientLight.ts";
@@ -16,7 +16,7 @@ import type {DirectionalLight} from "../lights/DirectionalLight.ts";
 import type {PointLight} from "../lights/PointLight.ts";
 import type {IMaterial} from "./IMaterial.ts";
 import type {ILightsMaterial} from "./ILightsMaterial.ts";
-import type {IForwardBlinnPhongRenderPipeline} from "../rendering/render-pipelines/IForwardBlinnPhongRenderPipeline.ts";
+import type {IForwardBlinnPhongRenderPipeline} from "../gpu/rendering/render-pipelines/IForwardBlinnPhongRenderPipeline.ts";
 
 /**
  * The additional material config options.
@@ -102,7 +102,7 @@ export class ForwardBlinnPhongMaterial implements IMaterial, ILightsMaterial {
         this._cameraPositionBuffer = descriptor.cameraPositionBuffer;
         this._materialBuffer = framework.bufferFactory.createUniformBuffer(this._materialData, usage);
         this._primitiveState = descriptor.primitiveState;
-        // Owned by the material, like C#: 3 directional + 5 point slots (88 floats), uploaded only when the lights changed.
+        // 3 directional + 5 point slots (88 floats), uploaded only when the lights changed.
         this._lightsBuffer = framework.lightsFactory.__createLightsBuffer({
             maxDirectionalLights: ForwardBlinnPhongMaterial.MAX_DIRECTIONAL_LIGHTS,
             maxPointLights: ForwardBlinnPhongMaterial.MAX_POINT_LIGHTS,
@@ -301,7 +301,8 @@ export class ForwardBlinnPhongMaterial implements IMaterial, ILightsMaterial {
             this._materialData[9] = this._specularColorCache.g;
             this._materialData[10] = this._specularColorCache.b;
             this._materialData[11] = this._shininessCache;
-            this._materialBuffer.update(this._materialData);
+            this._materialBuffer.write(this._materialData);
+            this._materialBuffer.update();
         }
     }
 

@@ -9,7 +9,7 @@ import {
     type IIndexBuffer,
     IndexBufferType,
 } from "../../../api/index.ts";
-import type {ITexture2DArray} from "../../../api/rendering/texture/ITexture2DArray.ts";
+import type {ITexture2DArray} from "../../../api/gpu/texture/ITexture2DArray.ts";
 import {VertexBufferLayout} from "../../../core/rendering/vertex-buffer-layout";
 import type {WebGlUniformBuffer} from "../../buffers/WebGlUniformBuffer.ts";
 import {asWebGLUniformBuffer} from "../../cast/cast";
@@ -22,7 +22,7 @@ import {WebGlTexture2DArray} from "../../texture/WebGlTexture2DArray.ts";
 import {WebGlTextureFactory} from "../../texture/WebGlTextureFactory.ts";
 
 /**
- * The WebGL implementation of {@link IUnlitTextureArrayRenderPipeline}.
+ * {@link IUnlitTextureArrayRenderPipeline} for WebGL.
  * Uses the `unlit_texture_array_material` GLSL program: the unlit vertex shader and a `sampler2DArray` fragment shader.
  * Uniform blocks: `CameraBuffer` (0), `ModelBuffer` (1), `MaterialBuffer` (2). The texture array is bound to unit 0.
  */

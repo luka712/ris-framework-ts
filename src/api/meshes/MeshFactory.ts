@@ -12,7 +12,7 @@ import type { IMaterial } from "../material/IMaterial.ts";
 import type { SubMeshDescriptor } from "./IMeshFactory.ts";
 
 /**
- * The implementation of the mesh factory interface.
+ * The mesh factory.
  */
 export class MeshFactory implements IMeshFactory {
 

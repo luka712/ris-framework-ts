@@ -23,11 +23,11 @@ import {
 import type {WebGlSampler} from "../../sampler/webgl-sampler.ts";
 import type {
     IForwardBlinnPhongRenderPipeline
-} from "../../../api/rendering/render-pipelines/IForwardBlinnPhongRenderPipeline.ts";
+} from "../../../api/gpu/rendering/render-pipelines/IForwardBlinnPhongRenderPipeline.ts";
 import { WebGlTextureFactory } from "../../texture/WebGlTextureFactory.ts";
 
 /**
- * The WebGL implementation of Blinn-Phong with forward calculated lighting.
+ * WebGL forward Blinn-Phong lighting.
  * @internal
  **/
 export class WebGlForwardBlinnPhongRenderPipeline extends AWebGlRenderPipeline implements IForwardBlinnPhongRenderPipeline {

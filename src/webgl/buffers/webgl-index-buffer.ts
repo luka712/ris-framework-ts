@@ -4,8 +4,7 @@ import {WebGlUtilities} from "../utilities/WebGlUtilities.ts";
 import {BufferUsage, type IIndexBuffer, IndexBufferType} from "../../api/index.ts";
 
 /**
- * The WebGLIndexBuffer class is an implementation of the IIndexBuffer interface for WebGL.
- * It represents a buffer that holds index data for rendering in a WebGL context. The class provides properties to access the type, size, and count of indices, as well as a method to initialize the buffer with index data. It also implements the IDisposable interface, allowing it to be disposed of to free resources when it is no longer needed.
+ * A WebGL index buffer.
  */
 export class WebGLIndexBuffer implements IIndexBuffer {
 
@@ -26,7 +25,7 @@ export class WebGLIndexBuffer implements IIndexBuffer {
      */
     constructor(framework: IFramework, data: ArrayLike<number>, label?: string) {
         this._initialData = data;
-        this._gl = asWebGLGraphicsDevice(framework.renderer.graphicsDevice).gl;
+        this._gl = asWebGLGraphicsDevice(framework.graphicsDevice).gl;
         this._label = label;
         this.usage = BufferUsage.INDEX;
     }

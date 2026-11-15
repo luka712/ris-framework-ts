@@ -3,10 +3,7 @@ import type {WebGlGraphicsDevice} from "../WebGlGraphicsDevice.ts";
 import {BufferUsage, type IFramework, type IVertexBuffer} from "../../api/index.ts";
 
 /**
- * The WebGL implementation of the vertex buffer.
- * This class is responsible for managing a vertex buffer in WebGL,
- * including creating the buffer, uploading data to the buffer,
- * and providing information about the buffer such as its size and stride.
+ * A WebGL vertex buffer.
  */
 export class WebGlVertexBuffer implements IVertexBuffer {
 
@@ -29,7 +26,7 @@ export class WebGlVertexBuffer implements IVertexBuffer {
                 private readonly _byteStride: number,
                 private readonly _bufferUsage: BufferUsage,
                 private readonly _label?: string) {
-        this._graphicsDevice = this._framework.renderer.graphicsDevice as WebGlGraphicsDevice;
+        this._graphicsDevice = this._framework.graphicsDevice as WebGlGraphicsDevice;
         this._gl = this._graphicsDevice.gl;
 
         if (typeof dataOrVertexCount === "number") {

@@ -56,7 +56,7 @@ class TouchContact {
 }
 
 /**
- * The browser implementation of {@link IInputManager}: keyboard, mouse, touch and gamepad state, updated once per frame.
+ * Keyboard, mouse, touch and gamepad state, updated once per frame.
  */
 export class InputManager implements IInputManager {
 

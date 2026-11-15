@@ -11,7 +11,7 @@ export class WebGpuUniformBuffer implements IUniformBuffer {
     private static _nextId = 1;
 
     private readonly _graphicsDevice: WebGpuGraphicsDevice;
-    private _initialData: Float32Array | null = null;
+    private _data: Float32Array;
     private readonly _byteSize: number;
     private _gpuBuffer: GPUBuffer | null = null;
 
@@ -23,18 +23,18 @@ export class WebGpuUniformBuffer implements IUniformBuffer {
      * @param label The label.
      */
     public constructor(framework: IFramework, dataOrFloatCount: ArrayLike<number> | number, bufferUsage: BufferUsage, label?: string) {
-        this._graphicsDevice = framework.renderer.graphicsDevice as WebGpuGraphicsDevice;
+        this._graphicsDevice = framework.graphicsDevice as WebGpuGraphicsDevice;
         this.usage = bufferUsage;
         this.label = label;
         this.id = WebGpuUniformBuffer._nextId++;
         const floatCount = typeof dataOrFloatCount === "number" ? dataOrFloatCount : dataOrFloatCount.length;
         // Uniform buffer bindings must be a multiple of 16 bytes.
         const alignedFloats = Math.max(4, Math.ceil(floatCount / 4) * 4);
-        this._initialData = new Float32Array(alignedFloats);
+        this._data = new Float32Array(alignedFloats);
         if (typeof dataOrFloatCount !== "number") {
-            this._initialData.set(dataOrFloatCount);
+            this._data.set(dataOrFloatCount);
         }
-        this._byteSize = this._initialData.byteLength;
+        this._byteSize = this._data.byteLength;
     }
 
     /** A unique id, used to cache bind groups. */
@@ -61,18 +61,31 @@ export class WebGpuUniformBuffer implements IUniformBuffer {
 
     /** @inheritDoc */
     public initialize(): void {
-        this._gpuBuffer = WebGpuUtilities.buffer.createUniformBufferAsync(this._graphicsDevice.device, this._initialData ?? this._byteSize, this.usage, this.label);
-        this._initialData = null;
+        this._gpuBuffer = WebGpuUtilities.buffer.createUniformBufferAsync(this._graphicsDevice.device, this._data, this.usage, this.label);
+    }
+
+    /** @inheritDoc */
+    public write(data: Float32Array, offset: number = 0, length: number = 0): void {
+        const count = length > 0 ? length : data.length - offset;
+        this._data.set(data.subarray(offset, offset + count), offset);
     }
 
     /**
-     * Updates the buffer.
-     * @param data The float data.
-     * @param offset The first element to write (in floats).
-     * @param length The number of elements to write; 0 or less writes everything after the offset.
+     * Writes a single float into the CPU-side data.
+     * @param value The value.
+     * @param offset The offset in floats.
+     * @ai-generated
      */
-    public update(data: Float32Array, offset: number = 0, length: number = 0): void {
-        WebGpuUtilities.buffer.writeBuffer(this._graphicsDevice.device.queue, this.gpuBuffer, data, offset, length);
+    public writeSingle(value: number, offset: number): void {
+        this._data[offset] = value;
+    }
+
+    /**
+     * Uploads the CPU-side data to the GPU buffer.
+     * @ai-generated
+     */
+    public update(): void {
+        WebGpuUtilities.buffer.writeBuffer(this._graphicsDevice.device.queue, this.gpuBuffer, this._data);
     }
 
     /** @inheritDoc */

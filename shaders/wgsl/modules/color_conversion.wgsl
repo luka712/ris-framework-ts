@@ -76,3 +76,63 @@ fn linearToGamma(c : vec3<f32>, gamma : f32) -> vec3<f32>
 {
     return pow(max(c, vec3<f32>(0.0)), vec3<f32>(1.0 / gamma));
 }
+
+
+/**
+ * Converts an sRGB-encoded channel value to linear light.
+ *
+ * Applies the piecewise inverse sRGB transfer function:
+ * - Values less than or equal to 0.0 are clamped to 0.0.
+ * - Values less than or equal to 0.04045 are converted using a linear segment.
+ * - Values below 1.0 are converted using a nonlinear power function.
+ * - Values greater than or equal to 1.0 are clamped to 1.0.
+ *
+ * This function is the inverse of linearToSrgbChannel and is intended
+ * for converting sRGB-encoded values into linear-light color values before filtering.
+ *
+ * Reference:
+ * OpenGL 4.6 Core Specification, Section 8.24.
+ *
+ * @param c sRGB-encoded color channel value.
+ * @return Corresponding linear-light channel value.
+ */
+fn srgbToLinearChannel(c : f32) -> f32
+{
+    if (c <= 0.0) {
+        return 0.0;
+    }
+
+    if (c <= 0.04045) {
+        return c / 12.92;
+    }
+
+    if (c < 1.0) {
+        return pow((c + 0.055) / 1.055, 2.4);
+    }
+
+    return 1.0;
+}
+
+/**
+ * Converts an sRGB-encoded color to linear light.
+ *
+ * Applies the srgbToLinearChannel conversion independently
+ * to the red, green, and blue channels.
+ *
+ * Alpha is not processed.
+ *
+ * Reference:
+ * OpenGL 4.6 Core Specification, Section 8.24.
+ *
+ * @param c sRGB-encoded RGB color.
+ * @return Corresponding linear-light RGB color.
+ */
+fn srgbToLinear(c : vec3<f32>) -> vec3<f32>
+{
+    return vec3<f32>(
+        srgbToLinearChannel(c.r),
+        srgbToLinearChannel(c.g),
+        srgbToLinearChannel(c.b)
+    );
+}
+

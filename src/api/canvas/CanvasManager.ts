@@ -3,7 +3,7 @@ import { CanvasBounds } from "./CanvasBounds.ts";
 import type { ICanvasManager } from "./ICanvasManager.ts";
 
 /**
- * Owns the canvas and the `requestAnimationFrame` event loop.
+ * Manages the canvas and the `requestAnimationFrame` event loop.
  * Each frame runs the update listeners, then the render listeners.
  */
 export class CanvasManager implements ICanvasManager {

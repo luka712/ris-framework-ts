@@ -1,6 +1,6 @@
-import type { IVertexBuffer } from "../rendering/buffers/IVertexBuffer.ts";
+import type { IVertexBuffer } from "../gpu/buffers/IVertexBuffer.ts";
 import type { IDisposable } from "../core/IDisposable.ts";
-import type { IIndexBuffer } from "../rendering/buffers/IIndexBuffer.ts";
+import type { IIndexBuffer } from "../gpu/buffers/IIndexBuffer.ts";
 import type { IGeometry } from "../geometry/IGeometry.ts";
 import type { GeometryFormat } from "../geometry/GeometryFormat.ts";
 import type { State } from "../data/State.ts";

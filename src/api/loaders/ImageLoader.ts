@@ -1,6 +1,6 @@
 import type { IImageLoader } from "./IImageLoader.ts";
 import type { IFramework } from "../IFramework.ts";
-import {TextureFormat} from "../rendering/texture/TextureFormat.ts";
+import {TextureFormat} from "../gpu/texture/TextureFormat.ts";
 import {RawImageData} from "../image/RawImageData.ts";
 
 /**

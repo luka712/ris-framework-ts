@@ -31,7 +31,7 @@ export abstract class AWebGlRenderPipeline implements IRenderPipeline {
      */
     public constructor(framework: IFramework, primitiveState?: IPrimitiveState) {
         this._framework = framework;
-        const graphicsDevice = framework.renderer.graphicsDevice as WebGlGraphicsDevice;
+        const graphicsDevice = framework.graphicsDevice as WebGlGraphicsDevice;
         this._gl = graphicsDevice.gl;
         this._blendState = graphicsDevice.defaultBlendState as WebGlBlendState;
         this._defaultTextureSampler = graphicsDevice.defaultTextureSampler as WebGlSampler;

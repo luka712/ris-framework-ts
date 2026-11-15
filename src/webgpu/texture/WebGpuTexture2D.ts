@@ -1,26 +1,36 @@
 import {
     type IFramework,
     State,
+    TextureUsage,
     TextureUtilities,
+    TextureViewDimension,
     type ITextureView2D,
+    type ITextureViewDescriptor,
     type ITextureDescriptor,
-    type TextureFormat,
+    TextureFormat,
 } from "../../api/index.ts";
-import { ATexture2D } from "../../api/rendering/texture/ATexture2D.ts";
+import { ATexture2D } from "../../api/gpu/texture/ATexture2D.ts";
 import type { WebGpuGraphicsDevice } from "../WebGpuGraphicsDevice.ts";
-import { WebGpuConverter } from "../utilities/WebGpuConverter.ts";
 import { WebGpuTextureView } from "./WebGpuTextureView.ts";
 import { WebGpuUtilities } from "../utilities/WebGpuUtilities.ts";
+import { WebGpuComputeContext } from "../compute/WebGpuComputeContext.ts";
+import { WebGpuDownsampleTextureComputePipeline } from "../compute/pipelines/WebGpuDownsampleTextureComputePipeline.ts";
+import type { WebGpuCommandEncoder } from "../WebGpuCommandEncoder.ts";
+import { ValidationUtilities } from "../../api/validation/ValidationUtilities.ts";
 
 /**
  * The WebGPU 2D texture.
  *
- * Supports `Uint8Array` mip levels (uncompressed or compressed, e.g. from KTX2) or `HTMLImageElement` mip levels.
- * Mipmap generation is not implemented for WebGPU yet.
+ * Supports `Uint8Array` mip levels (uncompressed or compressed, e.g. from KTX2) or `HTMLImageElement` mip levels
+ * (uncompressed only; needs `COPY_DST` and `RENDER_ATTACHMENT` usage).
+ * `generateMipmaps` is implemented with a compute shader for `RGBA8_UNORM` and `RGBA8_UNORM_SRGB`.
+ * Other formats throw. sRGB textures are written
+ * through an `rgba8unorm` view (`rgba8unorm-srgb` cannot be a storage texture); the shader filters in linear space.
  * @internal
  */
 export class WebGpuTexture2D extends ATexture2D {
 
+    private readonly _framework: IFramework;
     private readonly _graphicsDevice: WebGpuGraphicsDevice;
     private _gpuTexture: GPUTexture | null = null;
 
@@ -30,8 +40,14 @@ export class WebGpuTexture2D extends ATexture2D {
      * @param descriptor The texture descriptor.
      */
     public constructor(framework: IFramework, descriptor: ITextureDescriptor) {
-        const graphicsDevice = framework.renderer.graphicsDevice as WebGpuGraphicsDevice;
+
+        if (descriptor.textureFormat && descriptor.textureUsage) {
+            ValidationUtilities.validateTextureUsageTextureFormat(descriptor.textureUsage, descriptor.textureFormat);
+        }
+
+        const graphicsDevice = framework.graphicsDevice as WebGpuGraphicsDevice;
         super(graphicsDevice, descriptor);
+        this._framework = framework;
         this._graphicsDevice = graphicsDevice;
 
         if (!this._label) {
@@ -55,25 +71,27 @@ export class WebGpuTexture2D extends ATexture2D {
         return (this.defaultTextureView as WebGpuTextureView).gpuTextureView;
     }
 
-    /** @inheritDoc */
+    /**
+     * Creates the GPU texture and uploads every mip level.
+     * @throws Error when the texture is already initialized or disposed,
+     * mipmap generation is requested when compute is not supported or for an unsupported format,
+     * the usage lacks `COPY_DST` (or `RENDER_ATTACHMENT` for images) while there is data to upload,
+     * or a compressed format is given images.
+     */
     public initialize(): void {
         this._validateState();
 
-        const isCompressed = TextureUtilities.isCompressedTextureFormat(this.textureFormat);
-
-        if (this._generateMipMaps) {
-            throw new Error(`WebGpuTexture2D.initialize: mipmap generation (generateMipmaps) is not implemented for WebGPU yet ('${this.label ?? this.id}'). Provide the mip levels in ITextureDescriptor.data instead.`);
-        }
+        this._state = State.INITIALIZED;
 
         const device = this._graphicsDevice.device;
+        const isCompressed = TextureUtilities.isCompressedTextureFormat(this.textureFormat);
         const data = this._data;
-        const hasImages = typeof HTMLImageElement !== "undefined" && !!data && data[0] instanceof HTMLImageElement;
+
+        if (this._generateMipmaps) {
+            this._mipLevels = TextureUtilities.mipLevels(this.size[0], this.size[1]);
+        }
 
         if (isCompressed) {
-            if (hasImages) {
-                throw new Error(`WebGpuTexture2D.initialize: compressed format ${this.textureFormat} needs Uint8Array data, not images ('${this.label ?? this.id}').`);
-            }
-
             // Compressed formats need a block-aligned base size (e.g. ASTC 10x5 at 768x512 -> 770x515).
             const result = WebGpuUtilities.texture.createCompressedTexture(
                 device,
@@ -103,7 +121,9 @@ export class WebGpuTexture2D extends ATexture2D {
 
         this._handle = this._gpuTexture;
 
-        this._state = State.INITIALIZED;
+        if (this._generateMipmaps) {
+            this._fillMipmaps();
+        }
 
         let width = this.size[0];
         let height = this.size[1];
@@ -120,11 +140,98 @@ export class WebGpuTexture2D extends ATexture2D {
      * with `GPUTextureDescriptor.viewFormats` set to {@link viewFormats} (e.g. RGBA8_UNORM with an RGBA8_UNORM_SRGB view).
      * @inheritDoc
      */
-    protected _createTextureView(textureFormat: TextureFormat): ITextureView2D {
-        const label = textureFormat == this.textureFormat ? `${this.label} default view` : `${this.label} ${textureFormat} view`;
-        const view = WebGpuUtilities.textureView.create2D(
-            this.gpuTexture, WebGpuConverter.convertTextureFormat(textureFormat), label);
-        return new WebGpuTextureView(view, textureFormat, undefined, label);
+    protected _createTextureView(descriptor?: ITextureViewDescriptor): ITextureView2D {
+        const desc = descriptor ? { ...descriptor } : {};
+        desc.dimension = desc.dimension ?? TextureViewDimension.DIMENSION_2D;
+        desc.viewFormat = desc.viewFormat ?? this.textureFormat;
+        return new WebGpuTextureView(this._framework, this, desc);
+    }
+
+    /**
+     * Generates the mip chain from mip level 0. Runs in the current compute pass.
+     */
+    private _fillMipmaps(): void {
+
+debugger;
+
+        // We need encoder to encode commands that needs to be done.
+        const encoder = this._graphicsDevice.createCommandEncoder("FillMipmaps Encoder");
+        encoder.start();
+        const downsampleComputePass = this._framework.computeContext!.createComputePass({
+            commandEncoder: encoder,
+            label: "Downsample Pass"
+        });
+
+        // Create staging texture optionally.
+        let stagingTexture: WebGpuTexture2D | null = null;
+        if (!(this.textureUsage & TextureUsage.STORAGE_BINDING)) {
+            stagingTexture = this._framework.textureFactory.create(
+                this.size[0], this.size[1], undefined,
+                "StagingTexture", TextureUsage.COPY_SRC | TextureUsage.STORAGE_BINDING | TextureUsage.TEXTURE_BINDING,
+                TextureFormat.RGBA8_UNORM,
+                true
+            ) as WebGpuTexture2D;
+        }
+
+        const workgroupSize = 8;
+        const srgb = this.textureFormat == TextureFormat.RGBA8_UNORM_SRGB;
+        const context = this._framework.computeContext as WebGpuComputeContext;
+
+        const source = this._createTextureView({
+            viewFormat: TextureFormat.RGBA8_UNORM,
+            baseMipLevel: 0,
+            mipLevelCount: 1,
+        });
+
+        // Begin compute pass.
+        downsampleComputePass.beginPass();
+
+        for (let i = 1; i < this.mipLevels; i++) {
+
+            const desc: ITextureViewDescriptor = {
+                viewFormat: TextureFormat.RGBA8_UNORM,
+                baseMipLevel: i,
+                mipLevelCount: 1,
+            };
+
+            const destination = stagingTexture ? stagingTexture.createView(desc) : this.createView(desc);
+            const pipeline = this._framework.computePipelineFactory!.createDownsampleTexturePipeline(source, destination) as WebGpuDownsampleTextureComputePipeline;
+            encoder.queueDispose(pipeline);
+
+            pipeline.dispatchWorkgroup(
+                Math.ceil(destination.size[0] / workgroupSize),
+                Math.ceil(destination.size[1] / workgroupSize),
+                1);
+            context.queueDispose(pipeline);
+        }
+
+        // End pass. It can be disposed when ended.
+        downsampleComputePass.endPass();
+        downsampleComputePass.dispose();
+
+        // Submit everything to queue.
+        encoder.submit();
+        encoder.dispose();
+
+        if (stagingTexture) {
+            const commandEncoder = this._graphicsDevice.createCommandEncoder("GenerateMipmapsCopyBack") as WebGpuCommandEncoder;
+
+            for (let i = 1; i < this.mipLevels; i++) {
+
+                const width = this.size[0] << i;
+                const height = this.size[1] << i;
+
+                commandEncoder.gpuCommandEncoder?.copyTextureToTexture(
+                    { texture: this.gpuTexture, mipLevel: i },
+                    { texture: stagingTexture.gpuTexture, mipLevel: i },
+                    {
+                        width,
+                        height,
+                        depthOrArrayLayers: 1
+                    })
+            }
+            commandEncoder.queueDispose(stagingTexture);
+        }
     }
 
     /** @inheritDoc */

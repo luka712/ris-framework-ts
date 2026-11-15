@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Framework } from "../src/Framework.ts";
-import { TextureFormat } from "../src/api/rendering/texture/TextureFormat.ts";
+import { TextureFormat } from "../src/api/gpu/texture/TextureFormat.ts";
 import {IFrameworkConfiguration} from "../src";
 import { WebGlTextureFactory } from "../src/webgl/texture/WebGlTextureFactory.ts";
 
@@ -41,7 +41,8 @@ function createFramework(name: string) {
     const framework = new Framework(config);
     const context = fakeGl(name);
     const graphicsDevice = { gl: context.gl, dispose: vi.fn(), api: "WEB_GL", features: { supportsTextureView: false } };
-    // Stand in for renderer.initialize(), which needs a real canvas.
+    // Stand in for the framework-owned device (and the renderer getter) so dispose and texture creation use the stub.
+    Object.defineProperty(framework, "graphicsDevice", { get: () => graphicsDevice, configurable: true });
     Object.defineProperty(framework.renderer, "graphicsDevice", { get: () => graphicsDevice, configurable: true });
     Object.defineProperty(framework.renderer, "preferredTextureFormat", { get: () => TextureFormat.RGBA8_UNORM, configurable: true });
     return { framework, graphicsDevice, ...context };

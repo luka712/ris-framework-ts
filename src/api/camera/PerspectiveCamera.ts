@@ -2,8 +2,8 @@ import type { ICamera } from "./ICamera.ts";
 import {mat4, vec3} from "gl-matrix";
 import type { IFramework } from "../IFramework.ts";
 import {MathHelper} from "../utilities/MathHelper.ts";
-import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
-import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
+import {BufferUsage} from "../gpu/buffers/BufferUsage.ts";
+import type { IUniformBuffer } from "../gpu/buffers/IUniformBuffer.ts";
 import {GameTime} from "../time/GameTime.ts";
 import type {Scene} from "../scene/Scene.ts";
 import {TransformNode} from "../scene/node/TransformNode.ts";
@@ -271,10 +271,14 @@ export class PerspectiveCamera implements ICamera {
 
     /** @inheritDoc */
     public updateBuffers(): void {
-        this._positionBuffer.update(this._worldEye());
-        this._projectionBuffer.update(this.projectionMatrix as Float32Array);
-        this._viewBuffer.update(this.viewMatrix as Float32Array);
-        this._projectionViewBuffer.update(this.projectionViewMatrix as Float32Array);
+        this._positionBuffer.write(this._worldEye());
+        this._positionBuffer.update();
+        this._projectionBuffer.write(this.projectionMatrix as Float32Array);
+        this._projectionBuffer.update();
+        this._viewBuffer.write(this.viewMatrix as Float32Array);
+        this._viewBuffer.update();
+        this._projectionViewBuffer.write(this.projectionViewMatrix as Float32Array);
+        this._projectionViewBuffer.update();
     }
 
     /** @inheritDoc */

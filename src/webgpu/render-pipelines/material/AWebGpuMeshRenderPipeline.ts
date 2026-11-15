@@ -10,7 +10,7 @@ import {
 } from "../../../api/index.ts";
 import {AWebGpuRenderPipeline} from "../AWebGpuRenderPipeline.ts";
 import {WebGpuTexture2D} from "../../texture/WebGpuTexture2D.ts";
-import {TextureFormat} from "../../../api/rendering/texture/TextureFormat.ts";
+import {TextureFormat} from "../../../api/gpu/texture/TextureFormat.ts";
 import type {WebGpuSampler} from "../../sampler/WebGpuSampler.ts";
 import type {WebGpuUniformBuffer} from "../../buffers/WebGpuUniformBuffer.ts";
 import type {WebGpuVertexBuffer} from "../../buffers/WebGpuVertexBuffer.ts";
@@ -51,7 +51,7 @@ interface UniformGroupState {
 }
 
 /**
- * The base of WebGPU mesh pipelines, like the C# `AWebGPUMeshRenderPipeline`:
+ * The base of WebGPU mesh pipelines:
  * uniform groups with dirty checks, plus one texture + sampler group cached per texture and sampler id.
  * A 1x1 white texture is used when no texture is set.
  * @internal
@@ -140,7 +140,7 @@ export abstract class AWebGpuMeshRenderPipeline extends AWebGpuRenderPipeline {
             layouts.push(layout);
         }
 
-        this._gpuModule = module.gpuShaderModule;
+        this._gpuModule = module.shader!;
         this._gpuLayouts = layouts;
         this._buildGpuPipeline();
     }

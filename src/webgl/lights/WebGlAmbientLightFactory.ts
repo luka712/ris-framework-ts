@@ -10,7 +10,7 @@ import {
 } from "../../api/index.ts";
 import {WebGlLightsBuffer} from "./WebGlLightsBuffer.ts";
 
-/** The WebGL implementation of the light factory. */
+/** A WebGL light factory. */
 export class WebGlAmbientLightFactory implements AmbientLightFactory {
 
     /** The colour used when no descriptor is given. */

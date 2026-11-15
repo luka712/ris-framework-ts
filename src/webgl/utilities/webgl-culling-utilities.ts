@@ -1,4 +1,4 @@
-import { Culling } from "../../api/rendering/enums.ts";
+import { Culling } from "../../api/gpu/rendering/enums.ts";
 import { WebGlConverter } from "./WebGlConverter.ts";
 
 /**

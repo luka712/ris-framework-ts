@@ -164,7 +164,6 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
      * @param viewFormats The formats views of this texture may use (`GPUTextureDescriptor.viewFormats`).
      * In WebGPU they may only differ from `format` in sRGB-ness. By default, none (only `format`).
      * @param mipLevelCount The mip level count of the texture. By default, the largest mip count in `data` ({@link TextureUtilities.maxMipLevels}).
-     * Pass the full chain ({@link TextureUtilities.mipLevels}) to fill the levels with {@link WebGpuMipmapUtilities.generate2DArray} afterwards.
      * @returns The texture and its size.
      * @throws Error when `layers` is not greater than 0, or `format` is compressed.
      */

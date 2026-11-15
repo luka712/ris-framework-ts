@@ -1,14 +1,14 @@
 import type {IRenderableMesh} from "../meshes/IRenderableMesh.ts";
-import type {ITexture2DArray} from "../rendering/texture/ITexture2DArray.ts";
-import type {IInspectTextureArrayRenderPipeline} from "../rendering/render-pipelines/inspect/IInspectTextureArrayRenderPipeline.ts";
-import type {ISampler} from "../rendering/sampler/ISampler.ts";
+import type {ITexture2DArray} from "../gpu/texture/ITexture2DArray.ts";
+import type {IInspectTextureArrayRenderPipeline} from "../gpu/rendering/render-pipelines/inspect/IInspectTextureArrayRenderPipeline.ts";
+import type {ISampler} from "../gpu/sampler/ISampler.ts";
 import {mat4} from "gl-matrix";
 import {GeometryFormat} from "../geometry/GeometryFormat.ts";
-import type {IUniformBuffer} from "../rendering/buffers/IUniformBuffer.ts";
-import type {IIndexBuffer} from "../rendering/buffers/IIndexBuffer.ts";
-import type {IVertexBuffer} from "../rendering/buffers/IVertexBuffer.ts";
+import type {IUniformBuffer} from "../gpu/buffers/IUniformBuffer.ts";
+import type {IIndexBuffer} from "../gpu/buffers/IIndexBuffer.ts";
+import type {IVertexBuffer} from "../gpu/buffers/IVertexBuffer.ts";
 import type {IFramework} from "../IFramework.ts";
-import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
+import {BufferUsage} from "../gpu/buffers/BufferUsage.ts";
 
 /**
  * Material for inspecting a 2D texture array.
@@ -147,7 +147,8 @@ export class InspectTextureArrayMaterial {
             this._fragmentData[0] = inspectLod;
             this._fragmentData[1] = this.layer;
             this._fragmentData[2] = this.mipLevel;
-            this._fragmentDataBuffer.update(this._fragmentData);
+            this._fragmentDataBuffer.write(this._fragmentData);
+            this._fragmentDataBuffer.update();
         }
     }
 
