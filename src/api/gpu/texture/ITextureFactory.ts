@@ -6,6 +6,7 @@ import type {ITexture2DArray} from "./ITexture2DArray.ts";
 import type {IKtx2Texture} from "ris-ktx2";
 import { ColorSpace } from "../enums.ts";
 import type {vec2} from "gl-matrix";
+import type { ITextureDescriptor } from "./ITextureDescriptor.ts";
 
 /**
  * The texture factory.
@@ -37,12 +38,7 @@ export interface ITextureFactory {
     /**
      * TODO:
      */
-    create(width: number, height: number,
-           data?: number[] | HTMLImageElement | ArrayBufferView,
-           label?: string,
-           usage?: TextureUsage,
-           textureFormat?: TextureFormat,
-           generateMipMaps?: boolean): ITexture2D;
+    create(descriptor: ITextureDescriptor): ITexture2D;
 
     /**
      * Creates a 2D texture from explicit mip levels: `mipLevels[i]` is the pixel bytes of mip level `i`,

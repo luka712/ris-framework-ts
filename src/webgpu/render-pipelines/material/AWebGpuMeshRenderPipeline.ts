@@ -220,7 +220,7 @@ export abstract class AWebGpuMeshRenderPipeline extends AWebGpuRenderPipeline {
         }
         const vb = vertexBuffer as WebGpuVertexBuffer;
         const ib = indexBuffer as WebGpuIndexBuffer;
-        const encoder = this._graphicsDevice.renderPassEncoder;
+        const encoder = this._graphicsDevice.gpuRenderPassEncoder;
 
         encoder.setPipeline(this._gpuPipeline);
         encoder.setVertexBuffer(0, vb.gpuBuffer, 0, vb.byteSize);

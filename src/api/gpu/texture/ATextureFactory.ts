@@ -208,50 +208,36 @@ export abstract class ATextureFactory implements ITextureFactory {
     }
 
     /** @inheritdoc */
-    public create(
-        width: number, height: number,
-        data?: number[] | HTMLImageElement | ArrayBufferView,
-        label: string | null | undefined = null,
-        textureUsage?: TextureUsage,
-        textureFormat = TextureFormat.UNDEFINED,
-        useMipMaps = false): ITexture2D {
+    public create(descriptor: ITextureDescriptor): ITexture2D {
 
-        if (textureFormat == TextureFormat.UNDEFINED) {
-            textureFormat = this._framework.renderer.preferredTextureFormat;
-        }
-
+        const label = descriptor.label;
+        const width = descriptor.width ?? 0;
+        const height = descriptor.height ?? 0;
         if (width == 0 || height == 0) {
             throw new Error(`ATextureFactory.create: '${label ?? "unlabeled"}' has size ${width}x${height}; width and height must be greater than 0.`);
         }
 
-        // Images are uploaded as-is; pixel data is passed as bytes.
-        let levelData: Uint8Array[] | HTMLImageElement[] | undefined;
-        const isImage = typeof HTMLImageElement !== "undefined" && data instanceof HTMLImageElement;
-        if (isImage) {
-            levelData = [data as HTMLImageElement];
-        } else if (Array.isArray(data)) {
-            levelData = [new Uint8Array(data)];
-        } else if(data) {
-            const view = data as ArrayBufferView;
-            levelData = [new Uint8Array(view.buffer, view.byteOffset, view.byteLength)];
+        let textureFormat = descriptor.textureFormat;
+        if (textureFormat === undefined || textureFormat == TextureFormat.UNDEFINED) {
+            textureFormat = this._framework.renderer.preferredTextureFormat;
         }
 
-        let resolvedUsage = textureUsage;
-        if (resolvedUsage === undefined) {
-            resolvedUsage = TextureUsage.COPY_DST | TextureUsage.TEXTURE_BINDING;
+        let textureUsage = descriptor.textureUsage;
+        if (textureUsage === undefined) {
+            textureUsage = TextureUsage.COPY_DST | TextureUsage.TEXTURE_BINDING;
+            const isImage = typeof HTMLImageElement !== "undefined" && descriptor.data?.[0] instanceof HTMLImageElement;
             if (isImage) {
-                resolvedUsage |= TextureUsage.RENDER_ATTACHMENT;
+                textureUsage |= TextureUsage.RENDER_ATTACHMENT;
             }
         }
 
         const desc: ITextureDescriptor = {
+            ...descriptor,
             width,
             height,
-            data: levelData,
             textureFormat,
-            textureUsage: resolvedUsage,
-            generateMipmaps: useMipMaps,
-            label: label ?? undefined,
+            textureUsage,
+            generateMipmaps: descriptor.generateMipmaps ?? false,
         };
 
         return this._createAndInitializeTexture(desc);

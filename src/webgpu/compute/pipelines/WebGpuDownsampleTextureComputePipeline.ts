@@ -9,6 +9,7 @@ import { WebGpuUniformBuffer } from "../../buffers/WebGpuUniformBuffer.ts";
 import { WebGpuUtilities } from "../../utilities/WebGpuUtilities.ts";
 import { AWebGpuComputePipeline } from "./AWebGpuComputePipeline.ts";
 import type { vec3 } from "gl-matrix";
+import type { WebGpuComputePass } from "../WebGpuComputePass.ts";
 
 /**
  * WebGPU compute pipeline that downsamples a texture view into another.
@@ -120,7 +121,7 @@ export class WebGpuDownsampleTextureComputePipeline extends AWebGpuComputePipeli
             { binding: 2, resource: { buffer: (this._uniformBuffer as WebGpuUniformBuffer).gpuBuffer } },
         ]);
 
-        const encoder = this._graphicsDevice.computePassEncoder;
+        const encoder = (this._graphicsDevice.currentComputePass as WebGpuComputePass).gpuComputePassEncoder!;
         encoder.setPipeline(this._gpuPipeline!);
         encoder.setBindGroup(0, bindGroup);
         encoder.dispatchWorkgroups(x, y, z);

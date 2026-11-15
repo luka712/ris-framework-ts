@@ -14,7 +14,7 @@ import { WebGpuComputePass } from "./WebGpuComputePass.ts";
 export class WebGpuComputeContext implements IComputeContext {
 
     private readonly _graphicsDevice: WebGpuGraphicsDevice;
-    private _mainComputePass: IComputePass = null!;
+    private _mainComputePass: WebGpuComputePass = null!;
     private readonly _disposeQueue: IDisposable[] = [];
     private _disposed = false;
 
@@ -31,9 +31,6 @@ export class WebGpuComputeContext implements IComputeContext {
         this._mainComputePass = new WebGpuComputePass(this._graphicsDevice, {});
     }
 
-    /** @inheritdoc */
-    public readonly computePassQueue: IComputePass[] = [];
-
     /** @inheritDoc */
     public get graphicsDevice(): IGraphicsDevice {
         return this._graphicsDevice;
@@ -48,7 +45,6 @@ export class WebGpuComputeContext implements IComputeContext {
     public createComputePass(descriptor?: IComputePassDescriptor): IComputePass {
         const desc = descriptor ? { ...descriptor } : {};
         const pass = new WebGpuComputePass(this._graphicsDevice, desc);
-        this.computePassQueue.push(pass);
         return pass;
     }
 
@@ -60,7 +56,7 @@ export class WebGpuComputeContext implements IComputeContext {
         this._disposeQueue.push(disposable);
     }
 
-  
+
     /** @inheritDoc */
     public beginComputePass(): void {
         if (this._disposed) {
@@ -75,19 +71,10 @@ export class WebGpuComputeContext implements IComputeContext {
             throw new Error("WebGpuComputeContext.endComputePass: the context is disposed.");
         }
         this._mainComputePass.endPass();
-
-        for(let i = 0; i < this.computePassQueue.length; i++){
-            this.computePassQueue[i].submit();
-        }
     }
 
     /** @inheritDoc */
     public frameEnd(): void {
-
-        while(this.computePassQueue.length > 0){
-            this.computePassQueue.pop()?.dispose();
-        }
-
         for (const item of this._disposeQueue) {
             item.dispose();
         }
@@ -96,12 +83,12 @@ export class WebGpuComputeContext implements IComputeContext {
 
     /** @inheritDoc */
     public pushDebugGroup(label: string): void {
-        this._graphicsDevice.computePassEncoder.pushDebugGroup(label);
+        this._mainComputePass.gpuComputePassEncoder?.pushDebugGroup(label);
     }
 
     /** @inheritDoc */
     public popDebugGroup(): void {
-        this._graphicsDevice.computePassEncoder.popDebugGroup();
+        this._mainComputePass.gpuComputePassEncoder?.popDebugGroup();
     }
 
     /**
@@ -113,7 +100,6 @@ export class WebGpuComputeContext implements IComputeContext {
         }
         this._disposed = true;
         this._disposeQueue.length = 0;
-        this.computePassQueue.length = 0;
         this._mainComputePass.dispose();
     }
 }

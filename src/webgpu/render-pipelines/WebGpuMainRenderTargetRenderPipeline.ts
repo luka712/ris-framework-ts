@@ -161,7 +161,7 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
         }
         this._fragmentDataBuffer!.write(this._fragmentData);
         this._fragmentDataBuffer!.update();
-        const encoder = this._graphicsDevice.renderPassEncoder;
+        const encoder = this._graphicsDevice.gpuRenderPassEncoder;
         encoder.setPipeline(this._gpuPipeline);
         encoder.setVertexBuffer(0, this._vertexBuffer.gpuBuffer, 0, this._vertexBuffer.byteSize);
         encoder.setIndexBuffer(this._indexBuffer.gpuBuffer, this._indexBuffer.gpuIndexFormat, 0, this._indexBuffer.paddedByteSize);

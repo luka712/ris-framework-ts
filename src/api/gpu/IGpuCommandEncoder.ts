@@ -1,30 +1,50 @@
-import type { IDisposable } from "../_export";
+import type { IComputePass, IDisposable, IRenderPass } from "../_export";
+import type { Stack } from "../data/Stack";
 
 /**
- * A command encoder. Recreated each frame for the main encoder; custom encoders are created as needed.
+ * Encodes GPU commands for submission to a command queue.
+ *
+ * The engine provides its own command encoder for standard rendering operations.
+ * This interface provides access to an additional command encoder for specialized
+ * scenarios that require encoding and submitting GPU commands independently.
+ * 
+ * When using the WebGL backend, this interface performs no operations.
+ *
+ * The encoder can be reused after submission by calling {@link start} again.
+ *
  * @internal
  */
 export interface IGpuCommandEncoder extends IDisposable {
 
-    /** The label. */
+    /**
+     * An optional label used to identify the command encoder during debugging.
+     */
     readonly label?: string;
 
     /**
-     * Creates the native command encoder, or does nothing if one is already active.
-     * Call this again after {@link submit} to reuse the wrapper.
+     * Starts recording GPU commands by creating a native command encoder.
+     *
+     * If an encoder is already active, this method does nothing.
+     * After calling {@link submit}, this method can be called again to begin
+     * a new recording session using the same wrapper.
      */
     start(): void;
 
     /**
-     * Finishes the current encoder and submits it to the queue.
-     * @throws Error when no encoder is active.
+     * Finishes recording GPU commands and submits the resulting command buffer
+     * to the associated command queue.
+     *
+     * The encoder must be active when this method is called.
+     *
+     * @throws {Error} If no command encoder is currently active.
      */
     submit(): void;
 
     /**
-     * Queue item to dispose after command queue is submited.
-     * @param disposable The disposable item.
-     * @internal 
+     * Schedules a disposable resource for disposal after the associated
+     * command queue has finished processing its submitted commands.
+     *
+     * @param disposable The resource to dispose after command execution.
      */
-    queueDispose(disposable: IDisposable) : void;
+    queueDispose(disposable: IDisposable): void;
 }

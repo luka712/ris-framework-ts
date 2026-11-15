@@ -52,12 +52,6 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     protected _state: State = State.CREATED;
     protected _mainCommandEncoder: IGpuCommandEncoder = null!;
 
-    /** @inheritdoc */
-    public currentRenderPass: IRenderPass | null = null;
-
-    /** @inheritdoc */
-    public currentComputePass: IComputePass | null = null;
-
     /**
      * The constructor.
      * @param descriptor The descriptor for the graphics device. This is used to configure the graphics device during initialization.
@@ -65,6 +59,12 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     protected constructor(descriptor: IGraphicsDeviceDescriptor) {
         this._descriptor = descriptor;
     }
+   
+    /** @inheritdoc */
+    public currentComputePass: IComputePass = null!;
+
+    /** @inheritdoc */
+    public currentRenderPass: IRenderPass = null!;
 
     /** @inheritdoc */
     public get mainCommandEncoder(): IGpuCommandEncoder {

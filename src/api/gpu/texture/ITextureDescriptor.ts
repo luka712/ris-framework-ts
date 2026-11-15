@@ -1,10 +1,22 @@
-import type {TextureFormat} from "./TextureFormat.ts";
-import type {TextureUsage} from "./TextureUsage.ts";
-import type {vec2} from "gl-matrix";
-import type {ColorSpace} from "../enums.ts";
+import type { TextureFormat } from "./TextureFormat.ts";
+import type { TextureUsage } from "./TextureUsage.ts";
+import type { vec2 } from "gl-matrix";
+import type { ColorSpace } from "../enums.ts";
+import type { IGpuCommandEncoder } from "../IGpuCommandEncoder.ts";
 
 /** The texture descriptor. Every field is optional; factories fill in the defaults for missing fields. */
 export interface ITextureDescriptor {
+
+    /**
+     * The command encoder to use instead of the default command encoder.
+     * If not specified, the main command encoder is used.
+     *
+     * Intended for advanced usage scenarios.
+     * This property has no effect when using the WebGL backend.
+     *
+     * @internal
+     */
+    commandEncoder?: IGpuCommandEncoder;
 
     /**
      * The texture width in pixels. Required by textures; must be greater than 0.

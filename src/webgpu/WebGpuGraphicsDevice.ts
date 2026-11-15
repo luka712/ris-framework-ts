@@ -23,6 +23,8 @@ import { WebGpuPrimitiveState } from "./primitive/WebGpuPrimitiveState.ts";
 import { WebGpuUtilities } from "./utilities/WebGpuUtilities.ts";
 import type { IGpuCommandEncoder } from "../api/gpu/IGpuCommandEncoder.ts";
 import { WebGpuCommandEncoder } from "./WebGpuCommandEncoder.ts";
+import type { WebGpuRenderPass } from "./render-pass/WebGpuRenderPass.ts";
+import type { WebGpuComputePass } from "./compute/WebGpuComputePass.ts";
 
 /**
  * The WebGPU graphics device. It requests its own adapter and device in {@link initializeAsync},
@@ -42,12 +44,6 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
     private _features: WebGpuGraphicsDeviceFeatures = null!;
     private _gpuInfo: WebGPUInfo = null!;
     private _swapChain: WebGpuSwapChain | null = null;
-
-    /** The render pass encoder of the pass that is currently open, or null between passes. */
-    private _currentRenderPassEncoder: GPURenderPassEncoder | null = null;
-
-    /** The compute pass encoder of the pass that is currently open, or null between passes. */
-    private _currentComputePassEncoder: GPUComputePassEncoder | null = null;
 
     /**
      * The constructor. Call {@link initializeAsync} before use (done by `Framework.initializeAsync()`).
@@ -100,63 +96,18 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
         return this._gpuInfo;
     }
 
-    /** The current render pass encoder. Throws when no pass is open. */
-    public get renderPassEncoder(): GPURenderPassEncoder {
-        if (!this._currentRenderPassEncoder) {
-            throw new Error("WebGpuGraphicsDevice: no render pass is open. Draw calls must happen between beginRenderPass and endRenderPass.");
-        }
-        return this._currentRenderPassEncoder;
+    /**
+     * The underlying WebGPU render pass encoder.
+     */
+    public get gpuRenderPassEncoder(): GPURenderPassEncoder {
+        return (this.currentRenderPass as WebGpuRenderPass).gpuRenderPassEncoder;
     }
 
-    /**
-     * The current compute pass encoder. Throws when no pass is open.
-     * @ai-generated
+      /**
+     * The underlying WebGPU render compute encoder.
      */
-    public get computePassEncoder(): GPUComputePassEncoder {
-        if (!this._currentComputePassEncoder) {
-            throw new Error("WebGpuGraphicsDevice: no compute pass is open. Compute work must happen between beginComputePass and endComputePass.");
-        }
-        return this._currentComputePassEncoder;
-    }
-
-    /**
-     * Sets the current compute pass encoder when a compute pass begins.
-     * @internal
-     * @ai-generated
-     */
-    public setComputePassEncoder(encoder: GPUComputePassEncoder): void {
-        this._currentComputePassEncoder = encoder;
-    }
-
-    /**
-     * Ends and clears the current compute pass encoder.
-     * @internal
-     * @ai-generated
-     */
-    public endComputePassEncoder(): void {
-        if (this._currentComputePassEncoder) {
-            this._currentComputePassEncoder.end();
-            this._currentComputePassEncoder = null;
-        }
-    }
-
-    /**
-     * Sets the current render pass encoder when a render pass begins.
-     * @internal
-     */
-    public setRenderPassEncoder(encoder: GPURenderPassEncoder): void {
-        this._currentRenderPassEncoder = encoder;
-    }
-
-    /**
-     * Ends and clears the current render pass encoder.
-     * @internal
-     */
-    public endRenderPassEncoder(): void {
-        if (this._currentRenderPassEncoder) {
-            this._currentRenderPassEncoder.end();
-            this._currentRenderPassEncoder = null;
-        }
+    public get gpuComputePassEncoder(): GPUComputePassEncoder {
+        return (this.currentComputePass as WebGpuComputePass).gpuComputePassEncoder!;
     }
 
     /** @inheritdoc */
@@ -228,7 +179,6 @@ export class WebGpuGraphicsDevice extends AGraphicsDevice {
 
     /** @inheritDoc */
     public popDebugGroup(): void {
-        this._currentRenderPassEncoder?.popDebugGroup();
     }
 
     /**

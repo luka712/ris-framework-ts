@@ -5,11 +5,11 @@ import type { ISampler } from "./sampler/ISampler.ts";
 import type { IBlendState } from "./rendering/blending/IBlendState.ts";
 import type { IPrimitiveState } from "./rendering/primitive/IPrimitiveState.ts";
 import type { IRenderPass } from "./rendering/renderpass/IRenderPass.ts";
-import type {ISwapChainDescriptor} from "./rendering/swapchain/ISwapChainDescriptor.ts";
+import type { ISwapChainDescriptor } from "./rendering/swapchain/ISwapChainDescriptor.ts";
 import type { ISwapChain } from "./rendering/swapchain/ISwapChain.ts";
-import {SamplerDescriptor} from "./sampler/SamplerDescriptor.ts";
-import type {IPrimitiveStateDescriptor} from "./rendering/primitive/IPrimitiveStateDescriptor.ts";
-import type {GpuBackend} from "./GpuBackend.ts";
+import { SamplerDescriptor } from "./sampler/SamplerDescriptor.ts";
+import type { IPrimitiveStateDescriptor } from "./rendering/primitive/IPrimitiveStateDescriptor.ts";
+import type { GpuBackend } from "./GpuBackend.ts";
 import type { IComputePass, State } from "../_export.ts";
 import type { GpuLimits } from "./GpuLimits.ts";
 import type { IGpuCommandEncoder } from "./IGpuCommandEncoder.ts";
@@ -62,16 +62,17 @@ export interface IGraphicsDevice extends IDisposable {
     readonly mainCommandEncoder: IGpuCommandEncoder;
 
     /**
-     * The render pass that is currently open, or null when none is.
+     * The last compute pass that called beginPass method.
+     * Never defined for WebGL renderer.
      * @internal
      */
-    currentRenderPass: IRenderPass | null;
+    currentComputePass: IComputePass;
 
     /**
-     * The compute pass that is currently open, or null when none is.
+     * The last render pass that called beginPass method.
      * @internal
      */
-    currentComputePass: IComputePass | null;
+    currentRenderPass: IRenderPass;
 
     /** Initializes the graphics device. */
     initializeAsync(): Promise<void>;

@@ -8,6 +8,7 @@ import {
     type ITextureViewDescriptor,
     type ITextureDescriptor,
     TextureFormat,
+    type IGpuCommandEncoder,
 } from "../../api/index.ts";
 import { ATexture2D } from "../../api/gpu/texture/ATexture2D.ts";
 import type { WebGpuGraphicsDevice } from "../WebGpuGraphicsDevice.ts";
@@ -33,6 +34,7 @@ export class WebGpuTexture2D extends ATexture2D {
     private readonly _framework: IFramework;
     private readonly _graphicsDevice: WebGpuGraphicsDevice;
     private _gpuTexture: GPUTexture | null = null;
+    private _commandEncoder: WebGpuCommandEncoder;
 
     /**
      * The constructor.
@@ -49,6 +51,7 @@ export class WebGpuTexture2D extends ATexture2D {
         super(graphicsDevice, descriptor);
         this._framework = framework;
         this._graphicsDevice = graphicsDevice;
+        this._commandEncoder = (descriptor.commandEncoder ?? graphicsDevice.mainCommandEncoder) as WebGpuCommandEncoder;
 
         if (!this._label) {
             this._label = `WebGpuTexture2D ${this.id}`;
@@ -152,7 +155,7 @@ export class WebGpuTexture2D extends ATexture2D {
      */
     private _fillMipmaps(): void {
 
-debugger;
+        debugger;
 
         // We need encoder to encode commands that needs to be done.
         const encoder = this._graphicsDevice.createCommandEncoder("FillMipmaps Encoder");
@@ -165,12 +168,14 @@ debugger;
         // Create staging texture optionally.
         let stagingTexture: WebGpuTexture2D | null = null;
         if (!(this.textureUsage & TextureUsage.STORAGE_BINDING)) {
-            stagingTexture = this._framework.textureFactory.create(
-                this.size[0], this.size[1], undefined,
-                "StagingTexture", TextureUsage.COPY_SRC | TextureUsage.STORAGE_BINDING | TextureUsage.TEXTURE_BINDING,
-                TextureFormat.RGBA8_UNORM,
-                true
-            ) as WebGpuTexture2D;
+            stagingTexture = this._framework.textureFactory.create({
+                commandEncoder: encoder,
+                width: this.size[0],
+                height: this.size[1],
+                label: "StagingTexture",
+                textureUsage: TextureUsage.COPY_SRC | TextureUsage.STORAGE_BINDING | TextureUsage.TEXTURE_BINDING,
+                generateMipmaps: true
+            }) as WebGpuTexture2D;
         }
 
         const workgroupSize = 8;

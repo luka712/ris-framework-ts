@@ -115,14 +115,15 @@ export class ContentManager implements IContentManager {
         const imageLoader = this._framework.imageLoader;
         const data = await imageLoader.loadAsync(path, contentConfig?.keepDataCached);
 
-        return this._framework.textureFactory.create(
-            data.baseWidth, data.baseHeight,
-            data.getData(0) as Uint8Array,
-            textureDescriptor?.label ?? path,
-            textureDescriptor?.textureUsage,
-            format,
-            textureDescriptor?.generateMipmaps ?? false
-        );
+        return this._framework.textureFactory.create({
+            width: data.baseWidth,
+            height: data.baseHeight,
+            data: [data.getData(0) as Uint8Array],
+            label: textureDescriptor?.label ?? path,
+            textureUsage: textureDescriptor?.textureUsage,
+            textureFormat: format,
+            generateMipmaps: textureDescriptor?.generateMipmaps ?? false
+        });
     }
 
     /** @inheritDoc */
@@ -175,7 +176,12 @@ export class ContentManager implements IContentManager {
     public loadTexture2DFromPixels(width: number, height: number, pixels: ArrayBuffer): ITexture2D {
         const view = new Uint8Array(pixels);
         // Raw pixels keep the old linear default.
-        return this._framework.textureFactory.create(width, height, view, undefined, undefined, TextureFormat.RGBA8_UNORM);
+        return this._framework.textureFactory.create({
+            width,
+            height,
+            data: [view],
+            textureFormat: TextureFormat.RGBA8_UNORM
+        });
     }
 
     /** @inheritDoc */

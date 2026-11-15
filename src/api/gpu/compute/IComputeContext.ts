@@ -12,13 +12,6 @@ export interface IComputeContext extends IDisposable {
     /** The main compute pass. */
     readonly mainComputePass: IComputePass;
 
-    /**
-     * The queue of compute passes that are to be executed in after main pass.
-     * Filled when {@link createComputePass} is called.
-     * @internal
-     */
-    readonly computePassQueue: Array<IComputePass>;
-
     /** Initialize the compute context. */
     initialize(): void;
 
@@ -31,6 +24,7 @@ export interface IComputeContext extends IDisposable {
     /**
      * Begins the main compute pass.
      * @throws Error when a compute pass is already open, the context is disposed, or the graphics device is not initialized.
+     * @internal
      */
     beginComputePass(): void;
 
@@ -38,6 +32,7 @@ export interface IComputeContext extends IDisposable {
      * Ends the main compute pass. Queued custom compute passes are submitted after it.
      * The main command encoder is submitted by {@link IGraphicsDevice.frameEnd}.
      * @throws Error when no compute pass is open or the context is disposed.
+     * @internal
      */
     endComputePass(): void;
 

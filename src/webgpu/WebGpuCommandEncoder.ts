@@ -24,6 +24,7 @@ export class WebGpuCommandEncoder implements IGpuCommandEncoder {
         this.start();
     }
 
+
     /** @inheritdoc */
     public readonly label?: string;
 

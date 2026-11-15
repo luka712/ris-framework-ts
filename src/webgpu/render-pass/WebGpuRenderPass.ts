@@ -5,10 +5,10 @@ import {
     type RenderPassColorAttachment,
     StoreAction,
 } from "../../api/index.ts";
-import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
-import {WebGpuConverter} from "../utilities/WebGpuConverter.ts";
-import {WebGpuTexture2D} from "../texture/WebGpuTexture2D.ts";
-import type {WebGpuSwapChain} from "../swap-chain/WebGpuSwapChain.ts";
+import type { WebGpuGraphicsDevice } from "../WebGpuGraphicsDevice.ts";
+import { WebGpuConverter } from "../utilities/WebGpuConverter.ts";
+import { WebGpuTexture2D } from "../texture/WebGpuTexture2D.ts";
+import type { WebGpuSwapChain } from "../swap-chain/WebGpuSwapChain.ts";
 import type { WebGpuCommandEncoder } from "../WebGpuCommandEncoder.ts";
 
 /**
@@ -40,6 +40,11 @@ export class WebGpuRenderPass implements IRenderPass {
         // Own copy, so setColorAttachment does not change the caller's descriptor.
         this._colorAttachments = descriptor.colorAttachments.slice();
     }
+
+    /**
+     * The underlying WebGPU render pass encoder.
+     */
+    public gpuRenderPassEncoder: GPURenderPassEncoder = null!;
 
     /**
      * Replaces the color attachment at the index. The GPU descriptor is built on every {@link beginPass},
@@ -75,7 +80,7 @@ export class WebGpuRenderPass implements IRenderPass {
                 resolveTarget: attachment.resolveView
                     ? attachment.resolveView.nativeObject as GPUTextureView
                     : attachment.resolveTexture ? (attachment.resolveTexture as WebGpuTexture2D).gpuDefaultView : undefined,
-                clearValue: {r: c.r, g: c.g, b: c.b, a: c.a},
+                clearValue: { r: c.r, g: c.g, b: c.b, a: c.a },
                 loadOp: WebGpuConverter.convertLoadAction(attachment.loadAction),
                 storeOp: WebGpuConverter.convertStoreAction(attachment.storeAction),
             };
@@ -118,19 +123,14 @@ export class WebGpuRenderPass implements IRenderPass {
 
     /** @inheritDoc */
     public beginPass(): void {
-        this._commandEncoder.start();
-        const encoder = this._commandEncoder.gpuCommandEncoder;
-        if (!encoder) {
-            throw new Error("WebGpuRenderPass: the command encoder is not started.");
-        }
-        this._graphicsDevice.setRenderPassEncoder(encoder.beginRenderPass(this._buildDescriptor()));
+        const encoder = this._commandEncoder.gpuCommandEncoder!;
+        this.gpuRenderPassEncoder = encoder.beginRenderPass(this._buildDescriptor());
         this._graphicsDevice.currentRenderPass = this;
     }
 
     /** @inheritDoc */
     public endPass(): void {
-        this._graphicsDevice.endRenderPassEncoder();
-        this._graphicsDevice.currentRenderPass = null;
+        this.gpuRenderPassEncoder.end();
     }
 
     /** @inheritDoc */
@@ -143,12 +143,12 @@ export class WebGpuRenderPass implements IRenderPass {
 
     /** @inheritDoc */
     public pushDebugGroup(label: string): void {
-        this._graphicsDevice.renderPassEncoder.pushDebugGroup(label);
+        this.gpuRenderPassEncoder.pushDebugGroup(label);
     }
 
     /** @inheritDoc */
     public popDebugGroup(): void {
-        this._graphicsDevice.renderPassEncoder.popDebugGroup();
+        this.gpuRenderPassEncoder.popDebugGroup();
     }
 
     /** @inheritDoc */

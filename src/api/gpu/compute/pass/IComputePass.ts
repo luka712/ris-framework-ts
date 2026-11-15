@@ -13,13 +13,6 @@ export interface IComputePass extends IDisposable {
     label?: string;
 
     /**
-     * Whether the pass is currently open.
-     * @internal
-     * @ai-generated
-     */
-    readonly isOpen: boolean;
-
-    /**
      * Begins the compute pass.
      * @public
      * @throws Error when the pass is already open.
@@ -31,12 +24,4 @@ export interface IComputePass extends IDisposable {
      * Does nothing if the pass is not open.
      */
     endPass(): void;
-
-    /**
-     * Submits this pass's command encoder, if it is not the main encoder.
-     * The main command encoder is submitted by {@link IGraphicsDevice.frameEnd}.
-     * @internal
-     * @ai-generated
-     */
-    submit(): void;
 }
