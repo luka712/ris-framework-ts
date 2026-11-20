@@ -41,6 +41,11 @@ export interface IGpuCommandEncoder extends IDisposable {
     submit(): void;
 
     /**
+     * TODO
+     */
+    // copyTextureToTexture();
+
+    /**
      * Schedules a disposable resource for disposal after the associated
      * command queue has finished processing its submitted commands.
      *

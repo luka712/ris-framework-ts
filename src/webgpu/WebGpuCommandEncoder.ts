@@ -44,7 +44,6 @@ export class WebGpuCommandEncoder implements IGpuCommandEncoder {
         this._queueDisposable.push(disposable);
     }
 
-
     /** @inheritdoc */
     public submit(): void {
         if (!this.gpuCommandEncoder) {

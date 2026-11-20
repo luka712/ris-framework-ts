@@ -27,6 +27,9 @@ export abstract class AWebGpuComputePipeline implements IComputePipeline {
     /** @inheritDoc */
     public abstract initialize(): void;
 
+    /** @inheritdoc */
+    public abstract initializeAsync(): Promise<void>;
+
     /** @inheritDoc */
     public abstract dispatch(workgroups: vec3): void;
 
@@ -48,7 +51,24 @@ export abstract class AWebGpuComputePipeline implements IComputePipeline {
         this._gpuPipeline = device.createComputePipeline({
             label,
             layout: this._pipelineLayout,
-            compute: {module, entryPoint: "main"},
+            compute: { module, entryPoint: "main" },
+        });
+    }
+
+    /**
+   * Creates the pipeline layout and the compute pipeline.
+   * @param label The label.
+   * @param module The WGSL module with a `main` entry point.
+   * @param bindGroupLayouts The bind group layouts, in group order.
+   */
+    protected async _createGpuPipelineAsync(label: string, module: GPUShaderModule, bindGroupLayouts: GPUBindGroupLayout[])
+        : Promise<void> {
+        const device = this._graphicsDevice.device;
+        this._pipelineLayout = WebGpuUtilities.pipelineLayout.create(device, bindGroupLayouts, `${label} layout`);
+        this._gpuPipeline = await device.createComputePipelineAsync({
+            label,
+            layout: this._pipelineLayout,
+            compute: { module, entryPoint: "main" },
         });
     }
 

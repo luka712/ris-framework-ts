@@ -5,6 +5,9 @@ import type { IBuffer } from "./IBuffer.ts";
  */
 export interface IUniformBuffer extends IBuffer  {
 
+    /** Underlying native object. */
+readonly nativeObject: any;
+
     /**
      * Initialize the constant buffer.
      */

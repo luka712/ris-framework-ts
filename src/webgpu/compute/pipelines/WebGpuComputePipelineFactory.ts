@@ -23,4 +23,14 @@ export class WebGpuComputePipelineFactory implements IComputePipelineFactory {
         pipeline.target = destination;
         return pipeline;
     }
+
+    /** @inheritdoc */
+    public async createDownsampleTexturePipelineAsync(source: ITextureView2D, destination: ITextureView2D): Promise<IDownsampleTextureComputePipeline> {
+        const pipeline = new WebGpuDownsampleTextureComputePipeline(this._framework);
+        await pipeline.initializeAsync();
+        pipeline.source = source;
+        pipeline.target = destination;
+        return pipeline;
+    }
+
 }

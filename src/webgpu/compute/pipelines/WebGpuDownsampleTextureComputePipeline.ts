@@ -22,6 +22,7 @@ export class WebGpuDownsampleTextureComputePipeline extends AWebGpuComputePipeli
     private _target: ITextureView2D | null = null;
     private _dispatched = false;
     private _bindGroupLayout!: GPUBindGroupLayout;
+    private _bindGroup!: GPUBindGroup;
 
     /**
      * Uniform buffer where layout is:
@@ -55,6 +56,7 @@ export class WebGpuDownsampleTextureComputePipeline extends AWebGpuComputePipeli
             this._source = value;
             this._uniformBuffer.writeSingle(this.source.size[0], 0);
             this._uniformBuffer.writeSingle(this.source.size[1], 1);
+            this._createBindGroup();
         }
         const srgb = value.viewFormat == TextureFormat.RGBA8_UNORM_SRGB;
         if (srgb != this._srgb) {
@@ -76,12 +78,28 @@ export class WebGpuDownsampleTextureComputePipeline extends AWebGpuComputePipeli
             this._uniformBuffer.writeSingle(value.size[0], 2);
             this._uniformBuffer.writeSingle(value.size[1], 3);
             this._target = value;
+            this._createBindGroup();
         }
     }
 
+    private _createBindGroup(): void {
 
-    /** @inheritDoc */
-    public initialize(): void {
+        if (!this.source || !this.target) {
+            return
+        }
+
+        const gpuSource = this.source.nativeObject as GPUTextureView;
+        const gpuDest = this.target.nativeObject as GPUTextureView;
+        const gpuBuffer = (this._uniformBuffer as WebGpuUniformBuffer).gpuBuffer
+
+        this._bindGroup = WebGpuUtilities.bindGroup.create(this._graphicsDevice.device, this._bindGroupLayout, [
+            { binding: 0, resource: gpuSource },
+            { binding: 1, resource: gpuDest },
+            { binding: 2, resource: { buffer: gpuBuffer } },
+        ]);
+    }
+
+    private _initResources(): void {
         this._uniformBuffer = this._framework.bufferFactory.createUniformBuffer(
             new Float32Array(8),
             BufferUsage.UNIFORM | BufferUsage.COPY_DST,
@@ -94,8 +112,20 @@ export class WebGpuDownsampleTextureComputePipeline extends AWebGpuComputePipeli
             entries.createTextureStorageBindGroupLayoutEntry(1, GPUShaderStage.COMPUTE, "rgba8unorm"),
             entries.createUniformBufferBindGroupLayoutEntry(2, GPUShaderStage.COMPUTE),
         ], "downsample_texture group 0 layout");
+    }
+
+    /** @inheritDoc */
+    public initialize(): void {
+        this._initResources();
         const shaderModule = this._framework.content.loadShaderModule("downsample_texture") as WebGpuShaderModule;
         this._createGpuPipeline("downsample_texture", shaderModule.compute!, [this._bindGroupLayout]);
+    }
+
+    /** @inheritDoc */
+    public async initializeAsync(): Promise<void> {
+        this._initResources();
+        const shaderModule = this._framework.content.loadShaderModule("downsample_texture") as WebGpuShaderModule;
+        await this._createGpuPipelineAsync("downsample_texture", shaderModule.compute!, [this._bindGroupLayout]);
     }
 
     /** @inheritDoc */
@@ -112,14 +142,10 @@ export class WebGpuDownsampleTextureComputePipeline extends AWebGpuComputePipeli
 
         const source = this._source!;
         const target = this._target!;
-        
+
         this._uniformBuffer.update();
 
-        const bindGroup = WebGpuUtilities.bindGroup.create(this._graphicsDevice.device, this._bindGroupLayout, [
-            { binding: 0, resource: source.nativeObject as GPUTextureView },
-            { binding: 1, resource: target.nativeObject as GPUTextureView},
-            { binding: 2, resource: { buffer: (this._uniformBuffer as WebGpuUniformBuffer).gpuBuffer } },
-        ]);
+
 
         const encoder = (this._graphicsDevice.currentComputePass as WebGpuComputePass).gpuComputePassEncoder!;
         encoder.setPipeline(this._gpuPipeline!);
