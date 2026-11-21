@@ -29,7 +29,7 @@ export class WebGlRenderer extends ARenderer {
     }
 
     /** @inheritdoc */
-    protected _createRenderPass(descriptor: IRenderPassDescriptor): IRenderPass {
+    public createRenderPass(descriptor: IRenderPassDescriptor): IRenderPass {
         const desc = descriptor ? { ...descriptor } : {};
         return new WebGlRenderPass(this.graphicsDevice as WebGlGraphicsDevice, desc);
     }

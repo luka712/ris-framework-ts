@@ -1,6 +1,7 @@
 import type {ITextureView2D} from "./view/ITextureView2D.ts";
 import type {ITextureViewDescriptor} from "./view/ITextureViewDescriptor.ts";
 import type {IContent} from "../../content/IContent.ts";
+import type {IDeferredDisposable} from "../../core/IDeferredDisposable.ts";
 import {TextureUsage} from "./TextureUsage.ts";
 import {State} from "../../data/State.ts";
 import {TextureFormat} from "./TextureFormat.ts";
@@ -11,7 +12,7 @@ import type {vec3} from "gl-matrix";
  * or `texture_2d_array` (WGSL). Create one with {@link ITextureFactory.createTexture2DArray} or
  * {@link IContentManager.loadTexture2DArrayAsync}.
  */
-export interface ITexture2DArray extends IContent {
+export interface ITexture2DArray extends IContent, IDeferredDisposable {
 
     /**
      * The default texture view, i.e. the view in the texture's own {@link textureFormat}.

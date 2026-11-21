@@ -7,6 +7,7 @@ import {
     type ITexture2D,
     OutputColorSpace,
     TextureFormat,
+    State,
 } from "../../api/index.ts";
 import {VertexBufferLayout} from "../../core/rendering/vertex-buffer-layout.ts";
 import {AWebGpuRenderPipeline} from "./AWebGpuRenderPipeline.ts";
@@ -134,6 +135,8 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
             module.shader!,
             [this._bindGroupLayout],
             this._graphicsDevice.swapChain?.textureFormat ?? TextureFormat.RGBA8_UNORM);
+
+        this._state = State.INITIALIZED;
     }
 
     private _getBindGroup(): GPUBindGroup {
@@ -156,13 +159,13 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
 
     /** @inheritDoc */
     public render(): void {
-        if (!this._gpuPipeline) {
+        if (this._state != State.INITIALIZED) {
             return;
         }
         this._fragmentDataBuffer!.write(this._fragmentData);
         this._fragmentDataBuffer!.update();
         const encoder = this._graphicsDevice.gpuRenderPassEncoder;
-        encoder.setPipeline(this._gpuPipeline);
+        encoder.setPipeline(this._gpuPipeline!);
         encoder.setVertexBuffer(0, this._vertexBuffer.gpuBuffer, 0, this._vertexBuffer.byteSize);
         encoder.setIndexBuffer(this._indexBuffer.gpuBuffer, this._indexBuffer.gpuIndexFormat, 0, this._indexBuffer.paddedByteSize);
         encoder.setBindGroup(0, this._getBindGroup());
@@ -171,6 +174,11 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
 
     /** @inheritDoc */
     public override dispose(): void {
+
+        if (this._state == State.DISPOSED) {
+            return;
+        }
+
         // ARenderer recreates this pipeline on every resize, so release the quad buffers too.
         this._vertexBuffer?.dispose();
         this._indexBuffer?.dispose();

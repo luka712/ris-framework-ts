@@ -1,6 +1,7 @@
 import {
     GeometryFormat,
-    type IBlendState, type IFramework, type IIndexBuffer, type IPrimitiveState, type IRenderPipeline, type IVertexBuffer
+    type IBlendState, type IFramework, type IIndexBuffer, type IPrimitiveState, type IRenderPipeline, type IVertexBuffer,
+    State
 } from "../../api/index.ts";
 import type {VertexBufferLayout} from '../../core/rendering/vertex-buffer-layout';
 import type {WebGlBlendState} from '../blending/webgl-blend-state';
@@ -21,6 +22,9 @@ export abstract class AWebGlRenderPipeline implements IRenderPipeline {
     protected readonly _blendState: WebGlBlendState;
     protected _vertexArrayObject: WebGLVertexArrayObject | null = null;
 
+    /** The lifecycle state. @ai-generated */
+    protected _state = State.CREATED;
+
 
     protected _program: WebGLProgram = null!;
 
@@ -40,6 +44,11 @@ export abstract class AWebGlRenderPipeline implements IRenderPipeline {
 
     /** @inheritDoc */
     public abstract readonly geometryFormat: GeometryFormat;
+
+    /** @inheritDoc @ai-generated */
+    public get state(): State {
+        return this._state;
+    }
 
     /** @inheritDoc */
     public get blendState(): IBlendState {
@@ -126,10 +135,16 @@ export abstract class AWebGlRenderPipeline implements IRenderPipeline {
 
     /** @inheritDoc */
     public dispose(): void {
+
+        if (this._state == State.DISPOSED) {
+            return;
+        }
+
         if (this._vertexArrayObject) {
             this._gl.deleteVertexArray(this._vertexArrayObject);
             this._vertexArrayObject = null;
         }
+        this._state = State.DISPOSED;
     }
 
 }

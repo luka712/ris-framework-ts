@@ -2,10 +2,9 @@ import {RenderPassDepthStencilAttachment} from "./RenderPassDepthStencilAttachme
 import {RenderPassColorAttachment} from "./RenderPassColorAttachment.ts";
 import type { IGpuCommandEncoder } from "../../IGpuCommandEncoder.ts";
 
-/**
- * The render pass.
- */
+/** The render pass. */
 export interface IRenderPassDescriptor {
+
 
     /** The command encoder to use. If not passed in, main command encoder is used. */
     commandEncoder?: IGpuCommandEncoder;

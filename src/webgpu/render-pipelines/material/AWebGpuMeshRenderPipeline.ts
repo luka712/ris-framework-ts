@@ -143,6 +143,8 @@ export abstract class AWebGpuMeshRenderPipeline extends AWebGpuRenderPipeline {
         this._gpuModule = module.shader!;
         this._gpuLayouts = layouts;
         this._buildGpuPipeline();
+
+        this._state = State.INITIALIZED;
     }
 
     private _gpuModule: GPUShaderModule | null = null;
@@ -215,14 +217,14 @@ export abstract class AWebGpuMeshRenderPipeline extends AWebGpuRenderPipeline {
         if (this._gpuPipeline && this._gpuModule && this._colorFormat !== TextureFormat.RGBA8_UNORM) {
             this._buildGpuPipeline();
         }
-        if (indicesCount == 0 || !this._gpuPipeline) {
+        if (indicesCount == 0 || this._state != State.INITIALIZED) {
             return;
         }
         const vb = vertexBuffer as WebGpuVertexBuffer;
         const ib = indexBuffer as WebGpuIndexBuffer;
         const encoder = this._graphicsDevice.gpuRenderPassEncoder;
 
-        encoder.setPipeline(this._gpuPipeline);
+        encoder.setPipeline(this._gpuPipeline!);
         encoder.setVertexBuffer(0, vb.gpuBuffer, 0, vb.byteSize);
         // The index buffer was allocated padded to 4 bytes; bind the padded size.
         encoder.setIndexBuffer(ib.gpuBuffer, ib.gpuIndexFormat, 0, ib.paddedByteSize);
@@ -239,6 +241,11 @@ export abstract class AWebGpuMeshRenderPipeline extends AWebGpuRenderPipeline {
 
     /** @inheritDoc */
     public override dispose(): void {
+
+        if (this._state == State.DISPOSED) {
+            return;
+        }
+
         for (const texture of this._watchedTextures) {
             texture.removeOnDisposedListener(this._onTextureDisposed);
         }

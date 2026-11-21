@@ -1,11 +1,14 @@
 import type { vec3 } from "gl-matrix";
-import type { IDisposable } from "../../../_export";
+import type { IDisposable, State } from "../../../_export";
 
 /**
  * A compute pipeline: a compute shader with its resources, dispatched into the current compute pass.
  * The compute counterpart of a render pipeline.
  */
 export interface IComputePipeline extends IDisposable {
+
+    /** The current lifecycle state. */
+    readonly state: State;
 
     /**
      * Creates the GPU resources of the pipeline. Call once before dispatching.

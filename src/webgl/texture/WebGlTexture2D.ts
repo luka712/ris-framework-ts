@@ -18,7 +18,7 @@ import {vec2} from "gl-matrix";
  */
 export class WebGlTexture2D extends ATexture2D {
 
-    private readonly _graphicsDevice: WebGlGraphicsDevice;
+    declare protected readonly _graphicsDevice: WebGlGraphicsDevice;
 
     private _glTexture: WebGLTexture | null = null;
 
@@ -33,7 +33,6 @@ export class WebGlTexture2D extends ATexture2D {
     ) {
         const graphicsDevice = framework.graphicsDevice as WebGlGraphicsDevice;
         super(graphicsDevice, textureDescriptor);
-        this._graphicsDevice = graphicsDevice;
         this.gl = this._graphicsDevice.gl!;
     }
 
@@ -102,21 +101,13 @@ export class WebGlTexture2D extends ATexture2D {
         );
     }
 
-    /** @inheritdoc */
-    public dispose(): void {
-
-        if (this._state == State.DISPOSING || this._state == State.DISPOSED) {
-            return;
-        }
-
-        this._disposeTextureViews();
+    /**
+     * Deletes the WebGL texture.
+     * @inheritDoc
+     * @ai-generated
+     */
+    protected _dispose(): void {
         this.gl.deleteTexture(this._glTexture);
         this._glTexture = null;
-        this._state = State.DISPOSED;
-
-        // Iterate a copy. A listener may remove itself while this loop runs.
-        for (const listener of this._disposedListeners.slice()) {
-            listener(this);
-        }
     }
 }

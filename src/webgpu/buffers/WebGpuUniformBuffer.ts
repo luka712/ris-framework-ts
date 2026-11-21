@@ -51,6 +51,14 @@ export class WebGpuUniformBuffer implements IUniformBuffer {
         return this._byteSize;
     }
 
+    /**
+     * @inheritDoc
+     * @ai-generated
+     */
+    public get nativeObject(): GPUBuffer {
+        return this.gpuBuffer;
+    }
+
     /** The WebGPU buffer. */
     public get gpuBuffer(): GPUBuffer {
         if (!this._gpuBuffer) {

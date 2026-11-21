@@ -45,7 +45,8 @@ export interface ICanvasManager extends IDisposable {
     removeRenderListener(event: () => void): void;
 
     /**
-     * Adds a listener that is called when the window is resized.
+     * Adds a listener that is called at the start of a frame when the canvas width or height changed.
+     * The listener receives the canvas manager and the new size.
      */
     addOnResizeListener(event: (arg1: ICanvasManager, arg2: vec2) => void): void;
 

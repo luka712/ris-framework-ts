@@ -44,6 +44,14 @@ export class WebGlUniformBuffer implements IUniformBuffer {
      */
     public glBuffer: WebGLBuffer | null = null;
 
+    /**
+     * @inheritDoc
+     * @ai-generated
+     */
+    public get nativeObject(): WebGLBuffer {
+        return this.glBuffer!;
+    }
+
     /** @inheritdoc */
     public readonly label?: string;
 

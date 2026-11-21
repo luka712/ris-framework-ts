@@ -1,4 +1,5 @@
 import { TextureFormat } from "../../../api/gpu/texture/TextureFormat.ts";
+import { State } from "../../../api/_export.ts";
 import type { ITextureView2D } from "../../../api/gpu/texture/view/ITextureView2D.ts";
 import type { IDownsampleTextureComputePipeline } from "../../../api/gpu/compute/pipelines/IDownsampleTextureComputePipeline.ts";
 import type { IFramework } from "../../../api/IFramework.ts";
@@ -119,6 +120,7 @@ export class WebGpuDownsampleTextureComputePipeline extends AWebGpuComputePipeli
         this._initResources();
         const shaderModule = this._framework.content.loadShaderModule("downsample_texture") as WebGpuShaderModule;
         this._createGpuPipeline("downsample_texture", shaderModule.compute!, [this._bindGroupLayout]);
+        this._state = State.INITIALIZED;
     }
 
     /** @inheritDoc */
@@ -126,6 +128,9 @@ export class WebGpuDownsampleTextureComputePipeline extends AWebGpuComputePipeli
         this._initResources();
         const shaderModule = this._framework.content.loadShaderModule("downsample_texture") as WebGpuShaderModule;
         await this._createGpuPipelineAsync("downsample_texture", shaderModule.compute!, [this._bindGroupLayout]);
+        if (this._state != State.DISPOSED) {
+            this._state = State.INITIALIZED;
+        }
     }
 
     /** @inheritDoc */
@@ -135,21 +140,15 @@ export class WebGpuDownsampleTextureComputePipeline extends AWebGpuComputePipeli
 
     /** @inheritDoc */
     public dispatchWorkgroup(x: number, y: number, z: number = 1): void {
-        if (this._dispatched) {
+        if (this._dispatched || this._state != State.INITIALIZED) {
             return;
         }
         this._dispatched = true;
-
-        const source = this._source!;
-        const target = this._target!;
-
         this._uniformBuffer.update();
-
-
 
         const encoder = (this._graphicsDevice.currentComputePass as WebGpuComputePass).gpuComputePassEncoder!;
         encoder.setPipeline(this._gpuPipeline!);
-        encoder.setBindGroup(0, bindGroup);
+        encoder.setBindGroup(0, this._bindGroup);
         encoder.dispatchWorkgroups(x, y, z);
     }
 
@@ -160,6 +159,11 @@ export class WebGpuDownsampleTextureComputePipeline extends AWebGpuComputePipeli
 
     /** @inheritDoc */
     public dispose(): void {
+
+        if (this._state == State.DISPOSED) {
+            return;
+        }
+
         this._uniformBuffer.dispose();
         super.dispose();
     }

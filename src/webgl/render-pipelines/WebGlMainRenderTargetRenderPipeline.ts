@@ -1,6 +1,7 @@
 import {vec2} from "gl-matrix";
 import type {WebGlVertexBuffer} from "../buffers/WebGlVertexBuffer.ts";
 import {GeometryFormat} from "../../api/geometry/GeometryFormat.ts";
+import {State} from "../../api/index.ts";
 import type {WebGLIndexBuffer} from "../buffers/webgl-index-buffer";
 import {VertexBufferLayout} from "../../core/rendering/vertex-buffer-layout";
 import type {WebGlTexture2D} from "../texture/WebGlTexture2D.ts";
@@ -129,6 +130,8 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
         } else {
             console.warn("WebGlMainRenderTargetRenderPipeline: uniform block 'FragmentDataBuffer' not found in the main_render_target shader.");
         }
+
+        this._state = State.INITIALIZED;
     }
 
     private _createResources(): void {
@@ -153,7 +156,7 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
     /** @inheritdoc */
     public render(): void {
 
-        if (this._program == null) {
+        if (this._state != State.INITIALIZED) {
             return;
         }
 
@@ -177,6 +180,11 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
 
     /** @inheritdoc */
     public override dispose(): void {
+
+        if (this._state == State.DISPOSED) {
+            return;
+        }
+
         // ARenderer recreates this pipeline on every resize, so release the quad buffers too.
         this._vertexBuffer?.dispose();
         this._indexBuffer?.dispose();

@@ -25,8 +25,8 @@ export abstract class ATexture2D implements ITexture2D {
 
     /** The base (mip 0) size [width, height] in pixels. Returned by {@link size}. */
     protected _baseSize: vec2;
-    /** The native texture handle (backend specific). Returned by {@link handle}. */
-    protected _handle: any;
+    /** The native texture handle (backend specific). Returned by {@link nativeObject}. */
+    protected _nativeObject: any;
     /** The lifecycle state. Defaults to {@link State.CREATED}. */
     protected _state: State = State.CREATED;
     /** The approximate VRAM size in bytes. Set by the backend in {@link initialize}. Defaults to `0`. */
@@ -54,9 +54,15 @@ export abstract class ATexture2D implements ITexture2D {
      * @throws Error when `viewFormats` are given on a device without texture views, or when the format or size is missing.
      */
     protected constructor(
-        graphicsDevice: IGraphicsDevice,
+        protected readonly _graphicsDevice: IGraphicsDevice,
         descriptor: ITextureDescriptor,
     ) {
+        // Validate if texture views are supported.
+        if(!_graphicsDevice.features.supportsTextureView && descriptor.viewFormats && descriptor.viewFormats.length > 0)
+        {
+            throw new Error(`ATexture2D: "viewFormats" were given (${descriptor.viewFormats.join(", ")}), but this graphics device does not support texture views (e.g. WebGL2). Remove "viewFormats" from the texture descriptor.`);
+        }
+
         this.id = ATexture2D._generateId();
         this.textureFormat = descriptor.textureFormat ?? TextureFormat.RGBA8_UNORM;
         this.textureUsage = descriptor.textureUsage ?? (TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST);
@@ -117,8 +123,8 @@ export abstract class ATexture2D implements ITexture2D {
     }
 
     /** @inheritDoc */
-    public get handle(): any {
-        return this._handle;
+    public get nativeObject(): any {
+        return this._nativeObject;
     }
 
     /**
@@ -169,7 +175,6 @@ export abstract class ATexture2D implements ITexture2D {
     public get label(): string | undefined {
         return this._label;
     }
-
 
     /** @inheritDoc */
     public getTextureView(textureFormat: TextureFormat): ITextureView2D {
@@ -222,6 +227,38 @@ export abstract class ATexture2D implements ITexture2D {
         this._textureViews.clear();
     }
 
-    /** @inheritDoc */
-    public abstract dispose(): void;
+    /**
+     * Queues the texture to be disposed at the end of the current frame, after submit, and sets {@link State.DISPOSING}.
+     * The texture stays usable until then. Does nothing when already disposing or disposed.
+     */
+    public queueDispose(): void {
+        if (this._state == State.DISPOSING || this._state == State.DISPOSED) {
+            return;
+        }
+        this._state = State.DISPOSING;
+        this._graphicsDevice.queueDisposable(this);
+    }
+
+    /**
+     * Releases the backend's native texture. Called once by {@link dispose}, after the texture views are disposed.
+     */
+    protected abstract _dispose(): void;
+
+    /**
+     * Disposes the texture views and the native texture immediately, sets {@link State.DISPOSED}
+     * and raises the disposed listeners. Does nothing when already disposed.
+     */
+    public dispose(): void {
+        if (this._state == State.DISPOSED) {
+            return;
+        }
+        this._disposeTextureViews();
+        this._dispose();
+        this._state = State.DISPOSED;
+
+        // Iterate a copy. A listener may remove itself while this loop runs.
+        for (const listener of this._disposedListeners.slice()) {
+            listener(this);
+        }
+    }
 }

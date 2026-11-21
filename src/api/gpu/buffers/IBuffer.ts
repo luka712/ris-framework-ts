@@ -1,4 +1,4 @@
-import {BufferUsage} from "./BufferUsage.ts";
+import { BufferUsage } from "./BufferUsage.ts";
 import type { IDisposable } from "../../core/IDisposable.ts";
 
 /**
@@ -6,14 +6,14 @@ import type { IDisposable } from "../../core/IDisposable.ts";
  */
 export interface IBuffer extends IDisposable {
 
-/**
- * The label of the buffer.
- */
+  /**
+   * The label of the buffer.
+   */
   readonly label?: string;
 
-/**
- * Size of the buffer in bytes.
- */
+  /**
+   * Size of the buffer in bytes.
+   */
   readonly byteSize: number;
 
   /**
@@ -21,4 +21,6 @@ export interface IBuffer extends IDisposable {
    */
   readonly usage: BufferUsage;
 
+  /** Underlying native object. */
+  readonly nativeObject: any;
 }

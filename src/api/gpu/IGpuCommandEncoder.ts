@@ -1,5 +1,4 @@
-import type { IComputePass, IDisposable, IRenderPass } from "../_export";
-import type { Stack } from "../data/Stack";
+import type { IDisposable } from "../_export";
 
 /**
  * Encodes GPU commands for submission to a command queue.

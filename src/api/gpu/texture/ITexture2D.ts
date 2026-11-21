@@ -1,4 +1,5 @@
 import type { IContent } from "../../content/IContent.ts";
+import type { IDeferredDisposable } from "../../core/IDeferredDisposable.ts";
 import {TextureUsage} from "./TextureUsage.ts";
 import {State} from "../../data/State.ts";
 import {TextureFormat} from "./TextureFormat.ts";
@@ -9,7 +10,7 @@ import type { ITextureViewDescriptor } from "./view/ITextureViewDescriptor.ts";
 /**
  * The texture 2D interface.
  */
-export interface ITexture2D extends IContent {
+export interface ITexture2D extends IContent, IDeferredDisposable {
 
     /**
      * The default texture view, i.e. the view in the texture's own {@link textureFormat}.
@@ -35,10 +36,8 @@ export interface ITexture2D extends IContent {
      */
     readonly id: number;
 
-    /**
-     * The handle of the underlying graphics API texture object.
-     */
-    readonly handle?: any;
+    /** The underlying graphics API texture object. */
+    readonly nativeObject?: any;
 
     /** The label of the texture. The label is used as a label of underlying GPU texture. */
     readonly label?: string;

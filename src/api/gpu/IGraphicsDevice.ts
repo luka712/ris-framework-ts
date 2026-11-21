@@ -10,7 +10,7 @@ import type { ISwapChain } from "./rendering/swapchain/ISwapChain.ts";
 import { SamplerDescriptor } from "./sampler/SamplerDescriptor.ts";
 import type { IPrimitiveStateDescriptor } from "./rendering/primitive/IPrimitiveStateDescriptor.ts";
 import type { GpuBackend } from "./GpuBackend.ts";
-import type { IComputePass, State } from "../_export.ts";
+import type { IComputePass, IDeferredDisposable, State } from "../_export.ts";
 import type { GpuLimits } from "./GpuLimits.ts";
 import type { IGpuCommandEncoder } from "./IGpuCommandEncoder.ts";
 
@@ -140,5 +140,11 @@ export interface IGraphicsDevice extends IDisposable {
      * Note that it only pops from the render stack.
      */
     popDebugGroup(): void;
+
+    /**
+     * Queues the item to be disposed at the end of the current frame, after the frame is submitted.
+     * @param disposable The disposable item.
+     */
+    queueDisposable(disposable: IDeferredDisposable) : void;
 
 }

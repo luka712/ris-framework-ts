@@ -8,7 +8,6 @@ import {
     type ITextureDescriptor,
     TextureFormat,
     ContentConfig,
-    TextureUsage,
     type IMesh,
     type IRenderableMesh,
     type GeometryFormat,

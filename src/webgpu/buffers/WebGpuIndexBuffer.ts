@@ -37,6 +37,14 @@ export class WebGpuIndexBuffer implements IIndexBuffer {
     /** @inheritDoc */
     public readonly usage: BufferUsage = BufferUsage.INDEX | BufferUsage.COPY_DST;
 
+    /**
+     * @inheritDoc
+     * @ai-generated
+     */
+    public get nativeObject(): GPUBuffer {
+        return this.gpuBuffer;
+    }
+
     /** The WebGPU buffer. */
     public get gpuBuffer(): GPUBuffer {
         if (!this._gpuBuffer) {

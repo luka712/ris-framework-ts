@@ -5,6 +5,7 @@ import type { IVertexBufferLayout } from "../../buffers/IVertexBufferLayout.ts";
 import type { IIndexBuffer } from "../../buffers/IIndexBuffer.ts";
 import type { IVertexBuffer } from "../../buffers/IVertexBuffer.ts";
 import type { GeometryFormat } from "../../../geometry/GeometryFormat.ts";
+import type { State } from "../../../_export.ts";
 
 /**
  * The render pipeline interface.
@@ -12,6 +13,9 @@ import type { GeometryFormat } from "../../../geometry/GeometryFormat.ts";
  * the vertex buffer layout, the render targets, and the draw calls.
  */
 export interface IRenderPipeline extends IDisposable {
+
+    /** The lifecycle state. */
+    readonly state: State;
 
     /**
      * The blend state of the render pipeline.

@@ -3,10 +3,7 @@ import type { IBuffer } from "./IBuffer.ts";
 /**
  * Interface for uniform buffer.
  */
-export interface IUniformBuffer extends IBuffer  {
-
-    /** Underlying native object. */
-readonly nativeObject: any;
+export interface IUniformBuffer extends IBuffer {
 
     /**
      * Initialize the constant buffer.
@@ -33,5 +30,5 @@ readonly nativeObject: any;
      * @public
      */
     update(): void;
-    
+
 }

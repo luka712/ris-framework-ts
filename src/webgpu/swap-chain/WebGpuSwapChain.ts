@@ -68,13 +68,13 @@ export class WebGpuSwapChain implements ISwapChain {
     }
 
     /** @inheritDoc */
-    public resize(width: number, height: number): void {
-        if (width <= 0 || height <= 0) {
+    public resize(size: vec2): void {
+        if (size[0] <= 0 || size[1] <= 0) {
             return;
         }
         this._currentView = null;
-        this._backBufferSize[0] = width;
-        this._backBufferSize[1] = height;
+        this._backBufferSize[0] = size[0];
+        this._backBufferSize[1] = size[1];
     }
 
     /** @inheritDoc */

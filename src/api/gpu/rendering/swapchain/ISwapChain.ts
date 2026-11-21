@@ -10,10 +10,9 @@ export interface ISwapChain extends IDisposable {
     /**
      * Sets the back buffer size.
      * This is used to resize the back buffer when the window is resized.
-     * @param width - The new width.
-     * @param height - The new height.
+     * @param size - The new width and height.
      */
-    resize(width: number, height: number): void;
+    resize(size: vec2): void;
 
     /**
      * Presents the back buffer to the screen.

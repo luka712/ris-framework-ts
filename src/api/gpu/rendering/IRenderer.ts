@@ -7,6 +7,8 @@ import type {TextureSamplerFilteringPreset} from "../../../core/rendering/enums.
 import type {OutputColorSpace} from "./enums.ts";
 import type { IRenderPass } from "./renderpass/IRenderPass.ts";
 import type { IRenderPassDescriptor } from "./renderpass/RenderPassDescriptor.ts";
+import type { State } from "../../data/State.ts";
+import type { IDeferredDisposable, IDisposable } from "../../_export.ts";
 
 /**
  * The configuration for the renderer. This is used to initialize the renderer.
@@ -41,7 +43,10 @@ export interface IRendererConfiguration {
  * The interface for a renderer.
  * @public
  */
-export interface IRenderer {
+export interface IRenderer extends IDisposable {
+
+    /** The lifecycle state. */
+    readonly state: State;
 
     /**
      * The graphics device used by the renderer.

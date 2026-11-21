@@ -99,6 +99,15 @@ export class WebGlSampler implements ISampler {
         );
     }
 
+    /**
+     * Disposes immediately. WebGL has no deferred submit, so the driver keeps the object alive while it is in use.
+     * @inheritDoc
+     * @ai-generated
+     */
+    public queueDispose(): void {
+        this.dispose();
+    }
+
     /** @inheritdoc */
     public dispose(): void {
         if (this.glSampler) {

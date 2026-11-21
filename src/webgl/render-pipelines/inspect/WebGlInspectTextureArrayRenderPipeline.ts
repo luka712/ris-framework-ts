@@ -1,5 +1,6 @@
 import {
     GeometryFormat,
+    State,
     type IFramework, type IPrimitiveState,
     type ISampler,
     type IUniformBuffer,
@@ -126,6 +127,7 @@ export class WebGlInspectTextureArrayRenderPipeline extends AWebGlRenderPipeline
         this._createResources();
         this.vertexBufferLayouts = [VertexBufferLayout.createFloat3Float4Float2Layout()];
         super.initialize();
+        this._state = State.INITIALIZED;
     }
 
     private _createResources(): void {
@@ -157,7 +159,7 @@ export class WebGlInspectTextureArrayRenderPipeline extends AWebGlRenderPipeline
     /** @inheritdoc */
     public render(vertexBuffer: IVertexBuffer, indexBuffer: IIndexBuffer, indicesCount: number = -1, indicesOffset: number = 0): void {
 
-        if (indicesCount == 0) {
+        if (indicesCount == 0 || this._state != State.INITIALIZED) {
             return;
         }
 

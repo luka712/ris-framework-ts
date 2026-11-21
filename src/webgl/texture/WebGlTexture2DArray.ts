@@ -19,7 +19,7 @@ import {ATexture2DArray} from "../../api/gpu/texture/ATexture2DArray.ts";
  */
 export class WebGlTexture2DArray extends ATexture2DArray {
 
-    private readonly _graphicsDevice: WebGlGraphicsDevice;
+    declare protected readonly _graphicsDevice: WebGlGraphicsDevice;
 
     private _glTexture: WebGLTexture | null = null;
 
@@ -34,7 +34,6 @@ export class WebGlTexture2DArray extends ATexture2DArray {
     ) {
         const graphicsDevice = framework.graphicsDevice as WebGlGraphicsDevice;
         super(graphicsDevice, textureDescriptor);
-        this._graphicsDevice = graphicsDevice;
         this.gl = this._graphicsDevice.gl!;
     }
 
@@ -119,21 +118,13 @@ export class WebGlTexture2DArray extends ATexture2DArray {
     }
 
 
-    /** @inheritdoc */
-    public dispose(): void {
-
-        if (this._state == State.DISPOSING || this._state == State.DISPOSED) {
-            return;
-        }
-
-        this._disposeTextureViews();
+    /**
+     * Deletes the WebGL texture.
+     * @inheritDoc
+     * @ai-generated
+     */
+    protected _dispose(): void {
         this.gl.deleteTexture(this._glTexture);
         this._glTexture = null;
-        this._state = State.DISPOSED;
-
-        // Iterate a copy. A listener may remove itself while this loop runs.
-        for (const listener of this._disposedListeners.slice()) {
-            listener(this);
-        }
     }
 }

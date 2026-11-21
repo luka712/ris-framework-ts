@@ -11,7 +11,8 @@ import {
     type ISwapChain, type IRenderPass, type IComputePass, type IPrimitiveStateDescriptor,
     type GpuBackend,
     type GpuLimits,
-    State
+    State,
+    type IDeferredDisposable
 } from "../../api/index.ts";
 import { PowerPreferenceType } from "../../api/gpu/PowerPreference.ts";
 import type { IGpuCommandEncoder } from "../../api/gpu/IGpuCommandEncoder.ts";
@@ -51,6 +52,7 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     protected _limits: GpuLimits | null = null;
     protected _state: State = State.CREATED;
     protected _mainCommandEncoder: IGpuCommandEncoder = null!;
+    protected _disposableQueue: IDeferredDisposable[] = [];
 
     /**
      * The constructor.
@@ -59,7 +61,7 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     protected constructor(descriptor: IGraphicsDeviceDescriptor) {
         this._descriptor = descriptor;
     }
-   
+  
     /** @inheritdoc */
     public currentComputePass: IComputePass = null!;
 
@@ -175,6 +177,11 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     /** @inheritDoc */
     public frameEnd(): void {
         this._mainCommandEncoder.submit();
+
+        // Queued items were possibly used by this frame, so they are disposed only after submit.
+        while(this._disposableQueue.length > 0){
+            this._disposableQueue.pop()?.dispose();
+        }
     }
 
     /** @inheritDoc */
@@ -189,6 +196,12 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
      */
     protected abstract _disposeBackend(): void;
 
+    /** @inheritdoc */
+    public queueDisposable(disposable: IDeferredDisposable): void {
+        this._disposableQueue.push(disposable);
+    }
+   
+
     /**
      * Disposes the default sampler and blend state and the backend resources.
      * Moves the device through {@link State.DISPOSING} to {@link State.DISPOSED}. Calling it again does nothing.
@@ -200,6 +213,11 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
         this._state = State.DISPOSING;
         this._defaultTextureSampler?.dispose();
         this._defaultBlendState?.dispose();
+        // Flush deferred GPU destroys (textures, samplers) while the device is still alive.
+        this._mainCommandEncoder?.dispose();
+        while (this._disposableQueue.length > 0) {
+            this._disposableQueue.pop()?.dispose();
+        }
         this._disposeBackend();
         this._state = State.DISPOSED;
     }

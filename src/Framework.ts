@@ -35,7 +35,8 @@ import {
     MaterialFactory,
     MeshFactory,
     GpuBackend,
-    TimeManager
+    TimeManager,
+    State
 } from "./api/index.ts";
 import type { IDisposable } from "./api/core/IDisposable.ts";
 import { WebGlShaderModuleLoader } from "./webgl/shader/WebGlShaderModuleLoader.ts";
@@ -69,6 +70,7 @@ export class Framework implements IFramework {
     private readonly _onUpdateListeners: ((gameTime: GameTime) => void)[] = [];
     private readonly _onRenderListeners: (() => void)[] = [];
 
+    private _state = State.CREATED;
     private _configuration: IFrameworkConfiguration;
     private _textureFactory: ITextureFactory & IDisposable = null!;
     private _buffersFactory: IBufferFactory = null!;
@@ -133,6 +135,11 @@ export class Framework implements IFramework {
         if (this._configuration.useKtx2) {
             this.ktx2Factory = new Ktx2Factory();
         }
+    }
+
+    /** @inheritdoc */
+    public get state(): State {
+        return this._state;
     }
 
     /** @inheritdoc */
@@ -350,7 +357,14 @@ export class Framework implements IFramework {
 
         this.renderer.afterInitialize();
 
+        this._state = State.INITIALIZED;
+
         this.canvasManager.addUpdateListener(() => {
+
+            if (this._state != State.INITIALIZED) {
+                return;
+            }
+
             // Update logic here
             this.timeManager.frameStart();
             this.graphicsDevice.frameStart();
@@ -375,6 +389,11 @@ export class Framework implements IFramework {
             }
         });
         this.canvasManager.addRenderListener(() => {
+
+            if (this._state != State.INITIALIZED) {
+                return;
+            }
+
             this.renderer.beginRenderPass();
 
             // Invoke render listeners.
@@ -402,6 +421,9 @@ export class Framework implements IFramework {
         if (this._disposed) {
             return;
         }
+
+        this._state = State.DISPOSED;
+
         this.canvasManager.stopEventLoop();
         this._disposed = true;
 
@@ -417,6 +439,7 @@ export class Framework implements IFramework {
         this._textureFactory.dispose();
         (this._contentManager as Partial<IDisposable>).dispose?.();
         this._computeContext?.dispose();
+        this._renderer?.dispose();
         // Device last.
         this.graphicsDevice.dispose();
     }

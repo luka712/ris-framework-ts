@@ -16,10 +16,8 @@ export interface IComputePipelineFactory {
 
     /**
      * Asynchronously creates a pipeline that downsamples `source` into `destination`.
-     * @param source The source view (mip level 0 of the view is read).
-     * @param destination The destination view (mip level 0 of the view is written).
      * @returns A promise that resolves to the initialized downsample texture compute pipeline.
      */
-    createDownsampleTexturePipelineAsync(source: ITextureView2D, destination: ITextureView2D)
+    createDownsampleTexturePipelineAsync()
         : Promise<IDownsampleTextureComputePipeline>;
 }

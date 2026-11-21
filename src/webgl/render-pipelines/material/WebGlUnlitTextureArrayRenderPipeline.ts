@@ -1,5 +1,6 @@
 import {
     GeometryFormat,
+    State,
     type IFramework,
     type IPrimitiveState,
     type ISampler,
@@ -137,6 +138,7 @@ export class WebGlUnlitTextureArrayRenderPipeline extends AWebGlRenderPipeline i
 
         this.vertexBufferLayouts = [VertexBufferLayout.createFloat3Float4Float2Layout()];
         super.initialize();
+        this._state = State.INITIALIZED;
     }
 
     /** @inheritDoc */
@@ -156,7 +158,7 @@ export class WebGlUnlitTextureArrayRenderPipeline extends AWebGlRenderPipeline i
      * @param indicesOffset The first index to draw. By default, 0.
      */
     public render(vertexBuffer: IVertexBuffer, indexBuffer: IIndexBuffer, indicesCount: number = -1, indicesOffset: number = 0): void {
-        if (indicesCount == 0) {
+        if (indicesCount == 0 || this._state != State.INITIALIZED) {
             return;
         }
 

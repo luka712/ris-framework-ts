@@ -100,6 +100,6 @@ export class WebGpuComputeContext implements IComputeContext {
         }
         this._disposed = true;
         this._disposeQueue.length = 0;
-        this._mainComputePass.dispose();
+        this._mainComputePass?.dispose();
     }
 }

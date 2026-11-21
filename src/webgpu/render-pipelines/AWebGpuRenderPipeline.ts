@@ -6,15 +6,16 @@ import {
     type IPrimitiveState,
     type IRenderPipeline,
     type IVertexBuffer,
+    State,
     TextureFormat,
 } from "../../api/index.ts";
-import type {VertexBufferLayout} from "../../core/rendering/vertex-buffer-layout.ts";
-import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
-import type {WebGpuBlendState} from "../blending/WebGpuBlendState.ts";
-import type {WebGpuPrimitiveState} from "../primitive/WebGpuPrimitiveState.ts";
-import type {WebGpuSampler} from "../sampler/WebGpuSampler.ts";
-import {WebGpuConverter} from "../utilities/WebGpuConverter.ts";
-import {WebGpuUtilities} from "../utilities/WebGpuUtilities.ts";
+import type { VertexBufferLayout } from "../../core/rendering/vertex-buffer-layout.ts";
+import type { WebGpuGraphicsDevice } from "../WebGpuGraphicsDevice.ts";
+import type { WebGpuBlendState } from "../blending/WebGpuBlendState.ts";
+import type { WebGpuPrimitiveState } from "../primitive/WebGpuPrimitiveState.ts";
+import type { WebGpuSampler } from "../sampler/WebGpuSampler.ts";
+import { WebGpuConverter } from "../utilities/WebGpuConverter.ts";
+import { WebGpuUtilities } from "../utilities/WebGpuUtilities.ts";
 
 /**
  * The base WebGPU render pipeline. Holds the device, the states and the vertex layouts,
@@ -25,6 +26,7 @@ export abstract class AWebGpuRenderPipeline implements IRenderPipeline {
 
     protected readonly _framework: IFramework;
     protected readonly _graphicsDevice: WebGpuGraphicsDevice;
+    protected _state = State.CREATED;
     protected readonly _defaultTextureSampler: WebGpuSampler;
     protected _blendState: WebGpuBlendState;
     protected _gpuPipeline: GPURenderPipeline | null = null;
@@ -41,6 +43,11 @@ export abstract class AWebGpuRenderPipeline implements IRenderPipeline {
         this._blendState = this._graphicsDevice.defaultBlendState as WebGpuBlendState;
         this._defaultTextureSampler = this._graphicsDevice.defaultTextureSampler as WebGpuSampler;
         this.primitiveState = (primitiveState ?? this._graphicsDevice.defaultPrimitiveState) as WebGpuPrimitiveState;
+    }
+
+    /** @readonly */
+    public get state(): State {
+        return this._state;
     }
 
     /** @inheritDoc */
@@ -98,8 +105,14 @@ export abstract class AWebGpuRenderPipeline implements IRenderPipeline {
 
     /** @inheritDoc */
     public dispose(): void {
+
+        if (this._state == State.DISPOSED) {
+            return;
+        }
+
         // Pipelines and layouts have no destroy() in WebGPU.
         this._gpuPipeline = null;
         this._pipelineLayout = null;
+        this._state = State.DISPOSED;
     }
 }

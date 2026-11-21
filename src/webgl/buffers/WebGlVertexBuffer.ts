@@ -48,6 +48,14 @@ export class WebGlVertexBuffer implements IVertexBuffer {
      */
     public buffer: WebGLBuffer | null = null;
 
+    /**
+     * @inheritDoc
+     * @ai-generated
+     */
+    public get nativeObject(): WebGLBuffer {
+        return this.buffer!;
+    }
+
     /** @inheritdoc */
     public get label(): string | undefined {
         return this._label;

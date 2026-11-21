@@ -40,6 +40,14 @@ export class WebGpuVertexBuffer implements IVertexBuffer {
         }
     }
 
+    /**
+     * @inheritDoc
+     * @ai-generated
+     */
+    public get nativeObject(): GPUBuffer {
+        return this.gpuBuffer;
+    }
+
     /** The WebGPU buffer. */
     public get gpuBuffer(): GPUBuffer {
         if (!this._gpuBuffer) {

@@ -58,14 +58,14 @@ export abstract class ATexture2DArray implements ITexture2DArray {
      * or when mipmap generation is requested for a block-compressed format without mip levels.
      */
     protected constructor(
-        graphicsDevice: IGraphicsDevice,
+        protected readonly _graphicsDevice: IGraphicsDevice,
         descriptor: ITextureDescriptor,
     ) {
 
         // Extra view formats need native texture views (WebGPU). WebGL2 has supportsTextureView === false.
-        if (descriptor.viewFormats && descriptor.viewFormats.length > 0 && !graphicsDevice.features.supportsTextureView) {
+        if (descriptor.viewFormats && descriptor.viewFormats.length > 0 && !_graphicsDevice.features.supportsTextureView) {
             throw new Error(
-                `Texture view formats are not supported by ${graphicsDevice.api} ` +
+                `Texture view formats are not supported by ${_graphicsDevice.api} ` +
                 `(graphicsDevice.features.supportsTextureView is false). Omit ITextureDescriptor.viewFormats and use the texture directly.`
             );
         }
@@ -253,6 +253,38 @@ export abstract class ATexture2DArray implements ITexture2DArray {
         this._textureViews.clear();
     }
 
-    /** @inheritDoc */
-    public abstract dispose(): void;
+    /**
+     * Queues the texture to be disposed at the end of the current frame, after submit, and sets {@link State.DISPOSING}.
+     * The texture stays usable until then. Does nothing when already disposing or disposed.
+     */
+    public queueDispose(): void {
+        if (this._state == State.DISPOSING || this._state == State.DISPOSED) {
+            return;
+        }
+        this._state = State.DISPOSING;
+        this._graphicsDevice.queueDisposable(this);
+    }
+
+    /**
+     * Releases the backend's native texture. Called once by {@link dispose}, after the texture views are disposed.
+     */
+    protected abstract _dispose(): void;
+
+    /**
+     * Disposes the texture views and the native texture immediately, sets {@link State.DISPOSED}
+     * and raises the disposed listeners. Does nothing when already disposed.
+     */
+    public dispose(): void {
+        if (this._state == State.DISPOSED) {
+            return;
+        }
+        this._disposeTextureViews();
+        this._dispose();
+        this._state = State.DISPOSED;
+
+        // Iterate a copy. A listener may remove itself while this loop runs.
+        for (const listener of this._disposedListeners.slice()) {
+            listener(this);
+        }
+    }
 }

@@ -27,6 +27,7 @@ import type {PowerPreferenceType} from "./gpu/PowerPreference.ts";
 import type {OutputColorSpace} from "./gpu/rendering/enums.ts";
 import type { IComputePipelineFactory } from "./gpu/compute/pipelines/IComputePipelineFactory.ts";
 import type { IDispatcher } from "./dispatcher/IDispatcher.ts";
+import type { State } from "./data/State.ts";
 
 
 /**
@@ -73,20 +74,16 @@ export class IFrameworkConfiguration {
 /** The framework interface. */
 export interface IFramework extends IDisposable {
 
-    /**
-     * The image loader.
-     */
+    /** The lifecycle state. */
+    readonly state: State;
+
+    /** The image loader. */
     readonly imageLoader: IImageLoader;
 
-
-    /**
-     * The sprite batches.
-     */
+    /** The sprite batches. */
     readonly spriteBatch: ISpriteBatch;
 
-    /**
-     * The renderer used by the framework.
-     */
+    /** The renderer used by the framework. */
     readonly renderer: IRenderer;
 
     /**
@@ -192,14 +189,10 @@ export interface IFramework extends IDisposable {
     /** Called when the framework is initialized.*/
     removeOnInitializedListener(event: () => void): void;
 
-    /**
-     * Called when framework is updated.
-     */
+    /** Called when framework is updated.*/
     addOnUpdateListener(event: (gameTime: GameTime) => void): void;
 
-    /**
-     * Called when framework is updated.
-     */
+    /** Called when framework is updated.  */
     removeOnUpdateListener(event: (gameTime: GameTime) => void): void;
 
     /**

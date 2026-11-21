@@ -39,6 +39,14 @@ export class WebGLIndexBuffer implements IIndexBuffer {
      */
     public buffer: WebGLBuffer | null = null;
 
+    /**
+     * @inheritDoc
+     * @ai-generated
+     */
+    public get nativeObject(): WebGLBuffer {
+        return this.buffer!;
+    }
+
     /** @inheritdoc */
     public get type(): IndexBufferType {
         return this._type;

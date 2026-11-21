@@ -30,7 +30,7 @@ import { ValidationUtilities } from "../../api/validation/ValidationUtilities.ts
 export class WebGpuTexture2D extends ATexture2D {
 
     private readonly _framework: IFramework;
-    private readonly _graphicsDevice: WebGpuGraphicsDevice;
+    declare protected readonly _graphicsDevice: WebGpuGraphicsDevice;
     private _gpuTexture: GPUTexture | null = null;
     private _commandEncoder: WebGpuCommandEncoder;
 
@@ -48,7 +48,6 @@ export class WebGpuTexture2D extends ATexture2D {
         const graphicsDevice = framework.graphicsDevice as WebGpuGraphicsDevice;
         super(graphicsDevice, descriptor);
         this._framework = framework;
-        this._graphicsDevice = graphicsDevice;
         this._commandEncoder = (descriptor.commandEncoder ?? graphicsDevice.mainCommandEncoder) as WebGpuCommandEncoder;
 
         if (!this._label) {
@@ -121,10 +120,10 @@ export class WebGpuTexture2D extends ATexture2D {
                 this.viewFormats);
         }
 
-        this._handle = this._gpuTexture;
+        this._nativeObject = this._gpuTexture;
 
         if (this._generateMipmaps) {
-            this._framework.dispatcher.addNextUpdateFrameAction(() => this._fillMipmaps());
+            this._framework.dispatcher.addNextUpdateFrameAction(() => this._fillMipmapsAsync());
         }
 
         let width = this.size[0];
@@ -152,7 +151,23 @@ export class WebGpuTexture2D extends ATexture2D {
     /**
      * Generates the mip chain from mip level 0. Runs in the current compute pass.
      */
-    private _fillMipmaps(): void {
+    private async _fillMipmapsAsync(): Promise<void> {
+
+        const pipelinesTasks = [];
+        for (let i = 0; i < this.mipLevels; i++) {
+            const pipelineTask = this._framework.computePipelineFactory!.createDownsampleTexturePipelineAsync();
+            pipelinesTasks.push(pipelineTask);
+        }
+
+        const pipelines = (await Promise.all(pipelinesTasks)).map(x => x as WebGpuDownsampleTextureComputePipeline);
+
+        // The texture (or a pipeline) may have been disposed while pipelines were being created.
+        if (this._state != State.INITIALIZED || pipelines.some(p => p.state != State.INITIALIZED))
+        {
+            console.warn("Canceling creation of texture mipmaps. The texture or a downsample pipeline is not initialized.");
+            pipelines.forEach(x => x.dispose());
+            return;
+        }
 
         // We need encoder to encode commands that needs to be done.
         const encoder = this._graphicsDevice.createCommandEncoder("FillMipmaps Encoder");
@@ -174,7 +189,6 @@ export class WebGpuTexture2D extends ATexture2D {
             mipmapLevels: this.mipLevels
         }) as WebGpuTexture2D;
 
-
         const workgroupSize = 8;
 
         const source = this._createTextureView({
@@ -194,8 +208,10 @@ export class WebGpuTexture2D extends ATexture2D {
                 baseMipLevel: i,
             };
 
+            const pipeline = pipelines[i];
+            pipeline.source = source;
             const destination = stagingTexture.createView(desc);
-            const pipeline = this._framework.computePipelineFactory!.createDownsampleTexturePipeline(source, destination) as WebGpuDownsampleTextureComputePipeline;
+            pipeline.target = destination;
             encoder.queueDispose(pipeline);
 
             pipeline.dispatchWorkgroup(
@@ -217,8 +233,8 @@ export class WebGpuTexture2D extends ATexture2D {
 
         for (let i = 1; i < this.mipLevels; i++) {
 
-            const width = this.size[0] >> i;
-            const height = this.size[1] >> i;
+            const width = Math.max(1, this.size[0] >> i);
+            const height = Math.max(1, this.size[1] >> i);
 
             // TODO: would be nice to capture this as a method of higher level command encoder.
             commandEncoder.gpuCommandEncoder!.copyTextureToTexture(
@@ -235,18 +251,13 @@ export class WebGpuTexture2D extends ATexture2D {
         commandEncoder.submit();
     }
 
-    /** @inheritDoc */
-    public dispose(): void {
-        if (this._state == State.DISPOSING || this._state == State.DISPOSED) {
-            return;
-        }
-        this._disposeTextureViews();
+    /**
+     * Destroys the GPU texture.
+     * @inheritDoc
+     * @ai-generated
+     */
+    protected _dispose(): void {
         WebGpuUtilities.texture.dispose(this._gpuTexture);
         this._gpuTexture = null;
-        this._state = State.DISPOSED;
-
-        for (const listener of this._disposedListeners.slice()) {
-            listener(this);
-        }
     }
 }

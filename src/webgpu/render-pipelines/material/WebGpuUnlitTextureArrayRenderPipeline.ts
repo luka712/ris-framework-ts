@@ -165,6 +165,8 @@ export class WebGpuUnlitTextureArrayRenderPipeline extends AWebGpuRenderPipeline
             [this._cameraGroupLayout, this._textureGroupLayout, this._materialGroupLayout],
             TextureFormat.RGBA8_UNORM,
             this._framework.renderer.preferredDepthStencilFormat);
+
+        this._state = State.INITIALIZED;
     }
 
     /** Returns the group 0 bind group, rebuilding it when the projection-view or model buffer changed. */
@@ -235,14 +237,14 @@ export class WebGpuUnlitTextureArrayRenderPipeline extends AWebGpuRenderPipeline
      * @param indicesOffset The first index to draw. By default, 0.
      */
     public render(vertexBuffer: IVertexBuffer, indexBuffer: IIndexBuffer, indicesCount: number = -1, indicesOffset: number = 0): void {
-        if (indicesCount == 0 || !this._gpuPipeline) {
+        if (indicesCount == 0 || this._state != State.INITIALIZED) {
             return;
         }
         const vb = vertexBuffer as WebGpuVertexBuffer;
         const ib = indexBuffer as WebGpuIndexBuffer;
-        const encoder = this._graphicsDevice.renderPassEncoder;
+        const encoder = this._graphicsDevice.gpuRenderPassEncoder;
 
-        encoder.setPipeline(this._gpuPipeline);
+        encoder.setPipeline(this._gpuPipeline!);
         encoder.setVertexBuffer(0, vb.gpuBuffer, 0, vb.byteSize);
         // The index buffer was allocated padded to 4 bytes; bind the padded size.
         encoder.setIndexBuffer(ib.gpuBuffer, ib.gpuIndexFormat, 0, ib.paddedByteSize);
@@ -256,6 +258,11 @@ export class WebGpuUnlitTextureArrayRenderPipeline extends AWebGpuRenderPipeline
 
     /** Releases the bind groups and stops watching textures. The buffers, texture and sampler are not disposed. */
     public override dispose(): void {
+
+        if (this._state == State.DISPOSED) {
+            return;
+        }
+
         for (const texture of this._watchedTextures) {
             texture.removeOnDisposedListener(this._onTextureDisposed);
         }

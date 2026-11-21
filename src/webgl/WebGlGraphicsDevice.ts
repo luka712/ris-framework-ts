@@ -79,6 +79,10 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
             this._spector = new Spector();
             this._spector.spyCanvas(this._canvas);
         }
+        else {
+            // @ts-ignore
+            this._spector = window.spector as any as Spector;
+        }
 
         const contextOptions: WebGLContextAttributes = {
             antialias: false,
@@ -130,6 +134,7 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
 
     /** @inheritdoc */
     public pushDebugGroup(_groupName: string): void {
+        debugger;
         this._spector?.setMarker(_groupName);
     }
 

@@ -3,6 +3,7 @@ import type { IFramework } from "../../../api/IFramework.ts";
 import type { IComputePipeline } from "../../../api/gpu/compute/pipelines/IComputePipeline.ts";
 import type { WebGpuGraphicsDevice } from "../../WebGpuGraphicsDevice.ts";
 import { WebGpuUtilities } from "../../utilities/WebGpuUtilities.ts";
+import { State } from "../../../api/_export.ts";
 
 /**
  * The base WebGPU compute pipeline. Holds the device and builds the `GPUComputePipeline`.
@@ -11,6 +12,7 @@ import { WebGpuUtilities } from "../../utilities/WebGpuUtilities.ts";
 export abstract class AWebGpuComputePipeline implements IComputePipeline {
 
     protected readonly _framework: IFramework;
+    protected _state = State.CREATED;
     protected readonly _graphicsDevice: WebGpuGraphicsDevice;
     protected _gpuPipeline: GPUComputePipeline | null = null;
     protected _pipelineLayout: GPUPipelineLayout | null = null;
@@ -22,6 +24,11 @@ export abstract class AWebGpuComputePipeline implements IComputePipeline {
     protected constructor(framework: IFramework) {
         this._framework = framework;
         this._graphicsDevice = framework.graphicsDevice as WebGpuGraphicsDevice;
+    }
+  
+    /** @inheritdoc */
+    public get state(): State {
+        return this._state;
     }
 
     /** @inheritDoc */
@@ -53,6 +60,7 @@ export abstract class AWebGpuComputePipeline implements IComputePipeline {
             layout: this._pipelineLayout,
             compute: { module, entryPoint: "main" },
         });
+        this._state = State.INITIALIZED;
     }
 
     /**
@@ -70,11 +78,23 @@ export abstract class AWebGpuComputePipeline implements IComputePipeline {
             layout: this._pipelineLayout,
             compute: { module, entryPoint: "main" },
         });
+        if (this._state == State.DISPOSED) {
+            this._gpuPipeline = null;
+            this._pipelineLayout = null;
+            return;
+        }
+        this._state = State.INITIALIZED;
     }
 
     /** @inheritDoc */
     public dispose(): void {
+
+        if (this._state == State.DISPOSED) {
+            return;
+        }
+
         this._gpuPipeline = null;
         this._pipelineLayout = null;
+        this._state = State.DISPOSED;
     }
 }
