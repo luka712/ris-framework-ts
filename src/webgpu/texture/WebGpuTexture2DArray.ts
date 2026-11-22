@@ -13,8 +13,6 @@ import { ATexture2DArray } from "../../api/gpu/texture/ATexture2DArray.ts";
 import type { WebGpuGraphicsDevice } from "../WebGpuGraphicsDevice.ts";
 import { WebGpuTextureView } from "./WebGpuTextureView.ts";
 import { WebGpuUtilities } from "../utilities/WebGpuUtilities.ts";
-import { WebGpuDownsampleTextureComputePipeline } from "../compute/pipelines/WebGpuDownsampleTextureComputePipeline.ts";
-import type { WebGpuCommandEncoder } from "../WebGpuCommandEncoder.ts";
 import type { WebGpuTexture2D } from "./WebGpuTexture2D.ts";
 
 /**
@@ -150,119 +148,92 @@ export class WebGpuTexture2DArray extends ATexture2DArray {
     }
 
     /**
-     * Generates the mip chain of every layer from mip level 0.
-     * Each layer is downsampled into a 2D staging texture, which is then copied into that layer.
+     * Generates the mip chain of every layer from mip level 0, chaining each mip level from the previous one.
+     * Each step downsamples into a 2D staging texture, which is then copied into that layer and mip level.
      * @ai-generated
      */
     private async _fillMipmapsAsync(): Promise<void> {
 
-        const layers = this.size[2];
+        const pipeline = await this._framework.computePipelineFactory!.createDownsampleTexturePipelineAsync();
 
-        const pipelinesTasks = [];
-        for (let i = 0; i < this.mipLevels * layers; i++) {
-            const pipelineTask = this._framework.computePipelineFactory!.createDownsampleTexturePipelineAsync();
-            pipelinesTasks.push(pipelineTask);
-        }
-
-        const pipelines = (await Promise.all(pipelinesTasks)).map(x => x as WebGpuDownsampleTextureComputePipeline);
-
-        // The texture (or a pipeline) may have been disposed while pipelines were being created.
-        if (this._state != State.INITIALIZED || pipelines.some(p => p.state != State.INITIALIZED))
-        {
+        // The texture (or the pipeline) may have been disposed while the pipeline was being created.
+        if (this._state != State.INITIALIZED || pipeline.state != State.INITIALIZED) {
             console.warn("Canceling creation of texture mipmaps. The texture or a downsample pipeline is not initialized.");
-            pipelines.forEach(x => x.dispose());
+            pipeline.dispose();
             return;
         }
 
-        // We need encoder to encode commands that needs to be done.
-        const encoder = this._graphicsDevice.createCommandEncoder("FillMipmaps Encoder");
-        encoder.start();
-        const downsampleComputePass = this._framework.computeContext!.createComputePass({
-            commandEncoder: encoder,
-            label: "Downsample Pass"
-        });
+        const prepEncoder = this._graphicsDevice.createCommandEncoder("Prepare encoder");
+        prepEncoder.start();
 
-        // One staging texture per layer.
-        const stagingTextures: WebGpuTexture2D[] = [];
-        for (let layer = 0; layer < layers; layer++) {
-            stagingTextures.push(this._framework.textureFactory.create({
-                commandEncoder: encoder,
-                width: this.size[0],
-                height: this.size[1],
-                label: `StagingTexture ${layer}`,
-                textureFormat: TextureFormat.RGBA8_UNORM,
-                textureUsage: TextureUsage.STORAGE_BINDING | TextureUsage.COPY_SRC,
-                mipmapLevels: this.mipLevels
-            }) as WebGpuTexture2D);
-        }
+        const stagingTexture = this._framework.textureFactory.create({
+            commandEncoder: prepEncoder,
+            width: this.size[0],
+            height: this.size[1],
+            label: "StagingTexture",
+            textureFormat: TextureFormat.RGBA8_UNORM,
+            textureUsage: TextureUsage.STORAGE_BINDING | TextureUsage.COPY_SRC,
+            mipmapLevels: this.mipLevels
+        }) as WebGpuTexture2D;
+
+        prepEncoder.submit();
+        prepEncoder.dispose();
 
         const workgroupSize = 8;
-
-        // Begin compute pass.
-        downsampleComputePass.beginPass();
+        const layers = this.size[2];
 
         for (let layer = 0; layer < layers; layer++) {
+            for (let mipLevel = 0; mipLevel < this.mipLevels - 1; mipLevel++) {
 
-            const source = this._createTextureView({
-                viewFormat: this.textureFormat,
-                dimension: TextureViewDimension.DIMENSION_2D,
-                baseMipLevel: 0,
-                mipLevelCount: 1,
-                baseArrayLayer: layer,
-                arrayLayerCount: 1,
-            });
+                const nextMipLevel = mipLevel + 1;
+                const encoder = this._graphicsDevice.createCommandEncoder(`Create mip level encoder: layer ${layer}, mip ${nextMipLevel}`);
 
-            for (let i = 0; i < this.mipLevels; i++) {
+                const computePass = this._framework.computeContext!.createComputePass({
+                    commandEncoder: encoder,
+                    label: "Downsample Pass"
+                });
 
-                const desc: ITextureViewDescriptor = {
-                    viewFormat: TextureFormat.RGBA8_UNORM,
+                encoder.start();
+                computePass.beginPass();
+
+                const source = this._createTextureView({
+                    viewFormat: this.textureFormat,
+                    dimension: TextureViewDimension.DIMENSION_2D,
+                    baseMipLevel: mipLevel,
                     mipLevelCount: 1,
-                    baseMipLevel: i,
-                };
+                    baseArrayLayer: layer,
+                    arrayLayerCount: 1,
+                });
 
-                const pipeline = pipelines[layer * this.mipLevels + i];
+                const destination = stagingTexture.createView({
+                    viewFormat: TextureFormat.RGBA8_UNORM,
+                    baseMipLevel: nextMipLevel,
+                    mipLevelCount: 1,
+                });
+
                 pipeline.source = source;
-                const destination = stagingTextures[layer].createView(desc);
                 pipeline.target = destination;
-                encoder.queueDispose(pipeline);
 
                 pipeline.dispatchWorkgroup(
                     Math.ceil(destination.size[0] / workgroupSize),
                     Math.ceil(destination.size[1] / workgroupSize),
                     1);
+
+                computePass.endPass();
+                encoder.copyTextureToTexture(
+                    { texture: stagingTexture, mipLevel: nextMipLevel },
+                    { texture: this, mipLevel: nextMipLevel, arrayLayer: layer });
+                encoder.submit();
+
+                encoder.dispose();
+                computePass.dispose();
+                source.dispose();
+                destination.dispose();
             }
         }
 
-        // End pass. It can be disposed when ended.
-        downsampleComputePass.endPass();
-        downsampleComputePass.dispose();
-
-        // Submit everything to queue.
-        encoder.submit();
-        encoder.dispose();
-
-        const commandEncoder = this._graphicsDevice.createCommandEncoder("GenerateMipmapsCopyBack") as WebGpuCommandEncoder;
-        commandEncoder.start();
-
-        for (let layer = 0; layer < layers; layer++) {
-            for (let i = 1; i < this.mipLevels; i++) {
-
-                const width = Math.max(1, this.size[0] >> i);
-                const height = Math.max(1, this.size[1] >> i);
-
-                commandEncoder.gpuCommandEncoder!.copyTextureToTexture(
-                    { texture: stagingTextures[layer].gpuTexture, mipLevel: i },
-                    { texture: this.gpuTexture, mipLevel: i, origin: { x: 0, y: 0, z: layer } },
-                    {
-                        width,
-                        height,
-                        depthOrArrayLayers: 1
-                    });
-            }
-            commandEncoder.queueDispose(stagingTextures[layer]);
-        }
-
-        commandEncoder.submit();
+        pipeline.dispose();
+        stagingTexture.dispose();
     }
 
     /**

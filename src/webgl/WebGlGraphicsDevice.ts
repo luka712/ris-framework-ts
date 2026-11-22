@@ -134,7 +134,6 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
 
     /** @inheritdoc */
     public pushDebugGroup(_groupName: string): void {
-        debugger;
         this._spector?.setMarker(_groupName);
     }
 

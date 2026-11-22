@@ -6,16 +6,18 @@ export interface IImageProcessor {
     /**
      * Resize the image to the given size.
      * @param image The image to resize.
-     * @param vec2 The new size.
+     * @param size The new size.
      * @returns The resized image.
      */
-    resizeAsync(image: RawImageData, vec2: vec2): Promise<RawImageData>;
+    resizeAsync(image: RawImageData, size: vec2): Promise<RawImageData>;
 
     /**
-     * Generate mipmaps levels for the image.
-     * @param image The image to generate mipmaps for.
-     * @param levels The number of mip levels to generate. -1 for automatic.
-     * @returns The new image data with mipmaps.
+     * Generate mipmaps levels for the image. Each level is half the previous one (at least 1x1) and is
+     * downsampled from the previous level.
+     * @param image The image to generate mipmaps for. Only its base level is used.
+     * @param levels The number of mip levels to generate below the base level. 0 returns only the base level.
+     * -1 (default) generates the full chain down to 1x1.
+     * @returns The new image data with the base level followed by the generated mip levels.
      */
     generateMipmapsAsync(image: RawImageData, levels?: number): Promise<RawImageData>;
 

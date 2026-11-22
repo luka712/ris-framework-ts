@@ -12,4 +12,10 @@ export interface IDownsampleTextureComputePipeline extends IComputePipeline {
 
     /** The destination view (mip level 0 of the view is written). */
     target: ITextureView2D;
+
+    /**
+     * If true, each destination pixel takes the nearest source pixel. If false, it averages the 2×2 source pixels
+     * around it (bilinear), which gives smoother mips. By default, false.
+     */
+    nearestNeighbour: boolean;
 }

@@ -25,7 +25,7 @@ export abstract class AWebGpuComputePipeline implements IComputePipeline {
         this._framework = framework;
         this._graphicsDevice = framework.graphicsDevice as WebGpuGraphicsDevice;
     }
-  
+
     /** @inheritdoc */
     public get state(): State {
         return this._state;
@@ -42,9 +42,6 @@ export abstract class AWebGpuComputePipeline implements IComputePipeline {
 
     /** @inheritDoc */
     public abstract dispatchWorkgroup(x: number, y: number, z?: number): void;
-
-    /** @inheritDoc */
-    public abstract frameEnd(): void;
 
     /**
      * Creates the pipeline layout and the compute pipeline.

@@ -72,10 +72,7 @@ export class WebGpuTextureView implements ITextureView2D {
 
     /** The WebGPU view. */
     public get gpuTextureView(): GPUTextureView {
-        if (!this._gpuTextureView) {
-            throw new Error("WebGpuTextureView: the view is disposed.");
-        }
-        return this._gpuTextureView;
+        return this._gpuTextureView!;
     }
 
     /** @inheritDoc */

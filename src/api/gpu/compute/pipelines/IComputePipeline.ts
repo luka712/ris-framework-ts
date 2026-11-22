@@ -34,9 +34,4 @@ export interface IComputePipeline extends IDisposable {
      * @param z - The number of workgroups in z. By default, 1.
      */
     dispatchWorkgroup(x: number, y: number, z?: number) : void;
-
-    /**
-     * Clears per-frame state. Called at the end of the frame.
-     */
-    frameEnd(): void;
 }

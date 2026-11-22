@@ -1,4 +1,19 @@
-import type { IDisposable } from "../_export";
+import type { IDisposable, ITexture2D, ITexture2DArray, ITextureView2D } from "../_export";
+
+/**
+ * One side of a texture to texture copy.
+ * @public 
+ */
+export interface ITextureCopyRegion {
+    /** The texture. */
+    texture: ITexture2D | ITexture2DArray;
+
+    /** The mip level. By default 0. */
+    mipLevel?: number;
+
+    /** The first array layer. By default 0. */
+    arrayLayer?: number;
+}
 
 /**
  * Encodes GPU commands for submission to a command queue.
@@ -40,9 +55,13 @@ export interface IGpuCommandEncoder extends IDisposable {
     submit(): void;
 
     /**
-     * TODO
+     * Copies a mip level region of one texture into another. The width and height come from the source mip level
+     * and must match the destination mip level.
+     * @param source The source texture, mip level and first array layer.
+     * @param destination The destination texture, mip level and first array layer.
+     * @param arrayLayerCount The number of array layers to copy. By default 1.
      */
-    // copyTextureToTexture();
+    copyTextureToTexture(source: ITextureCopyRegion, destination: ITextureCopyRegion, arrayLayerCount?: number): void;
 
     /**
      * Schedules a disposable resource for disposal after the associated

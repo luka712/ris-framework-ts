@@ -11,7 +11,7 @@ export abstract class AComputePass implements IComputePass {
 
         this.label = _descriptor.label;
     }
-  
+
     /** @inheritdoc */
     public label?: string | undefined;
 
@@ -22,14 +22,12 @@ export abstract class AComputePass implements IComputePass {
         this._beginPass();
     }
 
-    /**
-     * The implementation of beginPass;
-     */
+    /**The implementation of beginPass;  */
     protected abstract _beginPass(): void;
 
     /** @inheritdoc */
     public abstract endPass(): void;
 
     /** @inheritdoc */
-    public abstract  dispose(): void;
+    public abstract dispose(): void;
 }

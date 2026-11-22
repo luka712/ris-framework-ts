@@ -39,7 +39,11 @@ Compared with 0.3.0.
 - `graphicsDevice.mainCommandEncoder`, `createCommandEncoder`, `frameStart` and `frameEnd`. Pass descriptors can take a `commandEncoder`; otherwise the main encoder is used.
 - `framework.computePipelineFactory` (`IComputePipelineFactory`; omitted on WebGL) with `createDownsampleTexturePipeline` (source and destination are `ITextureView2D`; the pipeline's `target` is that destination).
 - `ITextureViewDescriptor` sets `dimension` and can set `baseMipLevel`, `mipLevelCount`, `baseArrayLayer` and `arrayLayerCount`. `createView(descriptor)` creates a view of a mip or layer. `ITextureView2D.size` is the view's pixel size.
-- `IDownsampleTextureComputePipeline` (`source`, `target`; extends `IComputePipeline` with `initialize`, `dispatch`, `dispatchWorkgroup` and `frameEnd`).
+- `IDownsampleTextureComputePipeline` (`source`, `target`, `nearestNeighbour`; extends `IComputePipeline` with `initialize`, `dispatch` and `dispatchWorkgroup`). `nearestNeighbour` is false by default, so mips average 2×2 source pixels (bilinear).
+- `IGpuCommandEncoder.copyTextureToTexture(source, destination, arrayLayerCount?)`, where each side is an `ITextureCopyRegion` (`texture`, `mipLevel`, `arrayLayer`). WebGL throws "Not implemented".
+- `queueDispose()` on 2D textures and texture arrays, and `graphicsDevice.queueDisposable()`: the item is disposed in `frameEnd()`, after the frame is submitted. See [`guides/disposing.md`](guides/disposing.md).
+- `canvasManager.addOnResizeListener` and `removeOnResizeListener`, called at the start of a frame when the canvas size changed. The swap chain follows the canvas, and the main render target follows it when `backBufferMatchesSwapChain` is true. See [`guides/resizing.md`](guides/resizing.md).
+- `CpuImageProcessor.resizeAsync` and `generateMipmapsAsync` accept raw RGBA8 bytes, not only images.
 - `graphicsDevice.state` lifecycle, plus `supportedTextureFormats` and `supportsTextureFormat()` on device features.
 - `#include` in GLSL and WGSL shader modules.
 - `texture_array_2d` and `inspect_texture_mips` examples.
@@ -50,11 +54,16 @@ Compared with 0.3.0.
 - KTX2 textures use the color space stored in the file unless one is passed.
 - Texture factories validate data sizes and give clearer error messages.
 - Default usage for 2D images (`loadTexture2DAsync` and `textureFactory.create`) is `TEXTURE_BINDING | COPY_DST | RENDER_ATTACHMENT`. On WebGPU, missing flags throw.
+- Generated mips use a bilinear 2×2 average instead of nearest neighbour.
+- Texture array mipmaps are built like 2D ones: each mip level is downsampled from the previous level of the same layer.
 
 ### Fixed
 
 - Examples no longer hang after switching backends several times.
 - Running or restarting the event loop no longer starts a second loop, and removing a listener during a frame no longer skips the next one.
+- WebGL no longer renders with a 0×0 viewport.
+- Resizing on WebGPU no longer fails with "Destroyed texture used in a submit"; old render targets are disposed after the frame is submitted.
+- `CpuImageProcessor.generateMipmapsAsync` no longer adds an extra 0×0 level and keeps non-square levels at least 1 pixel wide and high.
 
 ## [0.3.0] - {{YYYY-MM-DD}}
 

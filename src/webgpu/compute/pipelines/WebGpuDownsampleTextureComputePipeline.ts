@@ -21,7 +21,6 @@ export class WebGpuDownsampleTextureComputePipeline extends AWebGpuComputePipeli
 
     private _source: ITextureView2D | null = null;
     private _target: ITextureView2D | null = null;
-    private _dispatched = false;
     private _bindGroupLayout!: GPUBindGroupLayout;
     private _bindGroup!: GPUBindGroup;
 
@@ -30,10 +29,12 @@ export class WebGpuDownsampleTextureComputePipeline extends AWebGpuComputePipeli
      * - vec2 sourceSize
      * - vec2 destSize
      * - float srgb
-     * - vec3 padding
+     * - float nearestNeighbour (1 = nearest, 0 = bilinear)
+     * - vec2 padding
      */
     private _uniformBuffer!: IUniformBuffer;
     private _srgb = false;
+    private _nearestNeighbour = false;
 
     /**
      * The constructor.
@@ -83,6 +84,18 @@ export class WebGpuDownsampleTextureComputePipeline extends AWebGpuComputePipeli
         }
     }
 
+    /** @inheritDoc */
+    public get nearestNeighbour(): boolean {
+        return this._nearestNeighbour;
+    }
+
+    public set nearestNeighbour(value: boolean) {
+        if (this._nearestNeighbour != value) {
+            this._nearestNeighbour = value;
+            this._uniformBuffer.writeSingle(value ? 1 : 0, 5);
+        }
+    }
+
     private _createBindGroup(): void {
 
         if (!this.source || !this.target) {
@@ -92,6 +105,11 @@ export class WebGpuDownsampleTextureComputePipeline extends AWebGpuComputePipeli
         const gpuSource = this.source.nativeObject as GPUTextureView;
         const gpuDest = this.target.nativeObject as GPUTextureView;
         const gpuBuffer = (this._uniformBuffer as WebGpuUniformBuffer).gpuBuffer
+
+        // We are not ready yet to create a bind group.
+        if(!gpuSource || !gpuDest || !gpuBuffer ){
+            return;
+        }
 
         this._bindGroup = WebGpuUtilities.bindGroup.create(this._graphicsDevice.device, this._bindGroupLayout, [
             { binding: 0, resource: gpuSource },
@@ -140,21 +158,16 @@ export class WebGpuDownsampleTextureComputePipeline extends AWebGpuComputePipeli
 
     /** @inheritDoc */
     public dispatchWorkgroup(x: number, y: number, z: number = 1): void {
-        if (this._dispatched || this._state != State.INITIALIZED) {
-            return;
+        // We cannot dispatch non-initialized pipeline.
+        if (this._state != State.INITIALIZED) {
+            throw new Error("TODO");
         }
-        this._dispatched = true;
         this._uniformBuffer.update();
 
         const encoder = (this._graphicsDevice.currentComputePass as WebGpuComputePass).gpuComputePassEncoder!;
         encoder.setPipeline(this._gpuPipeline!);
         encoder.setBindGroup(0, this._bindGroup);
         encoder.dispatchWorkgroups(x, y, z);
-    }
-
-    /** @inheritDoc */
-    public frameEnd(): void {
-        this._dispatched = false;
     }
 
     /** @inheritDoc */

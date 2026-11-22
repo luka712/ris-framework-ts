@@ -19,6 +19,8 @@ struct DownsampleParams {
     dstSize: vec2<f32>,
     // If 1 we are using srgb source
     srgb: f32, // 0 = linear, 1 = sRGB
+    // 1 = nearest neighbour, 0 = bilinear (average of 2x2 source pixels).
+    nearestNeighbour: f32,
 };
 
 @group(0) @binding(0)
@@ -46,7 +48,12 @@ fn main(
     let scale = params.srcSize / params.dstSize;
     let srcPos = (vec2<f32>(dstCoord) + 0.5) * scale - 0.5;
 
-    var color = resize_nearest(srcTexture, srcPos, params.srcSize);
+    var color: vec4<f32>;
+    if (params.nearestNeighbour >= 0.5) {
+        color = resize_nearest(srcTexture, srcPos, params.srcSize);
+    } else {
+        color = resize_bilinear(srcTexture, srcPos, params.srcSize);
+    }
 
     if (params.srgb >= 0.5) {
         color = vec4<f32>(srgbToLinear(color.rgb), color.a);

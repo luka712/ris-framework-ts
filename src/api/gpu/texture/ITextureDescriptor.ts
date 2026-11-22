@@ -12,7 +12,6 @@ export interface ITextureDescriptor {
      * If not specified, the main command encoder is used.
      *
      * Intended for advanced usage scenarios.
-     * This property has no effect when using the WebGL backend.
      *
      * @internal
      */
