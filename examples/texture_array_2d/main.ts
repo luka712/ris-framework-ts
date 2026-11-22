@@ -3,11 +3,12 @@ import {runWithBackendSwitcher} from "../shared/backendSwitcher.ts";
 import {
     Color,
     Framework,
-    RenderingBackend,
+    GpuBackend,
     RenderableMesh,
     Scene,
     type GameTime,
     TextureFormat,
+    TextureUsage,
     type IFramework,
     type ITexture2DArray,
     type InspectTextureArrayMaterial,
@@ -27,7 +28,7 @@ const LAYER_URLS: ReadonlyArray<string> = [layer0Url, layer1Url, layer2Url, laye
 runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
     const framework: IFramework = new Framework({
         canvas,
-        renderingBackend: backend,
+        gpuBackend: backend,
     });
 
     // The scene draws the quads; disposing it disposes the meshes and their materials (not the texture).
@@ -37,10 +38,14 @@ runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
     framework.addOnLoadContentListener(async () => {
         try {
             const layers = LAYER_URLS.length;
-            const loaded = await framework.content.loadTexture2DArrayAsync([...LAYER_URLS], {
-                label: "PngLayers",
-                textureFormat: TextureFormat.RGBA8_UNORM,
-            });
+            // One image per layer, mip level 0 only.
+            const images = await Promise.all(LAYER_URLS.map(url => framework.imageLoader.loadAsync(url)));
+            const loaded = framework.textureFactory.createTexture2DArray(
+                images[0].baseWidth, images[0].baseHeight, layers,
+                images.map(image => [image.getData(0) as Uint8Array]),
+                "PngLayers",
+                TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST,
+                TextureFormat.RGBA8_UNORM);
             if (!isCurrent()) {
                 loaded.dispose();
                 return;
@@ -70,7 +75,7 @@ runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
                 scene.add(unlitMesh);
             }
 
-            const backendName = backend === RenderingBackend.WEB_GPU ? "WebGPU" : "WebGL";
+            const backendName = backend === GpuBackend.WEB_GPU ? "WebGPU" : "WebGL";
             status.textContent = `${backendName} texture array: ${layers} PNG layers (16×16). Top: InspectTextureArrayMaterial, bottom: UnlitTextureArrayMaterial.`;
         } catch (error) {
             if (!isCurrent()) {

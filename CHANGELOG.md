@@ -10,39 +10,47 @@ Compared with 0.3.0.
 
 ### Breaking changes
 
-- `WindowManager` is now `CanvasManager` (`framework.canvasManager`), and `WindowBounds` is now `CanvasBounds`.
-- `framework.initialize()` is removed; use `initializeAsync()`. `framework.renderingBackend` is removed; use `graphicsDevice.api`.
-- WebGPU no longer falls back to WebGL; initialization throws when WebGPU is unavailable. `WebGpuRenderer.isSupported()` is removed.
-- Textures expose `size: vec2` instead of `width` and `height`; the old `size` byte count is now `vramSize`. `createEmpty` takes a `vec2`, and `createFromKtx2(ktx, textureFormat?, colorSpace?)` replaces the descriptor overload.
-- `textureColorSpace` and `renderer.colorSpace` are replaced by `outputColorSpace`, default `OutputColorSpace.NONE`. See [`guides/color-output.md`](guides/color-output.md).
-- `TextureFormat` members use wgpu-style names, for example `RGBA8_UNORM` instead of `RGBA_8_UNORM`.
-- `ITextureView` is now `ITextureView2D`; texture views are not supported on WebGL2 (check `features.supportsTextureView`).
-- `SwapChainDescriptor` is now the `ISwapChainDescriptor` interface.
+- `WindowManager` is now `CanvasManager`, and `WindowBounds` is now `CanvasBounds`.
+- `framework.initialize()` is removed; use `initializeAsync()`.
+- WebGPU no longer falls back to WebGL.
+- Textures use `size: vec2` instead of `width` and `height`; the byte count is now `vramSize`.
+- `textureColorSpace` and `renderer.colorSpace` are replaced by `outputColorSpace`. See [`guides/color-output.md`](guides/color-output.md).
+- `TextureFormat` members use wgpu-style names, for example `RGBA8_UNORM`.
+- `ITextureView` is now `ITextureView2D`; `SwapChainDescriptor` is now `ISwapChainDescriptor`.
+- `RenderingBackend` is now `GpuBackend`; `renderer.backend` and `renderer.limits` move to `graphicsDevice.api` and `graphicsDevice.limits`.
+- `createRenderPass` moves from the graphics device to the renderer.
+- `IUniformBuffer.update(data)` is split into `write` / `writeSingle` and `update()`.
+- KTX2 texture factories default `generateMipmaps` to false.
 
 ### Added
 
-- 2D texture arrays on WebGL and WebGPU: `createTexture2DArray`, `createTexture2DArrayFromKtx2` and `content.loadTexture2DArrayAsync`.
-- `createWithMipLevels` for 2D textures with your own mip levels.
-- `InspectTextureArrayMaterial`, and WebGPU support for `InspectTextureMipsMaterial`.
-- `UnlitTextureArrayMaterial` (`materialFactory.createUnlitTextureArrayMaterial()`): an unlit material that samples one `layer` of a texture array.
-- Compressed texture arrays on WebGL2 (BC, ETC2 and ASTC when supported; PVRTC throws).
-- Mipmap generation for RGBA8 texture arrays on WebGPU, and in `createTexture2DArrayFromKtx2` for single-level uncompressed files (`generateMipmaps` parameter).
-- `graphicsDevice.state` lifecycle, plus `supportedTextureFormats` and `supportsTextureFormat()` on device features.
-- `#include` in GLSL and WGSL shader modules.
-- `texture_array_2d` and `inspect_texture_mips` examples.
+- 2D texture arrays on WebGL and WebGPU, including compressed formats on WebGL2.
+- Mipmap generation for RGBA8 textures and texture arrays.
+- Compute support on WebGPU: `framework.computeContext`, compute passes and `computePipelineFactory`.
+- Main and custom render passes, and command encoders on the graphics device.
+- Texture views of a single mip or layer.
+- `copyTextureToTexture` on the command encoder (WebGPU only).
+- Deferred disposal with `queueDispose()`. See [`guides/disposing.md`](guides/disposing.md).
+- Canvas resize listeners. See [`guides/resizing.md`](guides/resizing.md).
+- `graphicsDevice.limits`, `graphicsDevice.state` and supported texture formats.
+- `CpuImageProcessor` resizes and generates mips from raw RGBA8 bytes.
+- `#include` in GLSL and WGSL shaders.
+- New materials and the `texture_array_2d` and `inspect_texture_mips` examples.
 
 ### Changed
 
-- Requires `ris-ktx2` ^0.3.0-dev.18.
-- KTX2 textures use the color space stored in the file unless one is passed.
-- Texture factories validate data sizes and give clearer error messages.
+- Updated `ris-ktx2` from 0.2.0 to 0.3.0.
+- KTX2 textures use the file's color space unless one is passed.
+- Clearer texture validation errors.
 
 ### Fixed
 
-- Examples no longer hang after switching backends several times.
-- Running or restarting the event loop no longer starts a second loop, and removing a listener during a frame no longer skips the next one.
+- Examples hanging after switching backends.
+- Event loop starting twice or skipping a frame.
+- WebGL rendering with a 0×0 viewport.
+- Wrong mip levels in `CpuImageProcessor.generateMipmapsAsync`.
 
-## [0.3.0] - {{YYYY-MM-DD}}
+## [0.3.0] - 2026-11-01
 
 Compared with 0.2.0.
 

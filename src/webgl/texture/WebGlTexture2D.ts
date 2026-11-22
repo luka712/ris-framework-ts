@@ -2,11 +2,12 @@ import {WebGlUtilities} from "../utilities/WebGlUtilities.ts";
 import {
     type IFramework, State,
     type ITextureView2D,
+    type ITextureViewDescriptor,
     TextureUtilities,
-    type ITextureDescriptor, TextureFormat,
+    type ITextureDescriptor,
 } from "../../api";
 import type {WebGlGraphicsDevice} from "../WebGlGraphicsDevice.ts";
-import {ATexture2D} from "../../api/rendering/texture/ATexture2D.ts";
+import {ATexture2D} from "../../api/gpu/texture/ATexture2D.ts";
 import {vec2} from "gl-matrix";
 
 /**
@@ -17,7 +18,7 @@ import {vec2} from "gl-matrix";
  */
 export class WebGlTexture2D extends ATexture2D {
 
-    private readonly _graphicsDevice: WebGlGraphicsDevice;
+    declare protected readonly _graphicsDevice: WebGlGraphicsDevice;
 
     private _glTexture: WebGLTexture | null = null;
 
@@ -30,9 +31,8 @@ export class WebGlTexture2D extends ATexture2D {
         framework: IFramework,
         textureDescriptor: ITextureDescriptor
     ) {
-        const graphicsDevice = framework.renderer.graphicsDevice as WebGlGraphicsDevice;
+        const graphicsDevice = framework.graphicsDevice as WebGlGraphicsDevice;
         super(graphicsDevice, textureDescriptor);
-        this._graphicsDevice = graphicsDevice;
         this.gl = this._graphicsDevice.gl!;
     }
 
@@ -64,7 +64,7 @@ export class WebGlTexture2D extends ATexture2D {
                 this.size[0], this.size[1],
                 this._data,
                 this.textureFormat,
-                this._generateMipMaps,
+                this._generateMipmaps,
                 0,
                 this.label
             );
@@ -77,7 +77,7 @@ export class WebGlTexture2D extends ATexture2D {
         let height = this.size[1];
 
         // If we can generate mipmaps, we need to calculate the number of mip levels.
-        if(this._generateMipMaps) {
+        if(this._generateMipmaps) {
             this._mipLevels = TextureUtilities.mipLevels(width, height);
         }
         this._vramSize = 0;
@@ -94,29 +94,20 @@ export class WebGlTexture2D extends ATexture2D {
      * WebGL2 does not support texture views. Always throws.
      * @inheritdoc
      */
-    protected _createTextureView(_textureFormat: TextureFormat): ITextureView2D {
+    protected _createTextureView(_descriptor: ITextureViewDescriptor): ITextureView2D {
         throw new Error(
             `WebGL2 does not support texture views (graphicsDevice.features.supportsTextureView is false). ` +
             `Use the texture directly (RenderPassColorAttachment.texture / WebGlTexture2D.glTexture).`
         );
     }
 
-
-    /** @inheritdoc */
-    public dispose(): void {
-
-        if (this._state == State.DISPOSING || this._state == State.DISPOSED) {
-            return;
-        }
-
-        this._disposeTextureViews();
+    /**
+     * Deletes the WebGL texture.
+     * @inheritDoc
+     * @ai-generated
+     */
+    protected _dispose(): void {
         this.gl.deleteTexture(this._glTexture);
         this._glTexture = null;
-        this._state = State.DISPOSED;
-
-        // Iterate a copy. A listener may remove itself while this loop runs.
-        for (const listener of this._disposedListeners.slice()) {
-            listener(this);
-        }
     }
 }

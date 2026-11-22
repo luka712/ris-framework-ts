@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it, vi} from "vitest";
 import {vec2} from "gl-matrix";
-import {TextureFormat} from "../src/api/rendering/texture/TextureFormat";
+import {TextureFormat} from "../src/api/gpu/texture/TextureFormat";
 import {WebGpuTexture2D} from "../src/webgpu/texture/WebGpuTexture2D";
 
 function createFramework() {
@@ -11,7 +11,8 @@ function createFramework() {
         popErrorScope: vi.fn(() => Promise.resolve(null)),
         queue: {writeTexture: vi.fn(), copyExternalImageToTexture: vi.fn()},
     };
-    const framework = {renderer: {graphicsDevice: {device, api: "WEB_GPU", features: {supportsTextureView: true}}}} as any;
+    const graphicsDevice = {device, api: "WEB_GPU", features: {supportsTextureView: true}};
+    const framework = {renderer: {graphicsDevice}, graphicsDevice} as any;
     return {framework, device, createTexture};
 }
 

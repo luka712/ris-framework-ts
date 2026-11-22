@@ -1,5 +1,4 @@
-import type {IBlendState, IIndexBuffer, ITexture2D, IUniformBuffer, IVertexBuffer} from "../../api/index.ts";
-import type { ITempRenderer } from "../../api/rendering/renderer-interface.ts";
+import type {IBlendState, IGraphicsDevice, IIndexBuffer, IRenderer, ITexture2D, IUniformBuffer, IVertexBuffer} from "../../api/index.ts";
 import { WebGlBlendState } from "../blending/webgl-blend-state";
 import { WebGLIndexBuffer } from "../buffers/webgl-index-buffer";
 import { WebGlUniformBuffer } from "../buffers/WebGlUniformBuffer.ts";
@@ -13,7 +12,7 @@ import { WebGlRenderer } from "../WebGlRenderer.ts";
  * @param renderer The renderer to cast.
  * @returns The given renderer casted to a WebGLRenderer.
  */
-export function asWebGLRenderer(renderer: ITempRenderer): WebGlRenderer {
+export function asWebGLRenderer(renderer: IRenderer): WebGlRenderer {
     if (renderer instanceof WebGlRenderer) {
         return renderer;
     } else {
@@ -78,7 +77,7 @@ export function asWebGLUniformBuffer(uniformBuffer: IUniformBuffer): WebGlUnifor
  * @param graphicsDevice The graphics device to cast.
  * @returns The given graphics device casted to a WebGLGraphicsDevice.
  */
-export function asWebGLGraphicsDevice(graphicsDevice: ITempRenderer["graphicsDevice"]): WebGlGraphicsDevice {
+export function asWebGLGraphicsDevice(graphicsDevice: IGraphicsDevice): WebGlGraphicsDevice {
     if (graphicsDevice instanceof WebGlGraphicsDevice   ) {
         return graphicsDevice as WebGlGraphicsDevice;
     } else {

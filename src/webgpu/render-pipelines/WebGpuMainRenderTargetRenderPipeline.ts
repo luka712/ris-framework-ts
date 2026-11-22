@@ -7,6 +7,7 @@ import {
     type ITexture2D,
     OutputColorSpace,
     TextureFormat,
+    State,
 } from "../../api/index.ts";
 import {VertexBufferLayout} from "../../core/rendering/vertex-buffer-layout.ts";
 import {AWebGpuRenderPipeline} from "./AWebGpuRenderPipeline.ts";
@@ -77,7 +78,6 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
 
     public set flipY(value: boolean) {
         this._fragmentData[0] = value ? 1 : 0;
-        this._fragmentDataBuffer?.update(this._fragmentData, 0, 1);
     }
 
     /**
@@ -91,7 +91,6 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
     public set outputColorSpace(value: OutputColorSpace) {
         this._outputColorSpace = value;
         this._fragmentData[1] = value == OutputColorSpace.SRGB ? 1 : 0;
-        this._fragmentDataBuffer?.update(this._fragmentData, 1, 1);
     }
 
     /**
@@ -103,7 +102,6 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
 
     public set gamma(value: number) {
         this._fragmentData[2] = value;
-        this._fragmentDataBuffer?.update(this._fragmentData, 2, 1);
     }
 
     /** @inheritDoc */
@@ -134,9 +132,11 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
         // Drawn in the swap chain pass, which has no depth attachment. Target the swap chain format (always linear UNORM).
         this._createGpuPipeline(
             "Main Frame Buffer Render Pipeline",
-            module.gpuShaderModule,
+            module.shader!,
             [this._bindGroupLayout],
             this._graphicsDevice.swapChain?.textureFormat ?? TextureFormat.RGBA8_UNORM);
+
+        this._state = State.INITIALIZED;
     }
 
     private _getBindGroup(): GPUBindGroup {
@@ -159,11 +159,13 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
 
     /** @inheritDoc */
     public render(): void {
-        if (!this._gpuPipeline) {
+        if (this._state != State.INITIALIZED) {
             return;
         }
-        const encoder = this._graphicsDevice.renderPassEncoder;
-        encoder.setPipeline(this._gpuPipeline);
+        this._fragmentDataBuffer!.write(this._fragmentData);
+        this._fragmentDataBuffer!.update();
+        const encoder = this._graphicsDevice.gpuRenderPassEncoder;
+        encoder.setPipeline(this._gpuPipeline!);
         encoder.setVertexBuffer(0, this._vertexBuffer.gpuBuffer, 0, this._vertexBuffer.byteSize);
         encoder.setIndexBuffer(this._indexBuffer.gpuBuffer, this._indexBuffer.gpuIndexFormat, 0, this._indexBuffer.paddedByteSize);
         encoder.setBindGroup(0, this._getBindGroup());
@@ -172,6 +174,11 @@ export class WebGpuMainRenderTargetRenderPipeline extends AWebGpuRenderPipeline 
 
     /** @inheritDoc */
     public override dispose(): void {
+
+        if (this._state == State.DISPOSED) {
+            return;
+        }
+
         // ARenderer recreates this pipeline on every resize, so release the quad buffers too.
         this._vertexBuffer?.dispose();
         this._indexBuffer?.dispose();

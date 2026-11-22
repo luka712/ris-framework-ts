@@ -137,4 +137,7 @@ export abstract class AGraphicsDeviceFeatures implements IGraphicsDeviceFeatures
     public supportsTextureFormat(format: TextureFormat): boolean {
         return this._supportedTextureFormats.has(format);
     }
+
+    /** @inheritdoc */
+    public abstract get supportComputePipeline(): boolean;
 }

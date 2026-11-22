@@ -1,10 +1,6 @@
-/**
- * Interface that should be called to correctly dispose of instance.
- */
+/** A resource that holds memory or native objects and must be disposed. */
 export interface IDisposable {
 
-    /**
-     * Disposes the resource and release memory if resources allocated memory.
-     */
-    dispose() : void;
+    /** Disposes the resource immediately and releases its memory. */
+    dispose(): void;
 }

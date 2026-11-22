@@ -1,5 +1,6 @@
 import {
     GeometryFormat,
+    State,
     type IFramework, type IPrimitiveState,
     type ISampler,
     type IUniformBuffer,
@@ -16,10 +17,10 @@ import { type IIndexBuffer, IndexBufferType } from "../../../api";
 import type { WebGlSampler } from "../../sampler/webgl-sampler.ts";
 import type {IInspectTextureArrayRenderPipeline} from "../../../api";
 import {WebGlTexture2DArray} from "../../texture/WebGlTexture2DArray.ts";
-import type {ITexture2DArray} from "../../../api/rendering/texture/ITexture2DArray.ts";
+import type {ITexture2DArray} from "../../../api/gpu/texture/ITexture2DArray.ts";
 import { WebGlTextureFactory } from "../../texture/WebGlTextureFactory.ts";
 
-/** The WebGL implementation of {@link IInspectTextureArrayRenderPipeline}. Uses the `inspect_texture_array` GLSL shader (`sampler2DArray`). */
+/** {@link IInspectTextureArrayRenderPipeline} for WebGL. Uses the `inspect_texture_array` GLSL shader (`sampler2DArray`). */
 export class WebGlInspectTextureArrayRenderPipeline extends AWebGlRenderPipeline implements IInspectTextureArrayRenderPipeline {
 
     private static readonly CAMERA_BINDING_POINT = 0;
@@ -126,6 +127,7 @@ export class WebGlInspectTextureArrayRenderPipeline extends AWebGlRenderPipeline
         this._createResources();
         this.vertexBufferLayouts = [VertexBufferLayout.createFloat3Float4Float2Layout()];
         super.initialize();
+        this._state = State.INITIALIZED;
     }
 
     private _createResources(): void {
@@ -157,7 +159,7 @@ export class WebGlInspectTextureArrayRenderPipeline extends AWebGlRenderPipeline
     /** @inheritdoc */
     public render(vertexBuffer: IVertexBuffer, indexBuffer: IIndexBuffer, indicesCount: number = -1, indicesOffset: number = 0): void {
 
-        if (indicesCount == 0) {
+        if (indicesCount == 0 || this._state != State.INITIALIZED) {
             return;
         }
 

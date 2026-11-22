@@ -3,7 +3,7 @@ import {runWithBackendSwitcher} from "../shared/backendSwitcher.ts";
 import {
     Color,
     Framework,
-    RenderingBackend,
+    GpuBackend,
     RenderableMesh,
     Scene,
     type GameTime,
@@ -22,7 +22,7 @@ const mipSelect = document.querySelector<HTMLSelectElement>("#mip-level")!;
 runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
     const framework: IFramework = new Framework({
         canvas,
-        renderingBackend: backend,
+        gpuBackend: backend,
         textureFiltering: TextureSamplerFilteringPreset.TRILINEAR
     });
 
@@ -71,7 +71,7 @@ runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
             mipSelect.disabled = false;
             onMipChange();
 
-            const backendName = backend === RenderingBackend.WEB_GPU ? "WebGPU" : "WebGL";
+            const backendName = backend === GpuBackend.WEB_GPU ? "WebGPU" : "WebGL";
             status.textContent = `${backendName}: kodim23.ktx2 (${texture.size[0]}×${texture.size[1]}, ${texture.textureFormat}) `
                 + `with ${levelCount} mip levels.`;
         } catch (error) {

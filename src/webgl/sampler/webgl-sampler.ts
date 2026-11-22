@@ -1,11 +1,11 @@
-import { SamplerCompareFunction } from "../../api/rendering/sampler/sampler-enums";
+import { SamplerCompareFunction } from "../../api/gpu/sampler/sampler-enums.ts";
 import { SamplerDescriptor } from "../../core/rendering/sampler/sampler-descriptor";
 import { WebGlUtilities } from "../utilities/WebGlUtilities.ts";
 import type { WebGlGraphicsDevice } from "../WebGlGraphicsDevice.ts";
 import {type ISampler, MipMapSamplerFilter, SamplerAddressMode, SamplerFilter} from "../../api/index.ts";
 
 /**
- * The WebGL implementation of the ISampler interface.
+ * A WebGL sampler.
  */
 export class WebGlSampler implements ISampler {
 
@@ -97,6 +97,15 @@ export class WebGlSampler implements ISampler {
             SamplerCompareFunction.Never,
             1,
         );
+    }
+
+    /**
+     * Disposes immediately. WebGL has no deferred submit, so the driver keeps the object alive while it is in use.
+     * @inheritDoc
+     * @ai-generated
+     */
+    public queueDispose(): void {
+        this.dispose();
     }
 
     /** @inheritdoc */

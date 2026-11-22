@@ -17,8 +17,9 @@ import colorConversion from "../../../shaders/glsl/modules/color_conversion.glsl
 /**
  * One built-in GLSL or WGSL shader registry entry.
  * `path` is set only for an importable module. By default, absent, and the entry is a program.
- * `vertex` and `fragment` are WebGL sources. By default, absent. WGSL programs use `shader` instead.
- * `shader` is a WGSL program or a module body. By default, absent.
+ * `vertex` and `fragment` are WebGL sources. By default, absent.
+ * `shader` is a WGSL render program (vertex and fragment entry points) or a module body pulled in with `#include`. By default, absent.
+ * `compute` is a WGSL compute program. By default, absent.
  * `reflection` is reserved. By default, absent. Built-in GLSL entries set `{}`.
  */
 export interface InternalShader {
@@ -32,7 +33,10 @@ export interface InternalShader {
     /** The fragment shader. Used by WebGL2 shaders. By default, absent. */
     fragment?: string;
 
-    /** The WGSL program, or a module body (GLSL or WGSL) pulled in with `#include`. By default, absent. */
+    /** The compute shader. Used by WebGPU compute programs. By default, absent. */
+    compute?: string;
+
+    /** The WGSL render program, or a module body (GLSL or WGSL) pulled in with `#include`. By default, absent. */
     shader?: string;
 
     /** The reflection data. By default, absent. Built-in GLSL entries set `{}`. */
@@ -104,12 +108,13 @@ import forwardBlinnPhongMaterial from "../../../shaders/wgsl/forward_blinn_phong
 import sprite from "../../../shaders/wgsl/sprite.wgsl?raw";
 import inspectTextureMips from "../../../shaders/wgsl/inspect/inspect_texture_mips.wgsl?raw";
 import inspectTextureArrayWgsl from "../../../shaders/wgsl/inspect/inspect_texture_array.wgsl?raw";
-import generateMipmapsWgsl from "../../../shaders/wgsl/utilities/generate_mipmaps.wgsl?raw";
 import colorConversionWgsl from "../../../shaders/wgsl/modules/color_conversion.wgsl?raw";
+import resizeWgsl from "../../../shaders/wgsl/modules/resize.wgsl?raw";
+import downsampleTextureWgsl from "../../../shaders/wgsl/utilities/downsample_texture.wgsl?raw";
 
 /**
  * The framework's built-in WGSL programs and modules, keyed by the same ids the WebGL backend uses where one exists.
- * `shader` is the WGSL source; every program has `main_vs` and `main_fs` entry points.
+ * Render programs set `shader` (`main_vs` and `main_fs` entry points). Compute programs set `compute`.
  * Modules also set `path` and are pulled in with `#include "<path>"`. `vertex` and `fragment` are absent on these entries.
  * @internal
  */
@@ -125,8 +130,6 @@ export const WgslShaderModuleContent: { [id: string]: InternalShader } = {
     sprite: { shader: sprite },
     inspect_texture_mips: { shader: inspectTextureMips },
     inspect_texture_array: { shader: inspectTextureArrayWgsl },
-    // Used by WebGpuMipmapUtilities, not by a render pipeline.
-    generate_mipmaps: { shader: generateMipmapsWgsl },
     color_conversion: {
         path: "modules/color_conversion.wgsl",
         shader: colorConversionWgsl,
@@ -136,6 +139,14 @@ export const WgslShaderModuleContent: { [id: string]: InternalShader } = {
         path: "modules/mesh_vertex.wgsl",
         shader: meshVertexWgsl,
         reflection: {}
+    },
+    resize: {
+        path: "modules/resize.wgsl",
+        shader: resizeWgsl,
+        reflection: {}
+    },
+    downsample_texture: {
+        compute: downsampleTextureWgsl,
     },
 
 };

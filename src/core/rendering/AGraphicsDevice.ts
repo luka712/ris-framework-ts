@@ -1,18 +1,21 @@
-import {BlendStateDescriptor} from "./blending/blend-state-descriptor";
-import {TextureSamplerFilteringPreset} from "./enums";
-import {SamplerDescriptor} from "./sampler/sampler-descriptor";
+import { BlendStateDescriptor } from "./blending/blend-state-descriptor";
+import { TextureSamplerFilteringPreset } from "./enums";
+import { SamplerDescriptor } from "./sampler/sampler-descriptor";
 import {
     type IGPUInfo,
     type IGraphicsDeviceFeatures,
     type ISampler,
     type IBlendState,
     type IPrimitiveState,
-    type IGraphicsDevice, type ISwapChainDescriptor, type RenderPassDescriptor, SamplerFilter, MipMapSamplerFilter,
-    type ISwapChain, type IRenderPass, type IPrimitiveStateDescriptor,
-    type RenderingBackend,
-    State
+    type IGraphicsDevice, type ISwapChainDescriptor, SamplerFilter, MipMapSamplerFilter,
+    type ISwapChain, type IRenderPass, type IComputePass, type IPrimitiveStateDescriptor,
+    type GpuBackend,
+    type GpuLimits,
+    State,
+    type IDeferredDisposable
 } from "../../api/index.ts";
-import {PowerPreferenceType} from "../../api/rendering/PowerPreference.ts";
+import { PowerPreferenceType } from "../../api/gpu/PowerPreference.ts";
+import type { IGpuCommandEncoder } from "../../api/gpu/IGpuCommandEncoder.ts";
 
 /**
  * The descriptor for the graphics device. This is used to configure the graphics device during initialization.
@@ -46,7 +49,10 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     protected _defaultTextureSampler: ISampler = null!;
     protected _defaultBlendState: IBlendState = null!;
     protected _defaultPrimitiveState: IPrimitiveState = null!;
+    protected _limits: GpuLimits | null = null;
     protected _state: State = State.CREATED;
+    protected _mainCommandEncoder: IGpuCommandEncoder = null!;
+    protected _disposableQueue: IDeferredDisposable[] = [];
 
     /**
      * The constructor.
@@ -55,9 +61,20 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     protected constructor(descriptor: IGraphicsDeviceDescriptor) {
         this._descriptor = descriptor;
     }
+  
+    /** @inheritdoc */
+    public currentComputePass: IComputePass = null!;
 
     /** @inheritdoc */
-    abstract readonly api: RenderingBackend;
+    public currentRenderPass: IRenderPass = null!;
+
+    /** @inheritdoc */
+    public get mainCommandEncoder(): IGpuCommandEncoder {
+        return this._mainCommandEncoder;
+    }
+
+    /** @inheritdoc */
+    abstract readonly api: GpuBackend;
 
     /** @inheritdoc */
     public get state(): State {
@@ -65,10 +82,21 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     }
 
     /** @inheritdoc */
-    abstract readonly features : IGraphicsDeviceFeatures;
+    abstract readonly features: IGraphicsDeviceFeatures;
 
     /** @inheritdoc */
     abstract readonly gpuInfo: IGPUInfo;
+
+    /**
+     * The GPU limits, populated by the backend during {@link initializeAsync}.
+     * @throws Error when the device is not initialized.
+     */
+    public get limits(): GpuLimits {
+        if (!this._limits) {
+            throw new Error(`${this.constructor.name}.limits: the graphics device is not initialized.`);
+        }
+        return this._limits;
+    }
 
     /** @inheritdoc */
     public get defaultTextureSampler(): ISampler {
@@ -115,6 +143,8 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
      */
     public async initializeAsync(): Promise<void> {
         this._validateState("AGraphicsDevice.initializeAsync");
+        this._mainCommandEncoder = this.createCommandEncoder("MainCommandEncoder");
+        this._mainCommandEncoder.start();
         this._defaultTextureSampler = this.configureAndCreateDefaultSampler();
         this._defaultBlendState = this.createBlendState(new BlendStateDescriptor());
         this._defaultPrimitiveState = this.createPrimitiveState();
@@ -122,13 +152,13 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     }
 
     /** @inheritdoc */
+    public abstract createCommandEncoder(label?: string): IGpuCommandEncoder;
+
+    /** @inheritdoc */
     public abstract createSwapChain(canvas: HTMLCanvasElement, swapChainDescriptor: ISwapChainDescriptor): ISwapChain;
 
     /** @inheritdoc */
     public abstract createSampler(descriptor?: SamplerDescriptor): ISampler;
-
-    /** @inheritdoc */
-    public abstract createRenderPass(descriptor: RenderPassDescriptor): IRenderPass;
 
     /** @inheritdoc */
     public abstract createBlendState(descriptor: BlendStateDescriptor): IBlendState;
@@ -140,7 +170,19 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
     public abstract setupDebugCallback(): void;
 
     /** @inheritDoc */
-    public abstract frameEnd(): void;
+    public frameStart(): void {
+        this._mainCommandEncoder.start();
+    }
+
+    /** @inheritDoc */
+    public frameEnd(): void {
+        this._mainCommandEncoder.submit();
+
+        // Queued items were possibly used by this frame, so they are disposed only after submit.
+        while(this._disposableQueue.length > 0){
+            this._disposableQueue.pop()?.dispose();
+        }
+    }
 
     /** @inheritDoc */
     public abstract pushDebugGroup(groupName: string): void;
@@ -154,6 +196,12 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
      */
     protected abstract _disposeBackend(): void;
 
+    /** @inheritdoc */
+    public queueDisposable(disposable: IDeferredDisposable): void {
+        this._disposableQueue.push(disposable);
+    }
+   
+
     /**
      * Disposes the default sampler and blend state and the backend resources.
      * Moves the device through {@link State.DISPOSING} to {@link State.DISPOSED}. Calling it again does nothing.
@@ -165,6 +213,11 @@ export abstract class AGraphicsDevice implements IGraphicsDevice {
         this._state = State.DISPOSING;
         this._defaultTextureSampler?.dispose();
         this._defaultBlendState?.dispose();
+        // Flush deferred GPU destroys (textures, samplers) while the device is still alive.
+        this._mainCommandEncoder?.dispose();
+        while (this._disposableQueue.length > 0) {
+            this._disposableQueue.pop()?.dispose();
+        }
         this._disposeBackend();
         this._state = State.DISPOSED;
     }

@@ -1,13 +1,13 @@
 import type {ITexture2D, ITexture2DArray, ITextureDescriptor} from "../../api/index.ts";
 import {State, TextureUsage} from "../../api/index.ts";
 import type {IDisposable} from "../../api/core/IDisposable.ts";
-import {ATextureFactory} from "../../api/rendering/texture/ATextureFactory.ts";
+import {ATextureFactory} from "../../api/gpu/texture/ATextureFactory.ts";
 import {WebGpuTexture2D} from "./WebGpuTexture2D.ts";
 import {WebGpuTexture2DArray} from "./WebGpuTexture2DArray.ts";
 
 /**
- * The WebGPU texture factory. The shared logic lives in {@link ATextureFactory}.
- * Owns the framework's default 1x1 white textures and disposes them in {@link dispose}.
+ * A WebGPU texture factory.
+ * Disposes the default 1x1 white textures in {@link dispose}.
  * @internal
  */
 export class WebGpuTextureFactory extends ATextureFactory implements IDisposable {

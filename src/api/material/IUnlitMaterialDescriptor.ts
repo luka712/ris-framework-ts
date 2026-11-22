@@ -1,4 +1,4 @@
-import type {IPrimitiveState} from "../rendering/primitive/IPrimitiveState.ts";
+import type {IPrimitiveState} from "../gpu/rendering/primitive/IPrimitiveState.ts";
 import type {ICamera} from "../camera/ICamera.ts";
 
 /**

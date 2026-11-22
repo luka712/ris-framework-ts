@@ -1,5 +1,5 @@
 /**
- * The WebGL implementation of a vertex buffer layout.
+ * A WebGL vertex buffer layout.
  */
 export class WebGLVertexBufferLayout {
 

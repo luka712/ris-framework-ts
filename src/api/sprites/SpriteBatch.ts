@@ -10,7 +10,7 @@ import {
 } from "../index.ts";
 
 /**
- * The implementation of sprite batch.
+ * A sprite batch.
  */
 export class SpriteBatch implements ISpriteBatch {
     static MAX_BATCH_SIZE = 1000;
@@ -128,7 +128,8 @@ export class SpriteBatch implements ISpriteBatch {
         this._currentSampler = sampler ?? this._framework.graphicsDevice.defaultTextureSampler;
 
         if (projectionViewMatrix) {
-            this._currentProjectionViewBuffer.update(projectionViewMatrix as Float32Array);
+            this._currentProjectionViewBuffer.write(projectionViewMatrix as Float32Array);
+            this._currentProjectionViewBuffer.update();
         }
 
         for (const texSamplerDrawableKvp of this._spriteBatchDrawables) {

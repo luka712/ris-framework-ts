@@ -1,8 +1,8 @@
 import type { IOrthographicCamera } from "./IOrthographicCamera.ts";
 import type { IFramework } from "../IFramework.ts";
 import {vec3, mat4} from "gl-matrix";
-import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
-import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
+import type { IUniformBuffer } from "../gpu/buffers/IUniformBuffer.ts";
+import {BufferUsage} from "../gpu/buffers/BufferUsage.ts";
 import {GameTime} from "../time/GameTime.ts";
 import {TransformNode} from "../scene/node/TransformNode.ts";
 import {CameraAim, CameraTransformUtilities} from "./CameraTransformUtilities.ts";
@@ -295,10 +295,14 @@ export class OrthographicCamera implements IOrthographicCamera {
     /** @inheritDoc */
     public updateBuffers(): void {
         this._updateMatrices();
-        this.projectionBuffer.update(this.projectionMatrix as Float32Array);
-        this.viewBuffer.update(this.viewMatrix as Float32Array);
-        this.projectionViewBuffer.update(this.projectionViewMatrix as Float32Array);
-        this.positionBuffer.update(this._updatePositionData());
+        this.projectionBuffer.write(this.projectionMatrix as Float32Array);
+        this.projectionBuffer.update();
+        this.viewBuffer.write(this.viewMatrix as Float32Array);
+        this.viewBuffer.update();
+        this.projectionViewBuffer.write(this.projectionViewMatrix as Float32Array);
+        this.projectionViewBuffer.update();
+        this.positionBuffer.write(this._updatePositionData());
+        this.positionBuffer.update();
     }
 
     /** @inheritDoc */

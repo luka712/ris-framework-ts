@@ -9,7 +9,7 @@ import { WebGlLightsBuffer } from "../src/webgl/lights/WebGlLightsBuffer.ts";
 import { WebGlAmbientLightFactory } from "../src/webgl/lights/WebGlAmbientLightFactory.ts";
 
 function fakeFramework() {
-    const buffer = { update: vi.fn(), dispose: vi.fn() };
+    const buffer = { write: vi.fn(), update: vi.fn(), dispose: vi.fn() };
     const createUniformBuffer = vi.fn((data: ArrayLike<number>) => {
         void data;
         return buffer;
@@ -146,7 +146,7 @@ describe("WebGlLightsBuffer", () => {
         lights.ambientLight.intensity = 2;
         lights.update();
         expect(buffer.update).toHaveBeenCalledTimes(2);
-        expect(Array.from((buffer.update.mock.calls[1][0] as number[]).slice(0, 4))).toEqual([1, 1, 1, 0]);
+        expect(Array.from((buffer.write.mock.calls[1][0] as number[]).slice(0, 4))).toEqual([1, 1, 1, 0]);
 
         const point = lamp();
         lights.add(point);
@@ -156,7 +156,7 @@ describe("WebGlLightsBuffer", () => {
         point.setPosition([4, 5, 6]);
         lights.update();
         expect(buffer.update).toHaveBeenCalledTimes(4);
-        expect(Array.from((buffer.update.mock.calls[3][0] as number[]).slice(12, 24))).toEqual(Array.from(new Float32Array([1, 0.5, 0.25, 1, 4, 5, 6, 0.35, 0.44, 0, 0, 0])));
+        expect(Array.from((buffer.write.mock.calls[3][0] as number[]).slice(12, 24))).toEqual(Array.from(new Float32Array([1, 0.5, 0.25, 1, 4, 5, 6, 0.35, 0.44, 0, 0, 0])));
     });
 
     it("replaces the ambient light through its setter", () => {
@@ -167,7 +167,7 @@ describe("WebGlLightsBuffer", () => {
         lights.ambientLight = ambient;
         lights.update();
         expect(lights.ambientLight).toBe(ambient);
-        expect(Array.from(buffer.update.mock.calls[0][0])).toEqual([0.25, 0.25, 0.25, 0]);
+        expect(Array.from(buffer.write.mock.calls[0][0])).toEqual([0.25, 0.25, 0.25, 0]);
     });
 
     it("adds and removes lights by kind; adding twice is a no-op", () => {
@@ -188,7 +188,7 @@ describe("WebGlLightsBuffer", () => {
         expect(lights.directionalLights).toEqual([]);
         lights.update();
         // The freed slot is written as black again.
-        expect(Array.from((buffer.update.mock.calls[1][0] as number[]).slice(4, 12))).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
+        expect(Array.from((buffer.write.mock.calls[1][0] as number[]).slice(4, 12))).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
     });
 
     it("throws a clear error when a kind's slots are full", () => {

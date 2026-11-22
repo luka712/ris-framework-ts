@@ -135,7 +135,7 @@ export interface ObjSubMesh {
     readonly indexCount: number;
 }
 
-/** A parsed OBJ model (C# `ObjModel`): geometry, sub meshes and material definitions. No GPU resources. */
+/** A parsed OBJ model: geometry, sub meshes and material definitions. No GPU resources. */
 export interface ObjModel extends ObjLoadResult {
     /** One entry per `usemtl` range, in file order. */
     readonly subMeshes: ObjSubMesh[];

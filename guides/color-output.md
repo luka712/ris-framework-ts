@@ -11,7 +11,7 @@ How colour is handled in ris-framework-ts today (branch `0.4.0` working tree).
 
 ## Output color space
 
-`renderer.outputColorSpace` (`OutputColorSpace` in `src/api/rendering/enums.ts`):
+`renderer.outputColorSpace` (`OutputColorSpace` in `src/api/gpu/rendering/enums.ts`):
 
 | Value | Default? | Behaviour |
 |-------|----------|-----------|
@@ -109,9 +109,10 @@ linear UNORM]
 
 ## Key files
 
-- `src/api/rendering/enums.ts` — `OutputColorSpace`, `ColorSpace`
+- `src/api/gpu/rendering/enums.ts` — `OutputColorSpace`
+- `src/api/gpu/enums.ts` — `ColorSpace`
 - `src/core/rendering/ARenderer.ts` — main RT creation, `outputColorSpace` setter
-- `src/api/rendering/render-pipelines/IMainRenderTargetRenderPipeline.ts`
+- `src/api/gpu/rendering/render-pipelines/IMainRenderTargetRenderPipeline.ts`
 - `shaders/glsl/main_render_target_fs.glsl`, `shaders/wgsl/main_frame_buffer.wgsl`
-- `src/api/rendering/IGraphicsDeviceFeatures.ts` — `supportsTextureView`
-- `../src/api/rendering/texture/ATexture2D.ts` — `ATexture2D` view cache / viewFormats gate
+- `src/api/gpu/IGraphicsDeviceFeatures.ts` — `supportsTextureView`
+- `../src/api/gpu/texture/ATexture2D.ts` — `ATexture2D` view cache / viewFormats gate

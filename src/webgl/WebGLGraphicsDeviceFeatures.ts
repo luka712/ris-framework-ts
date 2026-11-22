@@ -1,7 +1,7 @@
 import { AGraphicsDeviceFeatures } from "../core/rendering/AGraphicsDeviceFeatures.ts";
 
 /**
- * The WebGL implementation of the IGraphicsDeviceFeatures interface.
+ * WebGL graphics device features.
  * Features are detected from the WebGL2 extensions; enabling an extension happens on `getExtension`.
  */
 export class WebGlGraphicsDeviceFeatures extends AGraphicsDeviceFeatures {
@@ -64,4 +64,9 @@ export class WebGlGraphicsDeviceFeatures extends AGraphicsDeviceFeatures {
 
     /** The WEBGL_compressed_texture_s3tc_srgb extension. Undefined if not supported. */
     public s3tcSrgbExtension?: WEBGL_compressed_texture_s3tc_srgb;
+
+     /** @inheritdoc */
+    public get supportComputePipeline(): boolean {
+        return false;
+    }
 }

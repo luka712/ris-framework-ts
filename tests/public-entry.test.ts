@@ -26,10 +26,12 @@ describe("public entry", () => {
         const buffer: IBuffer = {
             byteSize: layout.arrayStride,
             usage: BufferUsage.VERTEX,
+            nativeObject: null,
             dispose() {},
         };
         const time: ITimeManager = {
             time: new GameTime(),
+            currentFrame: 0,
             prepareStart() {},
             frameStart() {},
         };

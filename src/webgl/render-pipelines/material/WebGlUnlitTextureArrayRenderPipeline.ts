@@ -1,5 +1,6 @@
 import {
     GeometryFormat,
+    State,
     type IFramework,
     type IPrimitiveState,
     type ISampler,
@@ -9,7 +10,7 @@ import {
     type IIndexBuffer,
     IndexBufferType,
 } from "../../../api/index.ts";
-import type {ITexture2DArray} from "../../../api/rendering/texture/ITexture2DArray.ts";
+import type {ITexture2DArray} from "../../../api/gpu/texture/ITexture2DArray.ts";
 import {VertexBufferLayout} from "../../../core/rendering/vertex-buffer-layout";
 import type {WebGlUniformBuffer} from "../../buffers/WebGlUniformBuffer.ts";
 import {asWebGLUniformBuffer} from "../../cast/cast";
@@ -22,7 +23,7 @@ import {WebGlTexture2DArray} from "../../texture/WebGlTexture2DArray.ts";
 import {WebGlTextureFactory} from "../../texture/WebGlTextureFactory.ts";
 
 /**
- * The WebGL implementation of {@link IUnlitTextureArrayRenderPipeline}.
+ * {@link IUnlitTextureArrayRenderPipeline} for WebGL.
  * Uses the `unlit_texture_array_material` GLSL program: the unlit vertex shader and a `sampler2DArray` fragment shader.
  * Uniform blocks: `CameraBuffer` (0), `ModelBuffer` (1), `MaterialBuffer` (2). The texture array is bound to unit 0.
  */
@@ -137,6 +138,7 @@ export class WebGlUnlitTextureArrayRenderPipeline extends AWebGlRenderPipeline i
 
         this.vertexBufferLayouts = [VertexBufferLayout.createFloat3Float4Float2Layout()];
         super.initialize();
+        this._state = State.INITIALIZED;
     }
 
     /** @inheritDoc */
@@ -156,7 +158,7 @@ export class WebGlUnlitTextureArrayRenderPipeline extends AWebGlRenderPipeline i
      * @param indicesOffset The first index to draw. By default, 0.
      */
     public render(vertexBuffer: IVertexBuffer, indexBuffer: IIndexBuffer, indicesCount: number = -1, indicesOffset: number = 0): void {
-        if (indicesCount == 0) {
+        if (indicesCount == 0 || this._state != State.INITIALIZED) {
             return;
         }
 

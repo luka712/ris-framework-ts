@@ -4,7 +4,7 @@ import type {IGeometry} from "../index.ts";
 
 
 /**
- * The default IGeometry implementation. GeometryBuilder fills it with vertex data.
+ * Geometry filled by GeometryBuilder.
  */
 export class BaseGeometry implements IGeometry {
 

@@ -25,7 +25,7 @@ export class WebGpuIndexBuffer implements IIndexBuffer {
      * @param label The label.
      */
     public constructor(framework: IFramework, data: ArrayLike<number>, label?: string) {
-        this._graphicsDevice = framework.renderer.graphicsDevice as WebGpuGraphicsDevice;
+        this._graphicsDevice = framework.graphicsDevice as WebGpuGraphicsDevice;
         this._label = label;
         this._initialData = WebGpuIndexBuffer._canUseUint16(data) ? new Uint16Array(data) : new Uint32Array(data);
         this._type = this._initialData instanceof Uint16Array ? IndexBufferType.UINT_16 : IndexBufferType.UINT_32;
@@ -36,6 +36,14 @@ export class WebGpuIndexBuffer implements IIndexBuffer {
 
     /** @inheritDoc */
     public readonly usage: BufferUsage = BufferUsage.INDEX | BufferUsage.COPY_DST;
+
+    /**
+     * @inheritDoc
+     * @ai-generated
+     */
+    public get nativeObject(): GPUBuffer {
+        return this.gpuBuffer;
+    }
 
     /** The WebGPU buffer. */
     public get gpuBuffer(): GPUBuffer {

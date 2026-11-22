@@ -1,6 +1,7 @@
 import {vec2} from "gl-matrix";
 import type {WebGlVertexBuffer} from "../buffers/WebGlVertexBuffer.ts";
 import {GeometryFormat} from "../../api/geometry/GeometryFormat.ts";
+import {State} from "../../api/index.ts";
 import type {WebGLIndexBuffer} from "../buffers/webgl-index-buffer";
 import {VertexBufferLayout} from "../../core/rendering/vertex-buffer-layout";
 import type {WebGlTexture2D} from "../texture/WebGlTexture2D.ts";
@@ -17,7 +18,7 @@ import {
 } from "../../api/index.ts";
 
 /**
- * The WebGL implementation of the main render target render pipeline.
+ * The WebGL main render target pipeline.
  * Encodes linear → sRGB in the blit shader when {@link outputColorSpace} is SRGB (the default framebuffer is never sRGB).
  */
 export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline implements IMainRenderTargetRenderPipeline {
@@ -62,7 +63,6 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
 
     public set flipY(value: boolean) {
         this._fragmentData[0] = value ? 1 : 0;
-        this._fragmentDataBuffer?.update(this._fragmentData, 0, 1);
     }
 
     /**
@@ -78,7 +78,6 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
     public set outputColorSpace(value: OutputColorSpace) {
         this._outputColorSpace = value;
         this._fragmentData[1] = value == OutputColorSpace.SRGB ? 1 : 0;
-        this._fragmentDataBuffer?.update(this._fragmentData, 1, 1);
     }
 
     /**
@@ -90,7 +89,6 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
 
     public set gamma(value: number) {
         this._fragmentData[2] = value;
-        this._fragmentDataBuffer?.update(this._fragmentData, 2, 1);
     }
 
     /** @inheritDoc */
@@ -132,6 +130,8 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
         } else {
             console.warn("WebGlMainRenderTargetRenderPipeline: uniform block 'FragmentDataBuffer' not found in the main_render_target shader.");
         }
+
+        this._state = State.INITIALIZED;
     }
 
     private _createResources(): void {
@@ -156,10 +156,12 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
     /** @inheritdoc */
     public render(): void {
 
-        if (this._program == null) {
+        if (this._state != State.INITIALIZED) {
             return;
         }
 
+        this._fragmentDataBuffer!.write(this._fragmentData);
+        this._fragmentDataBuffer!.update();
         this._setupPipeline();
 
         this._gl.useProgram(this._program);
@@ -178,6 +180,11 @@ export class WebGlMainRenderTargetRenderPipeline extends AWebGlRenderPipeline im
 
     /** @inheritdoc */
     public override dispose(): void {
+
+        if (this._state == State.DISPOSED) {
+            return;
+        }
+
         // ARenderer recreates this pipeline on every resize, so release the quad buffers too.
         this._vertexBuffer?.dispose();
         this._indexBuffer?.dispose();

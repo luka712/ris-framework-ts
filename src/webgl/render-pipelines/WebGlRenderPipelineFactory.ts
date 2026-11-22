@@ -16,11 +16,10 @@ import {WebGlInspectTextureArrayRenderPipeline} from "./inspect/WebGlInspectText
 import {WebGlUnlitRenderPipeline} from "./material/WebGlUnlitRenderPipeline.ts";
 import {WebGlUnlitTextureArrayRenderPipeline} from "./material/WebGlUnlitTextureArrayRenderPipeline.ts";
 import {WebGlForwardBlinnPhongRenderPipeline} from "./material/WebGlBlinnPhongRenderPipeline.ts";
-import type { IInspectTextureArrayRenderPipeline } from "../../api/rendering/render-pipelines/inspect/IInspectTextureArrayRenderPipeline.ts";
+import type { IInspectTextureArrayRenderPipeline } from "../../api/gpu/rendering/render-pipelines/inspect/IInspectTextureArrayRenderPipeline.ts";
 
 /**
- * The WebGL implementation of the IRenderPipelineFactory interface.
- * This factory is responsible for creating render pipelines for WebGL rendering.
+ * A WebGL render pipeline factory.
  */
 export class WebGlRenderPipelineFactory implements IRenderPipelineFactory {
 

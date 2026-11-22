@@ -10,7 +10,7 @@ import {
     State,
     TextureFormat,
 } from "../../../api/index.ts";
-import type {ITexture2DArray} from "../../../api/rendering/texture/ITexture2DArray.ts";
+import type {ITexture2DArray} from "../../../api/gpu/texture/ITexture2DArray.ts";
 import {VertexBufferLayout} from "../../../core/rendering/vertex-buffer-layout.ts";
 import {AWebGpuRenderPipeline} from "../AWebGpuRenderPipeline.ts";
 import {WebGpuTexture2DArray} from "../../texture/WebGpuTexture2DArray.ts";
@@ -23,7 +23,7 @@ import {WebGpuUtilities} from "../../utilities/WebGpuUtilities.ts";
 import { WebGpuTextureFactory } from "../../texture/WebGpuTextureFactory.ts";
 
 /**
- * The WebGPU implementation of {@link IUnlitTextureArrayRenderPipeline}, mirroring the WebGL one.
+ * {@link IUnlitTextureArrayRenderPipeline} for WebGPU.
  * Uses the `unlit_texture_array_material` WGSL shader (`texture_2d_array<f32>`, sampled through a `2d-array` view).
  *
  * Group 0: projection-view (0), model (1), vertex. Group 1: texture array (0), sampler (1), fragment.
@@ -161,10 +161,12 @@ export class WebGpuUnlitTextureArrayRenderPipeline extends AWebGpuRenderPipeline
         // The main render target is always linear RGBA8_UNORM; the blit encodes to sRGB.
         this._createGpuPipeline(
             `${shaderId} pipeline`,
-            module.gpuShaderModule,
+            module.shader!,
             [this._cameraGroupLayout, this._textureGroupLayout, this._materialGroupLayout],
             TextureFormat.RGBA8_UNORM,
             this._framework.renderer.preferredDepthStencilFormat);
+
+        this._state = State.INITIALIZED;
     }
 
     /** Returns the group 0 bind group, rebuilding it when the projection-view or model buffer changed. */
@@ -235,14 +237,14 @@ export class WebGpuUnlitTextureArrayRenderPipeline extends AWebGpuRenderPipeline
      * @param indicesOffset The first index to draw. By default, 0.
      */
     public render(vertexBuffer: IVertexBuffer, indexBuffer: IIndexBuffer, indicesCount: number = -1, indicesOffset: number = 0): void {
-        if (indicesCount == 0 || !this._gpuPipeline) {
+        if (indicesCount == 0 || this._state != State.INITIALIZED) {
             return;
         }
         const vb = vertexBuffer as WebGpuVertexBuffer;
         const ib = indexBuffer as WebGpuIndexBuffer;
-        const encoder = this._graphicsDevice.renderPassEncoder;
+        const encoder = this._graphicsDevice.gpuRenderPassEncoder;
 
-        encoder.setPipeline(this._gpuPipeline);
+        encoder.setPipeline(this._gpuPipeline!);
         encoder.setVertexBuffer(0, vb.gpuBuffer, 0, vb.byteSize);
         // The index buffer was allocated padded to 4 bytes; bind the padded size.
         encoder.setIndexBuffer(ib.gpuBuffer, ib.gpuIndexFormat, 0, ib.paddedByteSize);
@@ -256,6 +258,11 @@ export class WebGpuUnlitTextureArrayRenderPipeline extends AWebGpuRenderPipeline
 
     /** Releases the bind groups and stops watching textures. The buffers, texture and sampler are not disposed. */
     public override dispose(): void {
+
+        if (this._state == State.DISPOSED) {
+            return;
+        }
+
         for (const texture of this._watchedTextures) {
             texture.removeOnDisposedListener(this._onTextureDisposed);
         }

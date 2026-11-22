@@ -1,18 +1,18 @@
 import type {IMaterial} from "./IMaterial.ts";
 
 import type {IRenderableMesh} from "../meshes/IRenderableMesh.ts";
-import type { ITexture2D } from "../rendering/texture/ITexture2D.ts";
-import type { ISampler } from "../rendering/sampler/ISampler.ts";
+import type { ITexture2D } from "../gpu/texture/ITexture2D.ts";
+import type { ISampler } from "../gpu/sampler/ISampler.ts";
 import {mat4} from "gl-matrix";
 import {GeometryFormat} from "../geometry/GeometryFormat.ts";
-import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
-import type { IIndexBuffer } from "../rendering/buffers/IIndexBuffer.ts";
-import type { IVertexBuffer } from "../rendering/buffers/IVertexBuffer.ts";
+import type { IUniformBuffer } from "../gpu/buffers/IUniformBuffer.ts";
+import type { IIndexBuffer } from "../gpu/buffers/IIndexBuffer.ts";
+import type { IVertexBuffer } from "../gpu/buffers/IVertexBuffer.ts";
 import type { IFramework } from "../IFramework.ts";
-import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
+import {BufferUsage} from "../gpu/buffers/BufferUsage.ts";
 import {Color} from "../data/Color.ts";
-import type { IUnlitRenderPipeline } from "../rendering/render-pipelines/IUnlitRenderPipeline.ts";
-import type { IPrimitiveState } from "../rendering/primitive/IPrimitiveState.ts";
+import type { IUnlitRenderPipeline } from "../gpu/rendering/render-pipelines/IUnlitRenderPipeline.ts";
+import type { IPrimitiveState } from "../gpu/rendering/primitive/IPrimitiveState.ts";
 import type {ICamera} from "../camera/ICamera.ts";
 import type {IUnlitMaterialDescriptor} from "./IUnlitMaterialDescriptor.ts";
 import {resolveUnlitMaterialDescriptor} from "../../core/material/UnlitMaterialDescriptorUtilities.ts";
@@ -180,7 +180,8 @@ export class UnlitMaterial implements IMaterial {
             this._materialData[1] = this._color.g;
             this._materialData[2] = this._color.b;
             this._materialData[3] = this._color.a;
-            this._materialBuffer.update(this._materialData);
+            this._materialBuffer.write(this._materialData);
+            this._materialBuffer.update();
         }
     }
 

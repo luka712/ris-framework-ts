@@ -11,15 +11,6 @@ export class WebGpuCommandEncoderUtilities {
     }
 
     /**
-     * Finishes the encoder and submits it to the device queue.
-     * @param device The device.
-     * @param encoder The command encoder.
-     */
-    public submit(device: GPUDevice, encoder: GPUCommandEncoder): void {
-        device.queue.submit([encoder.finish()]);
-    }
-
-    /**
      * Copies a texture to a buffer.
      * @param encoder The command encoder.
      * @param texture The source texture.

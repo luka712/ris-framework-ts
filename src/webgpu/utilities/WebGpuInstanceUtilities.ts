@@ -1,6 +1,6 @@
 /**
  * The WebGPU instance utilities. In the browser the instance is `navigator.gpu`;
- * there is no instance to create and no backend to pick (C# `WebGPUInstanceUtilities.Create`).
+ * there is no instance to create and no backend to pick.
  */
 export class WebGpuInstanceUtilities {
 

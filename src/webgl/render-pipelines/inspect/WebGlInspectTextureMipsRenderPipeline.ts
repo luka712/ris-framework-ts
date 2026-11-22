@@ -1,5 +1,6 @@
 import {
     GeometryFormat,
+    State,
     type IFramework, type IPrimitiveState,
     type ISampler,
     type ITexture2D,
@@ -21,7 +22,7 @@ import type {
 } from "../../../api";
 import { WebGlTextureFactory } from "../../texture/WebGlTextureFactory.ts";
 
-/** The WebGL implementation of {@link IInspectTextureMipsRenderPipeline}. Uses the `inspect_texture_mips` GLSL shader. */
+/** {@link IInspectTextureMipsRenderPipeline} for WebGL. Uses the `inspect_texture_mips` GLSL shader. */
 export class WebGlInspectTextureMipsRenderPipeline extends AWebGlRenderPipeline implements IInspectTextureMipsRenderPipeline {
 
     private static readonly CAMERA_BINDING_POINT = 0;
@@ -128,6 +129,7 @@ export class WebGlInspectTextureMipsRenderPipeline extends AWebGlRenderPipeline 
         this._createResources();
         this.vertexBufferLayouts = [VertexBufferLayout.createFloat3Float4Float2Layout()];
         super.initialize();
+        this._state = State.INITIALIZED;
     }
 
     private _createResources(): void {
@@ -159,7 +161,7 @@ export class WebGlInspectTextureMipsRenderPipeline extends AWebGlRenderPipeline 
     /** @inheritdoc */
     public render(vertexBuffer: IVertexBuffer, indexBuffer: IIndexBuffer, indicesCount: number = -1, indicesOffset: number = 0): void {
 
-        if (indicesCount == 0) {
+        if (indicesCount == 0 || this._state != State.INITIALIZED) {
             return;
         }
 

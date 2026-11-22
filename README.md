@@ -150,7 +150,7 @@ Requires Node.js 22 (or `^20.19.0`) and a WebGL2-capable browser.
 
 ## Code conventions
 
-See [`ai-guide/CONVENTIONS.md`](ai-guide/CONVENTIONS.md). In short: no static pass-through wrappers and no silent fallbacks (throw a clear error instead).
+See [`guides/CONVENTIONS.md`](guides/CONVENTIONS.md). In short: no static pass-through wrappers and no silent fallbacks (throw a clear error instead).
 
 ## Known limitations
 

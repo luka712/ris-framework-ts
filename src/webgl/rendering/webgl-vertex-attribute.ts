@@ -1,6 +1,6 @@
 
 /**
- * The WebGL implementation of a vertex attribute.
+ * A WebGL vertex attribute.
  */
 export class WebGLVertexAttribute {
     /**

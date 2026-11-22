@@ -3,15 +3,15 @@ import {Mesh} from "./Mesh.ts";
 import type {IRenderableMesh} from "./IRenderableMesh.ts";
 import type {IFramework} from "../IFramework.ts";
 import type {IMaterial} from "../material/IMaterial.ts";
-import type {IUniformBuffer} from "../rendering/buffers/IUniformBuffer.ts";
-import type {IVertexBuffer} from "../rendering/buffers/IVertexBuffer.ts";
-import type {IIndexBuffer} from "../rendering/buffers/IIndexBuffer.ts";
+import type {IUniformBuffer} from "../gpu/buffers/IUniformBuffer.ts";
+import type {IVertexBuffer} from "../gpu/buffers/IVertexBuffer.ts";
+import type {IIndexBuffer} from "../gpu/buffers/IIndexBuffer.ts";
 import type {GeometryFormat} from "../geometry/GeometryFormat.ts";
-import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
+import {BufferUsage} from "../gpu/buffers/BufferUsage.ts";
 import {TransformNode} from "../scene/node/TransformNode.ts";
 
 /**
- * A mesh that can be drawn (C# `RenderableMesh`). See {@link IRenderableMesh}.
+ * A mesh that can be drawn. See {@link IRenderableMesh}.
  *
  * - Root: `new RenderableMesh(framework, material?)` owns the vertex and index buffers, the transform and the model buffer.
  * - Sub mesh: `new RenderableMesh(framework, material, parent, indexStart, indexCount)` (or `parent.addSubMesh(...)`)
@@ -127,7 +127,8 @@ export class RenderableMesh extends Mesh implements IRenderableMesh {
         const matrix = root.transform.modelMatrix;
         if (!mat4.exactEquals(root._uploadedMatrix, matrix)) {
             mat4.copy(root._uploadedMatrix, matrix);
-            buffer.update(root._uploadedMatrix as Float32Array);
+            buffer.write(root._uploadedMatrix as Float32Array);
+            buffer.update();
         }
         return buffer;
     }

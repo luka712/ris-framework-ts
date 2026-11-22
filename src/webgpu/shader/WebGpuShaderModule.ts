@@ -1,101 +1,71 @@
-import {type IFramework, type IShaderModule, ShaderStage} from "../../api/index.ts";
 import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
-import {type InternalShader, WgslShaderModuleContent} from "../../api/content/ShaderModuleContent.ts";
 import {WebGpuUtilities} from "../utilities/WebGpuUtilities.ts";
+import {type IFramework, ShaderStage} from "../../api";
+import {WgslShaderModuleContent, type InternalShader} from "../../api/content/ShaderModuleContent.ts";
+import { AShaderModule } from "../../api/shader/AShaderModule.ts";
 
-const MODULE_INCLUDE_KEYWORD = "#include";
+
 
 /**
- * The WebGPU shader module.
+ * The WebGPU shader module: WGSL modules built from a {@link WgslShaderModuleContent} entry.
  * Expands full-line `#include "path"` lines, then replaces `##KEY##` tokens.
+ * Render programs use {@link shader}; compute programs use {@link compute}.
  * @internal
  */
-export class WebGpuShaderModule implements IShaderModule {
+export class WebGpuShaderModule extends AShaderModule {
 
-    private _gpuShaderModule: GPUShaderModule | null = null;
-    /** Resolved include paths. By default, empty. The registry is not modified. */
-    private readonly _modules: {[path: string]: InternalShader} = {};
-    /** Full-line `#include "path"`, optional indent and semicolon. The path is group 1. */
-    private readonly _moduleRegex = new RegExp(
-        `^[ \\t]*${MODULE_INCLUDE_KEYWORD}[ \\t]+"([^"]+)"[ \\t]*;?[ \\t]*$`,
-        "gm",
-    );
+    private readonly _graphicsDevice: WebGpuGraphicsDevice;
+
+    private _shader?: GPUShaderModule;
+    private _compute?: GPUShaderModule;
 
     /**
-     * The constructor of the WebGPU shader module.
-     * @param framework The framework. Its graphics device must already expose a WebGPU device.
-     * @param id Key in {@link WgslShaderModuleContent}, for example `main_frame_buffer`.
+     * The constructor of the WebGPU shader module. Creates the GPU shader modules.
+     * @param framework The framework. Its graphics device must be a WebGPU device.
+     * @param shaderFilePath Key in {@link WgslShaderModuleContent}, for example `unlit_material`.
      * @param keyValueDictionary Optional `##KEY##` names to numbers. By default, omitted, so no token is replaced.
+     * @throws Error when the shader id or an `#include` is unknown, or both `shader` and `compute` sources are missing.
      */
-    public constructor(framework: IFramework, id: string, keyValueDictionary?: {[id: string]: number}) {
-        const device = (framework.renderer.graphicsDevice as WebGpuGraphicsDevice).device;
-        this._gpuShaderModule = this._loadShader(device, id, keyValueDictionary);
-        this.label = id;
+    public constructor(framework: IFramework, shaderFilePath: string, keyValueDictionary?: { [id: string]: number }) {
+        super();
+        this._graphicsDevice = framework.graphicsDevice as WebGpuGraphicsDevice;
+        this._loadShaders(shaderFilePath, keyValueDictionary);
     }
 
-    /** The shader id. This is also the GPU shader module label. */
-    public readonly label: string;
+    /** @inheritdoc */
+    protected shaderModuleContent: { [id: string]: InternalShader; } = WgslShaderModuleContent;
 
-    /** @inheritDoc */
-    public readonly stages: ShaderStage[] = [ShaderStage.VERTEX, ShaderStage.FRAGMENT];
-
-    /** @inheritDoc */
-    public get nativeHandle(): any {
-        return this._gpuShaderModule;
+    /**
+     * The GPU shader module with the vertex and fragment entry points. Undefined when the content has no `shader`, or after {@link dispose}.
+     */
+    public get shader(): GPUShaderModule | undefined {
+        return this._shader;
     }
 
     /**
-     * The WebGPU shader module.
-     * @returns The module created in the constructor.
-     * @throws When {@link dispose} has cleared it.
+     * The GPU shader module with the compute entry point. Undefined when the content has no `compute`, or after {@link dispose}.
      */
-    public get gpuShaderModule(): GPUShaderModule {
-        if (!this._gpuShaderModule) {
-            throw new Error("WebGpuShaderModule: the module is disposed.");
-        }
-        return this._gpuShaderModule;
+    public get compute(): GPUShaderModule | undefined {
+        return this._compute;
     }
-
-    /**
-     * Loads the included WGSL source for `path`.
-     * @param path The path inside `#include "path"`. The content id is not a path.
-     * @returns That entry's `shader` text.
-     * @throws Error when no {@link WgslShaderModuleContent} entry has this `path`, or its `shader` is absent.
-     */
-    private _loadModule(path: string): string {
-        let module = this._modules[path];
-        if (module?.shader !== undefined) {
-            return module.shader;
-        }
-
-        for (const id in WgslShaderModuleContent) {
-            module = WgslShaderModuleContent[id];
-            if (module.path === path && module.shader !== undefined) {
-                this._modules[path] = module;
-                return module.shader;
-            }
-        }
-
-        throw new Error(`WebGpuShaderModule: #include "${path}" not found; no WgslShaderModuleContent entry has this path and a shader.`);
-    }
-
+    
     /**
      * Replaces each full-line `#include "path"` with that module's source.
      * A path is inserted once. A repeat, including through nesting or a cycle, is removed.
-     * Text is copied literally, so `$` sequences are not patterns. `##KEY##` is not replaced here.
-     * @param source Shader or module source.
+     * @param shaderSource The shader source.
      * @param seen Paths already inserted. By default, a new empty set.
-     * @returns `source` with include lines expanded or removed.
+     * @returns The source with modules.
+     * @protected
      */
-    private _injectModules(source: string, seen: Set<string> = new Set()): string {
+    protected override _injectModules(shaderSource: string, seen: Set<string> = new Set()): string {
         const pattern = new RegExp(this._moduleRegex.source, this._moduleRegex.flags);
         let result = "";
         let cursor = 0;
 
-        for (const match of source.matchAll(pattern)) {
+        for (const match of shaderSource.matchAll(pattern)) {
             const path = match[1];
-            const index = match.index ?? 0;
-            result += source.slice(cursor, index);
+            const index = match.index!;
+            result += shaderSource.slice(cursor, index);
             if (path !== undefined && !seen.has(path)) {
                 seen.add(path);
                 result += this._injectModules(this._loadModule(path), seen);
@@ -103,39 +73,79 @@ export class WebGpuShaderModule implements IShaderModule {
             cursor = index + match[0].length;
         }
 
-        return result + source.slice(cursor);
+        return result + shaderSource.slice(cursor);
     }
 
     /**
-     * Builds the GPU shader module for `id`.
-     * Includes are expanded before `##KEY##` replacement.
-     * @param device The WebGPU device.
-     * @param id Key in {@link WgslShaderModuleContent}.
+     * Builds the GPU shader modules for `shaderFilePath`: expands includes, replaces `##KEY##` tokens, and creates the modules.
+     * @param shaderFilePath Key in {@link WgslShaderModuleContent}.
      * @param keyValueDictionary Optional replacements. By default, omitted.
-     * @returns The created shader module.
-     * @throws Error when `id` is missing from {@link WgslShaderModuleContent} or its `shader` is absent.
+     * @private
      */
-    private _loadShader(device: GPUDevice, id: string, keyValueDictionary?: {[id: string]: number}): GPUShaderModule {
-        let code = WgslShaderModuleContent[id]?.shader;
-        if (code === undefined) {
-            throw new Error(`WebGpuShaderModule: WGSL shader '${id}' is not implemented for WebGPU (no WgslShaderModuleContent entry with a shader).`);
+    private _loadShaders(shaderFilePath: string, keyValueDictionary?: { [id: string]: number }): void {
+
+        const internalShader = WgslShaderModuleContent[shaderFilePath];
+
+        if (!internalShader) {
+            throw new Error(`WebGpuShaderModule: WGSL shader '${shaderFilePath}' is not a built-in shader (WgslShaderModuleContent); loading shaders from files is not implemented for WebGPU yet.`);
         }
 
-        code = this._injectModules(code);
+        let shaderSource = internalShader.path === undefined ? internalShader.shader : undefined;
+        let computeSource = internalShader.compute;
+
+        if (shaderSource === undefined && computeSource === undefined) {
+            throw new Error(`WebGpuShaderModule: the shader and compute sources are missing for '${shaderFilePath}'.`);
+        }
+
+        if (shaderSource !== undefined) {
+            shaderSource = this._injectModules(shaderSource);
+        }
+        if (computeSource !== undefined) {
+            computeSource = this._injectModules(computeSource);
+        }
+
         if (keyValueDictionary) {
             for (const key in keyValueDictionary) {
-                code = code.split(`##${key}##`).join(String(keyValueDictionary[key]));
+                const value = String(keyValueDictionary[key]);
+                if (shaderSource !== undefined) {
+                    shaderSource = shaderSource.split(`##${key}##`).join(value);
+                }
+                if (computeSource !== undefined) {
+                    computeSource = computeSource.split(`##${key}##`).join(value);
+                }
             }
         }
 
-        return WebGpuUtilities.shaderModule.create(device, code, id);
+        const device = this._graphicsDevice.device;
+        if (shaderSource !== undefined) {
+            this._shader = WebGpuUtilities.shaderModule.create(device, shaderSource, shaderFilePath);
+            this.stages = [ShaderStage.VERTEX, ShaderStage.FRAGMENT]
+        }
+        if (computeSource !== undefined) {
+            this._compute = WebGpuUtilities.shaderModule.create(device, computeSource, shaderFilePath);
+            this.stages = [ShaderStage.COMPUTE];
+        }
+
+        if (this._shader !== undefined && this._compute !== undefined) {
+            this.stages = [ShaderStage.VERTEX, ShaderStage.FRAGMENT, ShaderStage.COMPUTE];
+        } else if (this._compute !== undefined) {
+            this.stages = [ShaderStage.COMPUTE];
+        }
+
+        if (this._shader !== undefined) {
+            this.nativeHandle = this._shader;
+        } else {
+            this.nativeHandle = this._compute;
+        }
     }
 
-    /**
-     * Drops the native shader module. {@link gpuShaderModule} throws after this.
-     * Calling it again leaves the field null.
-     */
+    /** @inheritdoc */
     public dispose(): void {
-        this._gpuShaderModule = null;
+
+        this._shader = undefined;
+        this._compute = undefined;
+        this.nativeHandle = undefined;
     }
 }
+
+export default WebGpuShaderModule

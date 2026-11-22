@@ -1,8 +1,8 @@
-import type { ITexture2D } from "../rendering/texture/ITexture2D.ts";
+import type { ITexture2D } from "../gpu/texture/ITexture2D.ts";
 import {Rect} from "../data/Rect.ts";
 import {Color} from "../data/Color.ts";
 import {vec2, mat4} from "gl-matrix"
-import type { ISampler } from "../rendering/sampler/ISampler.ts";
+import type { ISampler } from "../gpu/sampler/ISampler.ts";
 
 /**
  * The sprite batch.
@@ -10,8 +10,7 @@ import type { ISampler } from "../rendering/sampler/ISampler.ts";
 export interface ISpriteBatch {
 
     /**
-     * Initializes the sprite batch.
-     * This method is called internally by the framework.
+     * Initializes the sprite batch. Called by the framework.
      */
     initialize(): void;
 
@@ -139,7 +138,7 @@ export interface ISpriteBatch {
     end(): void;
 
     /**
-     * Called internally by framework on end of frame.
+     * Called by the framework at the end of the frame.
      */
     frameEnd(): void;
 }

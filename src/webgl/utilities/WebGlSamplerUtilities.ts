@@ -1,4 +1,4 @@
-import { SamplerCompareFunction } from '../../api/rendering/sampler/sampler-enums';
+import { SamplerCompareFunction } from '../../api/gpu/sampler/sampler-enums.ts';
 import { SpectorJSUtilities } from './SpectorJsUtilities.ts';
 import { WebGlConverter } from './WebGlConverter.ts';
 import {MipMapSamplerFilter, SamplerAddressMode, SamplerFilter} from "../../api/index.ts";

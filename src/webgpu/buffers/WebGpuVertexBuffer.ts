@@ -28,7 +28,7 @@ export class WebGpuVertexBuffer implements IVertexBuffer {
                        private readonly _bufferUsage: BufferUsage,
                        private readonly _label?: string) {
 
-        this._graphicsDevice = framework.renderer.graphicsDevice as WebGpuGraphicsDevice;
+        this._graphicsDevice = framework.graphicsDevice as WebGpuGraphicsDevice;
         if (typeof dataOrVertexCount === "number") {
             this._vertexCount = dataOrVertexCount;
             this._byteSize = dataOrVertexCount * this._byteStride;
@@ -38,6 +38,14 @@ export class WebGpuVertexBuffer implements IVertexBuffer {
             this._byteSize = this._initialData.byteLength;
             this._vertexCount = this._byteSize / this._byteStride;
         }
+    }
+
+    /**
+     * @inheritDoc
+     * @ai-generated
+     */
+    public get nativeObject(): GPUBuffer {
+        return this.gpuBuffer;
     }
 
     /** The WebGPU buffer. */

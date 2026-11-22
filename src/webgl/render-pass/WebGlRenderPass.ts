@@ -6,18 +6,20 @@ import {
     type IRenderPass,
     LoadAction,
     RenderPassColorAttachment, RenderPassDepthStencilAttachment,
-    RenderPassDescriptor,
+    type IRenderPassDescriptor,
     StoreAction,
     TextureFormat
 } from "../../api"
+import { vec2 } from "gl-matrix";
 
 /**
- * The WebGL implementation of the IRenderPass interface.
+ * A WebGL render pass.
  */
 export class WebGlRenderPass implements IRenderPass {
 
     private readonly _gl: WebGL2RenderingContext;
 
+    private readonly _size = vec2.fromValues(0, 0);
     private _colorAttachmentsCount = 0;
     private _colorAttachments: RenderPassColorAttachment[] = [];
     private _clearColors: Color[] = [];
@@ -35,17 +37,21 @@ export class WebGlRenderPass implements IRenderPass {
 
     /**
      * The constructor.
-     * @param graphicsDevice The graphics device.
+     * @param _graphicsDevice The graphics device.
      * @param descriptor The render pass descriptor.
      */
-    public constructor(graphicsDevice: WebGlGraphicsDevice, descriptor: RenderPassDescriptor) {
-        this._gl = graphicsDevice.gl;
+    public constructor(private readonly _graphicsDevice: WebGlGraphicsDevice, descriptor: IRenderPassDescriptor) {
+        this._gl = _graphicsDevice.gl;
+        this.label = descriptor.label;
 
         this._setupFrameBuffer(descriptor.colorAttachments ?? []);
         if (descriptor.depthStencilAttachment) {
             this._setupDepthStencilAttachment(descriptor.depthStencilAttachment, descriptor.colorAttachments);
         }
     }
+
+    /** @inheritdoc */
+    public readonly label?: string;
 
     /**
      * Replaces the color attachment at the index and re-attaches its texture to the framebuffer.
@@ -59,6 +65,10 @@ export class WebGlRenderPass implements IRenderPass {
         }
         if (!this._frameBuffer || value.swapChain) {
             throw new Error("WebGlRenderPass: setColorAttachment is not supported for swap chain (default framebuffer) attachments.");
+        }
+
+        if (index == 0 && value.texture) {
+            vec2.copy(this._size, value.texture.size);
         }
 
         const gl = this._gl;
@@ -127,6 +137,10 @@ export class WebGlRenderPass implements IRenderPass {
             return;
         }
 
+        if (colorAttachments[0]?.texture) {
+            vec2.copy(this._size, colorAttachments[0].texture.size);
+        }
+
         const glColorAttachments = [];
         for (let i = 0; i < this._colorAttachmentsCount; i++) {
             glColorAttachments[i] = this._getGlTexture(colorAttachments[i]);
@@ -192,9 +206,19 @@ export class WebGlRenderPass implements IRenderPass {
 
     /** @inheritdoc */
     public beginPass(): void {
+
+        if (this.label) {
+            this._graphicsDevice.pushDebugGroup(this.label);
+        }
+
         const gl = this._gl;
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer);
+
+        // The default framebuffer follows the swap chain size; texture targets use the first attachment's size.
+        const swapChain = this._colorAttachments[0]?.swapChain;
+        const size = swapChain ? swapChain.backBufferSize : this._size;
+        gl.viewport(0, 0, size[0], size[1]);
 
         if (this._enableDepthTest) {
             gl.enable(gl.DEPTH_TEST);
@@ -232,6 +256,10 @@ export class WebGlRenderPass implements IRenderPass {
         if (this._discardAttachments.length > 0) {
             gl.invalidateFramebuffer(gl.FRAMEBUFFER, this._discardAttachments);
         }
+
+        if(this.label){
+            this._graphicsDevice.popDebugGroup();
+        }
     }
 
     /** @inheritdoc */
@@ -245,4 +273,19 @@ export class WebGlRenderPass implements IRenderPass {
             this._depthStencilRenderBuffer = null;
         }
     }
+
+    /** @inheritDoc */
+    public pushDebugGroup(label: string): void {
+        this._graphicsDevice.pushDebugGroup(label)
+    }
+
+    /** @inheritDoc */
+    public popDebugGroup(): void {
+        this._graphicsDevice.popDebugGroup();
+    }
+
+    /** @inheritDoc */
+    public submit(): void {
+    }
+
 }

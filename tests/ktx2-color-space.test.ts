@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { KtxDFTransfer, VkFormat, type IKtx2Texture } from "ris-ktx2";
 import { ColorSpace, OutputColorSpace, TextureFormat } from "../src/api/index.ts";
-import { ATextureFactory } from "../src/api/rendering/texture/ATextureFactory.ts";
-import type { ITextureDescriptor } from "../src/api/rendering/texture/ITextureDescriptor.ts";
-import type { ITexture2D } from "../src/api/rendering/texture/ITexture2D.ts";
+import { ATextureFactory } from "../src/api/gpu/texture/ATextureFactory.ts";
+import type { ITextureDescriptor } from "../src/api/gpu/texture/ITextureDescriptor.ts";
+import type { ITexture2D } from "../src/api/gpu/texture/ITexture2D.ts";
 
 class TestFactory extends ATextureFactory {
     public last: ITextureDescriptor | null = null;

@@ -1,5 +1,4 @@
 import { WebGlSampler } from "./sampler/webgl-sampler";
-import { WebGlRenderPass } from "./render-pass/WebGlRenderPass.ts";
 import { AGraphicsDevice, type IGraphicsDeviceDescriptor } from "../core/rendering/AGraphicsDevice.ts";
 import { type BlendStateDescriptor } from "../core/rendering/blending/blend-state-descriptor";
 import { WebGlBlendState } from "./blending/webgl-blend-state";
@@ -11,16 +10,17 @@ import type { SamplerDescriptor } from "../core/rendering/sampler/sampler-descri
 import {
     type IBlendState,
     type IGPUInfo, type IPrimitiveState,
-    type IRenderPass,
     type ISampler,
     type ISwapChain,
     type ICanvasManager,
     type IPrimitiveStateDescriptor,
-    RenderPassDescriptor,
     type ISwapChainDescriptor,
-    RenderingBackend
+    GpuBackend,
+    GpuLimits,
 } from "../api/index.ts";
 import type { Spector } from "spectorjs";
+import type { IGpuCommandEncoder } from "../api/gpu/IGpuCommandEncoder.ts";
+import { WebGlCommandEncoder } from "./WebGlCommandEncoder.ts";
 
 /**
  * Creates WebGL2 enabled graphics device.
@@ -47,7 +47,7 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
     }
 
     /** @inheritdoc */
-    public readonly api = RenderingBackend.WEB_GL;
+    public readonly api = GpuBackend.WEB_GL;
 
     /**
      * The WebGL rendering context.
@@ -79,6 +79,10 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
             this._spector = new Spector();
             this._spector.spyCanvas(this._canvas);
         }
+        else {
+            // @ts-ignore
+            this._spector = window.spector as any as Spector;
+        }
 
         const contextOptions: WebGLContextAttributes = {
             antialias: false,
@@ -97,9 +101,15 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
         }
 
         this._features = new WebGlGraphicsDeviceFeatures(this._gl);
+        this._limits = GpuLimits.fromWebGlContext(this._gl);
         this._gpuInfo = new WebGlGpuInfo(this);
 
         await super.initializeAsync();
+    }
+
+    /** @inheritdoc */
+    public createCommandEncoder(_label?: string): IGpuCommandEncoder {
+        return new WebGlCommandEncoder();
     }
 
     /** @inheritdoc */
@@ -110,11 +120,6 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
     /** @inheritdoc */
     public createSampler(descriptor?: SamplerDescriptor): ISampler {
         return new WebGlSampler(this, descriptor);
-    }
-
-    /** @inheritdoc */
-    public createRenderPass(descriptor: RenderPassDescriptor): IRenderPass {
-        return new WebGlRenderPass(this, descriptor);
     }
 
     /** @inheritdoc */
@@ -140,14 +145,8 @@ export class WebGlGraphicsDevice extends AGraphicsDevice {
     /** @inheritdoc */
     public setupDebugCallback(): void {
         this._spector?.onError.add(error => {
-            debugger;
             console.error(error);
         })
-    }
-
-    /** Not implemented for WebGL2; always throws. */
-    public frameEnd(): void {
-        throw new Error("WebGlGraphicsDevice.frameEnd: Not implemented for WebGL2.");
     }
 
     /**

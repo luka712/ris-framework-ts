@@ -1,9 +1,9 @@
-import type { vec2 } from "gl-matrix";
+import { vec2 } from "gl-matrix";
 import { CanvasBounds } from "./CanvasBounds.ts";
 import type { ICanvasManager } from "./ICanvasManager.ts";
 
 /**
- * Owns the canvas and the `requestAnimationFrame` event loop.
+ * Manages the canvas and the `requestAnimationFrame` event loop.
  * Each frame runs the update listeners, then the render listeners.
  */
 export class CanvasManager implements ICanvasManager {
@@ -11,6 +11,8 @@ export class CanvasManager implements ICanvasManager {
     private readonly _ownsCanvas: boolean;
     private readonly _updateListeners: Array<() => void> = [];
     private readonly _renderListeners: Array<() => void> = [];
+    private readonly _resizeListeners: Array<(canvasManager: ICanvasManager, size: vec2) => void> = [];
+    private readonly _size = vec2.create();
     private _animationFrame: number | null = null;
     private _running = false;
     private _disposed = false;
@@ -32,6 +34,7 @@ export class CanvasManager implements ICanvasManager {
         if (this._ownsCanvas) {
             document.body.appendChild(this._canvas);
         }
+        vec2.set(this._size, this._canvas.width, this._canvas.height);
     }
 
     /** @inheritdoc */
@@ -64,14 +67,23 @@ export class CanvasManager implements ICanvasManager {
         CanvasManager._remove(this._renderListeners, listener);
     }
 
-    /** Not implemented yet; always throws. */
-    public addOnResizeListener(_listener: (canvasManager: ICanvasManager, size: vec2) => void): void {
-        throw new Error("CanvasManager.addOnResizeListener: Not implemented.");
+    /**
+     * Adds a listener that is called at the start of a frame when the canvas width or height changed.
+     * @ai-generated
+     */
+    public addOnResizeListener(listener: (canvasManager: ICanvasManager, size: vec2) => void): void {
+        this._resizeListeners.push(listener);
     }
 
-    /** Not implemented yet; always throws. */
-    public removeOnResizeListener(_listener: (canvasManager: ICanvasManager, size: vec2) => void): void {
-        throw new Error("CanvasManager.removeOnResizeListener: Not implemented.");
+    /**
+     * Removes a resize listener. An unknown listener is ignored.
+     * @ai-generated
+     */
+    public removeOnResizeListener(listener: (canvasManager: ICanvasManager, size: vec2) => void): void {
+        const index = this._resizeListeners.indexOf(listener);
+        if (index >= 0) {
+            this._resizeListeners.splice(index, 1);
+        }
     }
 
     /**
@@ -104,12 +116,15 @@ export class CanvasManager implements ICanvasManager {
         this.stopEventLoop();
         this._updateListeners.length = 0;
         this._renderListeners.length = 0;
+        this._resizeListeners.length = 0;
         if (this._ownsCanvas) {
             this._canvas.remove();
         }
     }
 
     private _frame(): void {
+        this._checkResize();
+
         // Iterate copies: a listener may add or remove listeners while the frame runs.
         for (const listener of this._updateListeners.slice()) {
             listener();
@@ -125,6 +140,20 @@ export class CanvasManager implements ICanvasManager {
             this._animationFrame = null;
             this._frame();
         });
+    }
+
+    /**
+     * Raises the resize listeners when the canvas width or height differs from the last frame.
+     * @ai-generated
+     */
+    private _checkResize(): void {
+        if (this._canvas.width == this._size[0] && this._canvas.height == this._size[1]) {
+            return;
+        }
+        vec2.set(this._size, this._canvas.width, this._canvas.height);
+        for (const listener of this._resizeListeners.slice()) {
+            listener(this, this._size);
+        }
     }
 
     private static _remove(listeners: Array<() => void>, listener: () => void): void {

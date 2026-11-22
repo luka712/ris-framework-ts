@@ -2,18 +2,18 @@
  * The mesh is a building class for a world shape.
  */
 import {State} from "../data/State.ts";
-import type {IVertexBuffer} from "../rendering/buffers/IVertexBuffer.ts";
-import type {IIndexBuffer} from "../rendering/buffers/IIndexBuffer.ts";
+import type {IVertexBuffer} from "../gpu/buffers/IVertexBuffer.ts";
+import type {IIndexBuffer} from "../gpu/buffers/IIndexBuffer.ts";
 import type {IFramework} from "../IFramework.ts";
 import type {IMesh} from "./IMesh.ts";
-import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
+import {BufferUsage} from "../gpu/buffers/BufferUsage.ts";
 import type {IGeometry} from "../geometry/IGeometry.ts";
 import {MeshParameters} from "./MeshParameters.ts";
 import {GeometryUtilities} from "../utilities/GeometryUtilities.ts";
 import type {GeometryFormat} from "../geometry/GeometryFormat.ts";
 
 /**
- * The base mesh: geometry and the vertex and index buffers created from it (C# `BaseMesh`).
+ * The base mesh: geometry and the vertex and index buffers created from it.
  * No material and no transform; {@link RenderableMesh} adds those.
  * @public
  */

@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {TextureFormat} from "../src/api/rendering/texture/TextureFormat";
+import {TextureFormat} from "../src/api/gpu/texture/TextureFormat";
 import {WebGlGraphicsDeviceFeatures} from "../src/webgl/WebGLGraphicsDeviceFeatures";
 import {WebGpuGraphicsDeviceFeatures} from "../src/webgpu/WebGpuGraphicsDeviceFeatures";
 

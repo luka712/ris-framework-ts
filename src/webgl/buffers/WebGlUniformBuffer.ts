@@ -3,7 +3,7 @@ import type { WebGlGraphicsDevice } from "../WebGlGraphicsDevice.ts";
 import {AlignUtilities, type BufferUsage, type IFramework, type IUniformBuffer} from "../../api/index.ts";
 
 /**
- * The WebGL implementation of the uniform buffer.
+ * A WebGL uniform buffer.
  */
 export class WebGlUniformBuffer implements IUniformBuffer {
 
@@ -23,7 +23,7 @@ export class WebGlUniformBuffer implements IUniformBuffer {
                        bufferUsage: BufferUsage,
                        label?: string) {
 
-        this._gl = (framework.renderer.graphicsDevice as WebGlGraphicsDevice).gl;
+        this._gl = (framework.graphicsDevice as WebGlGraphicsDevice).gl;
         this.usage = bufferUsage;
         this.label = label;
 
@@ -43,6 +43,14 @@ export class WebGlUniformBuffer implements IUniformBuffer {
      * The native WebGL buffer object that is used to store the uniform data. 
      */
     public glBuffer: WebGLBuffer | null = null;
+
+    /**
+     * @inheritDoc
+     * @ai-generated
+     */
+    public get nativeObject(): WebGLBuffer {
+        return this.glBuffer!;
+    }
 
     /** @inheritdoc */
     public readonly label?: string;
@@ -64,20 +72,28 @@ export class WebGlUniformBuffer implements IUniformBuffer {
 
 
     /** @inheritdoc */
-    public update(data: Float32Array, offset: number = 0, length: number = 0): void {
-        length = length > 0 ? length : data.length - offset;
-        length = Math.min(length, data.length - offset, this._data.length - offset);
-        if (length <= 0) {
-            return;
-        }
+    public write(data: Float32Array, offset: number = 0, length: number = 0): void {
+        const count = length > 0 ? length : data.length - offset;
+        this._data.set(data.subarray(offset, offset + count), offset);
+    }
 
-        for(let i = offset; i < offset + length; i++)
-        {
-            this._data[i] = data[i];
-        }
+    /**
+     * Writes a single float into the CPU-side data.
+     * @param value The value.
+     * @param offset The offset in floats.
+     * @ai-generated
+     */
+    public writeSingle(value: number, offset: number): void {
+        this._data[offset] = value;
+    }
 
+    /**
+     * Uploads the CPU-side data to the GPU buffer.
+     * @ai-generated
+     */
+    public update(): void {
         this._gl.bindBuffer(this._gl.UNIFORM_BUFFER, this.glBuffer);
-        this._gl.bufferSubData(this._gl.UNIFORM_BUFFER, offset * Float32Array.BYTES_PER_ELEMENT, this._data, offset, length);
+        this._gl.bufferSubData(this._gl.UNIFORM_BUFFER, 0, this._data);
         this._gl.bindBuffer(this._gl.UNIFORM_BUFFER, null);
     }
 
