@@ -83,7 +83,7 @@ export interface ITextureDescriptor {
 
     /**
      * Should mipmaps be generated.
-     * By default, it is false. Supported for `RGBA8_UNORM` and `RGBA8_UNORM_SRGB` (needs `TEXTURE_BINDING` and `STORAGE_BINDING` on WebGPU).
+     * By default, it is false. Supported for `RGBA8_UNORM` and `RGBA8_UNORM_SRGB`.
      * Other WebGPU formats throw.
      */
     generateMipmaps?: boolean;

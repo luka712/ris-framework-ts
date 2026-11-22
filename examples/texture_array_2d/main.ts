@@ -44,8 +44,7 @@ runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
                 images[0].baseWidth, images[0].baseHeight, layers,
                 images.map(image => [image.getData(0) as Uint8Array]),
                 "PngLayers",
-                // WebGPU uploads images with copyExternalImageToTexture, which needs RENDER_ATTACHMENT.
-                TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST | TextureUsage.RENDER_ATTACHMENT,
+                TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST,
                 TextureFormat.RGBA8_UNORM);
             if (!isCurrent()) {
                 loaded.dispose();

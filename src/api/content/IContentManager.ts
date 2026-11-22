@@ -44,8 +44,7 @@ export interface IContentManager {
      * For a `.ktx2` path, `generateMipmaps` is passed to {@link ITextureFactory.createFromKtx2} (false by default).
      * @param desc - The texture descriptor. Only `textureFormat`, `preferredColorSpace`, `label`, `textureUsage` and `generateMipmaps` are used.
      * By default, the format is the renderer's {@link IRenderer.preferredTextureFormat} (images) or follows the file (KTX2),
-     * and usage is `TEXTURE_BINDING | COPY_DST | RENDER_ATTACHMENT` for images (WebGPU copies them with `copyExternalImageToTexture`, which needs both).
-     * On WebGPU, `generateMipmaps` true requires `STORAGE_BINDING` in the usage.
+     * and usage is `TEXTURE_BINDING | COPY_DST`.
      * @param contentConfig - The content config. By default, data is not kept cached.
      * @returns The Texture2D.
      */

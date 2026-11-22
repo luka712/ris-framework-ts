@@ -20,8 +20,7 @@ import type { WebGpuTexture2D } from "./WebGpuTexture2D.ts";
  * sampled in WGSL as `texture_2d_array<f32>` through a `2d-array` view.
  *
  * Every layer and mip level of {@link ITextureDescriptor.dataArray} is uploaded with `GPUQueue.writeTexture`
- * (`origin.z` is the layer). Supports `Uint8Array` mip levels (uncompressed, or block-compressed e.g. from KTX2)
- * and `HTMLImageElement` mip levels (uncompressed only; needs `COPY_DST` and `RENDER_ATTACHMENT` usage).
+ * (`origin.z` is the layer). Supports `Uint8Array` mip levels (uncompressed, or block-compressed e.g. from KTX2).
  * `generateMipmaps` is implemented with a compute shader for `RGBA8_UNORM` and `RGBA8_UNORM_SRGB`.
  * Other formats throw. sRGB textures are written
  * through an `rgba8unorm` view (`rgba8unorm-srgb` cannot be a storage texture); the shader filters in linear space.
@@ -72,9 +71,7 @@ export class WebGpuTexture2DArray extends ATexture2DArray {
      * Creates the GPU texture and uploads every layer and mip level.
      * @throws Error when the texture is already initialized or disposed,
      * mipmap generation is requested when compute is not supported or for an unsupported format,
-     * mipmap generation is requested and the usage lacks `STORAGE_BINDING`,
-     * the usage lacks `COPY_DST` (or `RENDER_ATTACHMENT` for images) while there is data to upload,
-     * or a compressed format is given images.
+         * or the usage lacks `COPY_DST` while there is data to upload.
      */
     public initialize(): void {
         this._validateState();

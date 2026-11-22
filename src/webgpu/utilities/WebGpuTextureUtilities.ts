@@ -167,7 +167,7 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
         layers: number,
         format: TextureFormat,
         usage: TextureUsage,
-        data?: Uint8Array[][] | HTMLImageElement[][],
+        data?: Uint8Array[][],
         label?: string,
         viewFormats?: TextureFormat[],
         mipLevelCount: number = TextureUtilities.maxMipLevels(data)): WebGpuCreateTextureResult {
@@ -186,14 +186,7 @@ export class WebGpuTextureUtilities extends AWebGpuLoggingUtilities {
             const levels = data[layer] ?? [];
             for (let level = 0; level < levels.length; level++) {
                 const levelData = levels[level];
-                if (typeof HTMLImageElement !== "undefined" && levelData instanceof HTMLImageElement) {
-                    device.queue.copyExternalImageToTexture(
-                        { source: levelData },
-                        { texture: result.texture, mipLevel: level, origin: { x: 0, y: 0, z: layer } },
-                        { width: levelData.width, height: levelData.height });
-                    continue;
-                }
-                this.writeToTexture(device.queue, result.texture, this._mipSize(size, level), levelData as Uint8Array, bytesPerPixel, level, layer);
+                this.writeToTexture(device.queue, result.texture, this._mipSize(size, level), levelData, bytesPerPixel, level, layer);
             }
         }
 

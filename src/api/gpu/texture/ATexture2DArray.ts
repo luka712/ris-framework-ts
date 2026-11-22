@@ -40,7 +40,7 @@ export abstract class ATexture2DArray implements ITexture2DArray {
     protected _mipLevels: number;
 
     /** The data per layer, per mip level, from {@link ITextureDescriptor.dataArray}. */
-    protected _data?: Uint8Array[][] | HTMLImageElement[][];
+    protected _data?: Uint8Array[][];
     /** The block size of a compressed format, from {@link ITextureDescriptor.blockSize}. Defaults to `[1, 1]`. */
     protected _blockSize: vec2;
     /** The label, from {@link ITextureDescriptor.label}. */
