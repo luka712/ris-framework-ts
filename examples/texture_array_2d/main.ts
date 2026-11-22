@@ -8,6 +8,7 @@ import {
     Scene,
     type GameTime,
     TextureFormat,
+    TextureUsage,
     type IFramework,
     type ITexture2DArray,
     type InspectTextureArrayMaterial,
@@ -37,10 +38,15 @@ runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
     framework.addOnLoadContentListener(async () => {
         try {
             const layers = LAYER_URLS.length;
-            const loaded = await framework.content.loadTexture2DArrayAsync([...LAYER_URLS], {
-                label: "PngLayers",
-                textureFormat: TextureFormat.RGBA8_UNORM,
-            });
+            // One image per layer, mip level 0 only.
+            const images = await Promise.all(LAYER_URLS.map(url => framework.imageLoader.loadAsync(url)));
+            const loaded = framework.textureFactory.createTexture2DArray(
+                images[0].baseWidth, images[0].baseHeight, layers,
+                images.map(image => [image.getData(0) as Uint8Array]),
+                "PngLayers",
+                // WebGPU uploads images with copyExternalImageToTexture, which needs RENDER_ATTACHMENT.
+                TextureUsage.TEXTURE_BINDING | TextureUsage.COPY_DST | TextureUsage.RENDER_ATTACHMENT,
+                TextureFormat.RGBA8_UNORM);
             if (!isCurrent()) {
                 loaded.dispose();
                 return;
