@@ -10,60 +10,47 @@ Compared with 0.3.0.
 
 ### Breaking changes
 
-- `WindowManager` is now `CanvasManager` (`framework.canvasManager`), and `WindowBounds` is now `CanvasBounds`.
-- `framework.initialize()` is removed; use `initializeAsync()`. `framework.renderingBackend` is removed; use `graphicsDevice.api`.
-- WebGPU no longer falls back to WebGL; initialization throws when WebGPU is unavailable. `WebGpuRenderer.isSupported()` is removed.
-- Textures expose `size: vec2` instead of `width` and `height`; the old `size` byte count is now `vramSize`. `createEmpty` takes a `vec2`, and `createFromKtx2(ktx, textureFormat?, colorSpace?)` replaces the descriptor overload.
-- `textureColorSpace` and `renderer.colorSpace` are replaced by `outputColorSpace`, default `OutputColorSpace.NONE`. See [`guides/color-output.md`](guides/color-output.md).
-- `TextureFormat` members use wgpu-style names, for example `RGBA8_UNORM` instead of `RGBA_8_UNORM`.
-- `ITextureView` is now `ITextureView2D`; texture views are not supported on WebGL2 (check `features.supportsTextureView`).
-- `SwapChainDescriptor` is now the `ISwapChainDescriptor` interface.
-- `renderer.backend` and `renderer.limits` are removed; use `graphicsDevice.api` and `graphicsDevice.limits` (`GpuLimits`). `beginComputePass` and `endComputePass` are removed from the renderer.
-- `IGraphicsDevice.createRenderPass` is moved to `IRenderer.createRenderPass`. The renderer also has `mainRenderPass`; queued custom render passes run after the main pass.
-- `RenderingBackend` is now `GpuBackend`, and the `renderingBackend` option is now `gpuBackend`.
-- `IUniformBuffer.update(data, offset?, length?)` is replaced by `write(data, offset?, length?)` and `writeSingle(value, offset)`, which only fill the buffer's CPU-side copy, and `update()`, which uploads it to the GPU. Offsets and lengths are in floats, not bytes.
-- `createFromKtx2` and `createTexture2DArrayFromKtx2` default `generateMipmaps` to false.
+- `WindowManager` is now `CanvasManager`, and `WindowBounds` is now `CanvasBounds`.
+- `framework.initialize()` is removed; use `initializeAsync()`.
+- WebGPU no longer falls back to WebGL.
+- Textures use `size: vec2` instead of `width` and `height`; the byte count is now `vramSize`.
+- `textureColorSpace` and `renderer.colorSpace` are replaced by `outputColorSpace`. See [`guides/color-output.md`](guides/color-output.md).
+- `TextureFormat` members use wgpu-style names, for example `RGBA8_UNORM`.
+- `ITextureView` is now `ITextureView2D`; `SwapChainDescriptor` is now `ISwapChainDescriptor`.
+- `RenderingBackend` is now `GpuBackend`; `renderer.backend` and `renderer.limits` move to `graphicsDevice.api` and `graphicsDevice.limits`.
+- `createRenderPass` moves from the graphics device to the renderer.
+- `IUniformBuffer.update(data)` is split into `write` / `writeSingle` and `update()`.
+- KTX2 texture factories default `generateMipmaps` to false.
 
 ### Added
 
-- 2D texture arrays on WebGL and WebGPU: `createTexture2DArray`, `createTexture2DArrayFromKtx2` and `content.loadTexture2DArrayAsync`.
-- `createWithMipLevels` for 2D textures with your own mip levels.
-- `InspectTextureArrayMaterial`, and WebGPU support for `InspectTextureMipsMaterial`.
-- `UnlitTextureArrayMaterial` (`materialFactory.createUnlitTextureArrayMaterial()`): an unlit material that samples one `layer` of a texture array.
-- Compressed texture arrays on WebGL2 (BC, ETC2 and ASTC when supported; PVRTC throws).
-- Mipmap generation for RGBA8 and RGBA8 sRGB textures and texture arrays, and in `createTexture2DArrayFromKtx2` / `createFromKtx2` for single-level uncompressed files when `generateMipmaps` is true (false by default). On WebGPU, the texture needs `TEXTURE_BINDING | COPY_DST`; the compute shader writes into an internal staging texture. sRGB is filtered in linear space. Other formats throw.
-- `graphicsDevice.limits` (`GpuLimits`): max 2D/3D texture size, array layers, uniform buffer size and anisotropy.
-- `framework.graphicsDevice`.
-- `framework.computeContext` (`IComputeContext`; `null` on WebGL), plus `IComputePass` and `IComputePassDescriptor`. `IComputeContext` has `mainComputePass`, `createComputePass` and `frameEnd`. Queued custom compute passes run after the main compute pass.
-- `IRenderer.mainRenderPass` and `createRenderPass`. Custom render passes run after the main render pass.
-- `graphicsDevice.mainCommandEncoder`, `createCommandEncoder`, `frameStart` and `frameEnd`. Pass descriptors can take a `commandEncoder`; otherwise the main encoder is used.
-- `framework.computePipelineFactory` (`IComputePipelineFactory`; omitted on WebGL) with `createDownsampleTexturePipeline(source, destination)` (both `ITextureView2D`; the pipeline's `target` is that destination) and `createDownsampleTexturePipelineAsync()`, which sets `source` and `target` later.
-- `ITextureViewDescriptor` sets `dimension` and can set `baseMipLevel`, `mipLevelCount`, `baseArrayLayer` and `arrayLayerCount`. `createView(descriptor)` creates a view of a mip or layer. `ITextureView2D.size` is the view's pixel size.
-- `IDownsampleTextureComputePipeline` (`source`, `target`, `nearestNeighbour`; extends `IComputePipeline` with `initialize`, `dispatch` and `dispatchWorkgroup`). `nearestNeighbour` is false by default, so mips average 2×2 source pixels (bilinear).
-- `IGpuCommandEncoder.copyTextureToTexture(source, destination, arrayLayerCount?)`, where each side is an `ITextureCopyRegion` (`texture`, `mipLevel`, `arrayLayer`). WebGL throws "Not implemented".
-- `queueDispose()` on 2D textures and texture arrays, and `graphicsDevice.queueDisposable()`: the item is disposed in `frameEnd()`, after the frame is submitted. See [`guides/disposing.md`](guides/disposing.md).
-- `canvasManager.addOnResizeListener` and `removeOnResizeListener`, called at the start of a frame when the canvas size changed. The swap chain follows the canvas, and the main render target follows it when `backBufferMatchesSwapChain` is true. See [`guides/resizing.md`](guides/resizing.md).
-- `CpuImageProcessor.resizeAsync` and `generateMipmapsAsync` accept raw RGBA8 bytes, not only images.
-- `graphicsDevice.state` lifecycle, plus `supportedTextureFormats` and `supportsTextureFormat()` on device features.
-- `#include` in GLSL and WGSL shader modules.
-- `texture_array_2d` and `inspect_texture_mips` examples.
+- 2D texture arrays on WebGL and WebGPU, including compressed formats on WebGL2.
+- Mipmap generation for RGBA8 textures and texture arrays.
+- Compute support on WebGPU: `framework.computeContext`, compute passes and `computePipelineFactory`.
+- Main and custom render passes, and command encoders on the graphics device.
+- Texture views of a single mip or layer.
+- `copyTextureToTexture` on the command encoder (WebGPU only).
+- Deferred disposal with `queueDispose()`. See [`guides/disposing.md`](guides/disposing.md).
+- Canvas resize listeners. See [`guides/resizing.md`](guides/resizing.md).
+- `graphicsDevice.limits`, `graphicsDevice.state` and supported texture formats.
+- `CpuImageProcessor` resizes and generates mips from raw RGBA8 bytes.
+- `#include` in GLSL and WGSL shaders.
+- New materials and the `texture_array_2d` and `inspect_texture_mips` examples.
 
 ### Changed
 
 - Updated `ris-ktx2` to 0.3.0.
-- KTX2 textures use the color space stored in the file unless one is passed.
-- Texture factories validate data sizes and give clearer error messages.
-- `textureFactory.create` defaults the usage to `TEXTURE_BINDING | COPY_DST`. On WebGPU, uploading an `HTMLImageElement` also needs `RENDER_ATTACHMENT`, which the caller has to pass.
-- Generated mips use a bilinear 2×2 average instead of nearest neighbour.
-- Texture array mipmaps are built like 2D ones: each mip level is downsampled from the previous level of the same layer.
+- KTX2 textures use the file's color space unless one is passed.
+- Generated mips use bilinear filtering.
+- Clearer texture validation errors.
 
 ### Fixed
 
-- Examples no longer hang after switching backends several times.
-- Running or restarting the event loop no longer starts a second loop, and removing a listener during a frame no longer skips the next one.
-- WebGL no longer renders with a 0×0 viewport.
-- Resizing on WebGPU no longer fails with "Destroyed texture used in a submit"; old render targets are disposed after the frame is submitted.
-- `CpuImageProcessor.generateMipmapsAsync` no longer adds an extra 0×0 level and keeps non-square levels at least 1 pixel wide and high.
+- Examples hanging after switching backends.
+- Event loop starting twice or skipping a frame.
+- WebGL rendering with a 0×0 viewport.
+- WebGPU "Destroyed texture used in a submit" error on resize.
+- Wrong mip levels in `CpuImageProcessor.generateMipmapsAsync`.
 
 ## [0.3.0] - {{YYYY-MM-DD}}
 
