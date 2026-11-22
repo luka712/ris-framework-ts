@@ -1,4 +1,4 @@
-import type { IDisposable, ITexture2D, ITexture2DArray, ITextureView2D } from "../_export";
+import type { IDisposable, ITexture2D, ITexture2DArray } from "../_export";
 
 /**
  * One side of a texture to texture copy.

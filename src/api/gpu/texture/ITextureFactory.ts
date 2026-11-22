@@ -81,7 +81,7 @@ export interface ITextureFactory {
      * On WebGPU, `generateMipMaps` true requires `STORAGE_BINDING` in the usage.
      */
     createTexture2DArray(width: number, height: number, layer: number,
-           data?: HTMLImageElement[][] | Uint8Array[][],
+           data?: Uint8Array[][],
            label?: string,
            usage?: TextureUsage,
            textureFormat?: TextureFormat,

@@ -265,7 +265,7 @@ export abstract class ATextureFactory implements ITextureFactory {
     }
 
     /** @inheritDoc */
-    public createTexture2DArray(width: number, height: number, layer: number, data?: HTMLImageElement[][] | Uint8Array[][], label?: string, usage?: TextureUsage, textureFormat?: TextureFormat, generateMipmaps?: boolean): ITexture2DArray {
+    public createTexture2DArray(width: number, height: number, layer: number, data?: Uint8Array[][], label?: string, usage?: TextureUsage, textureFormat?: TextureFormat, generateMipmaps?: boolean): ITexture2DArray {
         if (textureFormat == undefined || textureFormat == TextureFormat.UNDEFINED) {
             textureFormat = this._framework.renderer.preferredTextureFormat;
         }
