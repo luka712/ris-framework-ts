@@ -39,7 +39,7 @@ Compared with 0.3.0.
 
 ### Changed
 
-- Updated `ris-ktx2` to 0.3.0.
+- Updated `ris-ktx2` from 0.2.0 to 0.3.0.
 - KTX2 textures use the file's color space unless one is passed.
 - Clearer texture validation errors.
 
@@ -48,10 +48,9 @@ Compared with 0.3.0.
 - Examples hanging after switching backends.
 - Event loop starting twice or skipping a frame.
 - WebGL rendering with a 0×0 viewport.
-- WebGPU "Destroyed texture used in a submit" error on resize.
 - Wrong mip levels in `CpuImageProcessor.generateMipmapsAsync`.
 
-## [0.3.0] - {{YYYY-MM-DD}}
+## [0.3.0] - 2026-11-01
 
 Compared with 0.2.0.
 
