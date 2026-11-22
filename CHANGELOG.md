@@ -41,7 +41,6 @@ Compared with 0.3.0.
 
 - Updated `ris-ktx2` to 0.3.0.
 - KTX2 textures use the file's color space unless one is passed.
-- Generated mips use bilinear filtering.
 - Clearer texture validation errors.
 
 ### Fixed
