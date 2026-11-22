@@ -22,7 +22,7 @@ Compared with 0.3.0.
 - `IGraphicsDevice.createRenderPass` is moved to `IRenderer.createRenderPass`. The renderer also has `mainRenderPass`; queued custom render passes run after the main pass.
 - `RenderingBackend` is now `GpuBackend`, and the `renderingBackend` option is now `gpuBackend`.
 - `IUniformBuffer.update(data, offset?, length?)` is replaced by `write(data, offset?, length?)` and `writeSingle(value, offset)`, which only fill the buffer's CPU-side copy, and `update()`, which uploads it to the GPU. Offsets and lengths are in floats, not bytes.
-- On WebGPU, mipmap generation (`generateMipmaps` / `useMipmap`) requires `TextureUsage.STORAGE_BINDING` in the usage the caller passes; missing the flag throws. `createFromKtx2` and `createTexture2DArrayFromKtx2` default `generateMipmaps` to false.
+- `createFromKtx2` and `createTexture2DArrayFromKtx2` default `generateMipmaps` to false.
 
 ### Added
 
@@ -31,13 +31,13 @@ Compared with 0.3.0.
 - `InspectTextureArrayMaterial`, and WebGPU support for `InspectTextureMipsMaterial`.
 - `UnlitTextureArrayMaterial` (`materialFactory.createUnlitTextureArrayMaterial()`): an unlit material that samples one `layer` of a texture array.
 - Compressed texture arrays on WebGL2 (BC, ETC2 and ASTC when supported; PVRTC throws).
-- Mipmap generation for RGBA8 and RGBA8 sRGB textures and texture arrays, and in `createTexture2DArrayFromKtx2` / `createFromKtx2` for single-level uncompressed files when `generateMipmaps` is true (false by default). On WebGPU, the usage must include `STORAGE_BINDING`. sRGB is filtered in linear space. Other formats throw.
+- Mipmap generation for RGBA8 and RGBA8 sRGB textures and texture arrays, and in `createTexture2DArrayFromKtx2` / `createFromKtx2` for single-level uncompressed files when `generateMipmaps` is true (false by default). On WebGPU, the texture needs `TEXTURE_BINDING | COPY_DST`; the compute shader writes into an internal staging texture. sRGB is filtered in linear space. Other formats throw.
 - `graphicsDevice.limits` (`GpuLimits`): max 2D/3D texture size, array layers, uniform buffer size and anisotropy.
 - `framework.graphicsDevice`.
 - `framework.computeContext` (`IComputeContext`; `null` on WebGL), plus `IComputePass` and `IComputePassDescriptor`. `IComputeContext` has `mainComputePass`, `createComputePass` and `frameEnd`. Queued custom compute passes run after the main compute pass.
 - `IRenderer.mainRenderPass` and `createRenderPass`. Custom render passes run after the main render pass.
 - `graphicsDevice.mainCommandEncoder`, `createCommandEncoder`, `frameStart` and `frameEnd`. Pass descriptors can take a `commandEncoder`; otherwise the main encoder is used.
-- `framework.computePipelineFactory` (`IComputePipelineFactory`; omitted on WebGL) with `createDownsampleTexturePipeline` (source and destination are `ITextureView2D`; the pipeline's `target` is that destination).
+- `framework.computePipelineFactory` (`IComputePipelineFactory`; omitted on WebGL) with `createDownsampleTexturePipeline(source, destination)` (both `ITextureView2D`; the pipeline's `target` is that destination) and `createDownsampleTexturePipelineAsync()`, which sets `source` and `target` later.
 - `ITextureViewDescriptor` sets `dimension` and can set `baseMipLevel`, `mipLevelCount`, `baseArrayLayer` and `arrayLayerCount`. `createView(descriptor)` creates a view of a mip or layer. `ITextureView2D.size` is the view's pixel size.
 - `IDownsampleTextureComputePipeline` (`source`, `target`, `nearestNeighbour`; extends `IComputePipeline` with `initialize`, `dispatch` and `dispatchWorkgroup`). `nearestNeighbour` is false by default, so mips average 2×2 source pixels (bilinear).
 - `IGpuCommandEncoder.copyTextureToTexture(source, destination, arrayLayerCount?)`, where each side is an `ITextureCopyRegion` (`texture`, `mipLevel`, `arrayLayer`). WebGL throws "Not implemented".
@@ -53,7 +53,7 @@ Compared with 0.3.0.
 - Requires `ris-ktx2` ^0.3.0-dev.18.
 - KTX2 textures use the color space stored in the file unless one is passed.
 - Texture factories validate data sizes and give clearer error messages.
-- Default usage for 2D images (`loadTexture2DAsync` and `textureFactory.create`) is `TEXTURE_BINDING | COPY_DST | RENDER_ATTACHMENT`. On WebGPU, missing flags throw.
+- `textureFactory.create` defaults the usage to `TEXTURE_BINDING | COPY_DST`. On WebGPU, uploading an `HTMLImageElement` also needs `RENDER_ATTACHMENT`, which the caller has to pass.
 - Generated mips use a bilinear 2×2 average instead of nearest neighbour.
 - Texture array mipmaps are built like 2D ones: each mip level is downsampled from the previous level of the same layer.
 
