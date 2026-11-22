@@ -2,8 +2,8 @@ import type { ICamera } from "./ICamera.ts";
 import {mat4, vec3} from "gl-matrix";
 import type { IFramework } from "../IFramework.ts";
 import {MathHelper} from "../utilities/MathHelper.ts";
-import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
-import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
+import {BufferUsage} from "../gpu/buffers/BufferUsage.ts";
+import type { IUniformBuffer } from "../gpu/buffers/IUniformBuffer.ts";
 import {GameTime} from "../time/GameTime.ts";
 import type {Scene} from "../scene/Scene.ts";
 import {TransformNode} from "../scene/node/TransformNode.ts";
@@ -46,7 +46,7 @@ export class PerspectiveCamera implements ICamera {
 
     protected readonly _framework: IFramework;
     private readonly _lastWorld = mat4.fromValues(NaN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-    private readonly _positionData = [0, 0, 0, 0];
+    private readonly _positionData = new Float32Array(4);
 
     private _projectionMatrix = mat4.create();
     private _viewMatrix = mat4.create();
@@ -237,7 +237,7 @@ export class PerspectiveCamera implements ICamera {
     }
 
     /** The world position, std140 `vec3` (padded to 16 bytes). This is what {@link positionBuffer} holds. */
-    private _worldEye(): number[] {
+    private _worldEye(): Float32Array {
         const m = this.transform.modelMatrix;
         this._positionData[0] = m[12];
         this._positionData[1] = m[13];
@@ -271,10 +271,14 @@ export class PerspectiveCamera implements ICamera {
 
     /** @inheritDoc */
     public updateBuffers(): void {
-        this._positionBuffer.update(this._worldEye());
-        this._projectionBuffer.update(this.projectionMatrix);
-        this._viewBuffer.update(this.viewMatrix);
-        this._projectionViewBuffer.update(this.projectionViewMatrix);
+        this._positionBuffer.write(this._worldEye());
+        this._positionBuffer.update();
+        this._projectionBuffer.write(this.projectionMatrix as Float32Array);
+        this._projectionBuffer.update();
+        this._viewBuffer.write(this.viewMatrix as Float32Array);
+        this._viewBuffer.update();
+        this._projectionViewBuffer.write(this.projectionViewMatrix as Float32Array);
+        this._projectionViewBuffer.update();
     }
 
     /** @inheritDoc */

@@ -1,6 +1,7 @@
+import { TextureUtilities } from "../_export.ts";
 import type { IImageProcessor } from "./IImageProcessor.ts";
-import {RawImageData} from "./RawImageData.ts";
-import {vec2} from "gl-matrix";
+import { RawImageData } from "./RawImageData.ts";
+import { vec2 } from "gl-matrix";
 
 /**
  * The default CPU-based image processor.
@@ -8,19 +9,16 @@ import {vec2} from "gl-matrix";
 export class CpuImageProcessor implements IImageProcessor {
 
     /** @inheritdoc */
-    public async resizeAsync(image: RawImageData, vec2: vec2): Promise<RawImageData> {
+    public async resizeAsync(image: RawImageData, size: vec2): Promise<RawImageData> {
         const data = image.getData(0);
 
         if (data === undefined) {
-            throw new Error("Invalid image data");
+            throw new Error("CpuImageProcessor.resizeAsync: Invalid image data (the base level has no data).");
         }
 
-        if (data instanceof HTMLImageElement) {
-            const htmlImage = await this._resizeHTMLImageAsync(data, vec2);
-            return new RawImageData([htmlImage], htmlImage.width, htmlImage.height, image.channels);
-        } else {
-            throw new Error("Not implemented.");
-        }
+        const bytes = this._resizeBytes(data, [image.baseWidth, image.baseHeight], image.channels, size);
+        return new RawImageData([bytes], Math.floor(size[0]), Math.floor(size[1]), image.channels);
+
     }
 
     /** @inheritdoc */
@@ -43,56 +41,72 @@ export class CpuImageProcessor implements IImageProcessor {
     }
 
     /** @inheritdoc */
-    public async generateMipmapsAsync(image: RawImageData, levels = -1): Promise<RawImageData> {
+    public async generateMipmapsAsync(imageData: RawImageData, levels = -1): Promise<RawImageData> {
 
-        const data = image.getData(0);
+        let data = imageData.getData(0);
         const resultData = [data];
 
+        const baseSize = vec2.fromValues(imageData.baseWidth, imageData.baseHeight);
         const resize = vec2.create();
-        let w = image.baseWidth;
-        let h = image.baseHeight;
 
+
+        // mipLevels counts the base level too; levels is the number of mips below the base.
         if (levels < 0) {
-
-            while (w > 1 && h > 1) {
-                w = Math.floor(w / 2);
-                h = Math.floor(h / 2);
-
-                resize[0] = w;
-                resize[1] = h;
-
-                if (data instanceof HTMLImageElement) {
-                    const htmlImage = await this._resizeHTMLImageAsync(data, resize);
-                    resultData.push(htmlImage);
-                } else {
-                    throw new Error("Not implemented.");
-                }
-            }
-        } else {
-            for(let i = 0; i < levels; i++) {
-
-                w = Math.floor(w / 2);
-                h = Math.floor(h / 2);
-
-                resize[0] = w;
-                resize[1] = h;
-
-                if (data instanceof HTMLImageElement) {
-                    const htmlImage = await this._resizeHTMLImageAsync(data, resize);
-                    resultData.push(htmlImage);
-                } else {
-                    throw new Error("Not implemented.");
-                }
-            }
+            levels = TextureUtilities.mipLevels(baseSize[0], baseSize[1]) - 1;
         }
 
-        return new RawImageData(resultData, image.baseWidth, image.baseHeight, image.channels);
+        for (let i = 0; i < levels; i++) {
+
+            resize[0] = Math.max(1, Math.floor(baseSize[0] / 2));
+            resize[1] = Math.max(1, Math.floor(baseSize[1] / 2));
+
+            data = this._resizeBytes(data, baseSize, imageData.channels, resize);
+            vec2.copy(baseSize, resize);
+            resultData.push(data);
+        }
+
+
+        return new RawImageData(resultData, imageData.baseWidth, imageData.baseHeight, imageData.channels);
     }
 
-    private async _resizeHTMLImageAsync(image: HTMLImageElement, vec2: vec2): Promise<HTMLImageElement> {
+    /**
+     * Resizes raw RGBA8 bytes by drawing them into a canvas and scaling it with high quality smoothing.
+     * @param data The source bytes, `width * height * 4` long.
+     * @param baseSize The source width and height.
+     * @param channels The number of channels. Must be 4.
+     * @param size The target width and height. Fractions are floored.
+     * @returns The resized RGBA8 bytes.
+     * @throws Error when the image does not have 4 channels or the byte length does not match width * height * 4.
+     * @ai-generated
+     */
+    private _resizeBytes(data: number[] | ArrayBufferView, baseSize: vec2, channels: number,
+        size: vec2): Uint8ClampedArray<ArrayBuffer> {
 
-        const w = Math.floor(vec2[0]);
-        const h = Math.floor(vec2[1]);
+        const width = baseSize[0];
+        const height = baseSize[1];
+
+        if (channels != 4) {
+            throw new Error(`CpuImageProcessor._resizeBytes: only 4 channel (RGBA) raw bytes can be resized; got ${channels} channels.`);
+        }
+
+        // Reads only, so an ArrayBuffer backed view is used without copying.
+        const source = Array.isArray(data)
+            ? Uint8ClampedArray.from(data)
+            : data.buffer instanceof ArrayBuffer
+                ? new Uint8ClampedArray(data.buffer, data.byteOffset, data.byteLength)
+                : Uint8ClampedArray.from(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
+
+        if (source.length != width * height * 4) {
+            throw new Error(`CpuImageProcessor._resizeBytes: expected ${width * height * 4} bytes for ${width}x${height} RGBA; got ${source.length}.`);
+        }
+
+        const sourceCanvas = document.createElement("canvas");
+        sourceCanvas.width = width;
+        sourceCanvas.height = height;
+        sourceCanvas.getContext("2d")!.putImageData(new ImageData(source, width, height), 0, 0);
+
+        const w = Math.floor(size[0]);
+        const h = Math.floor(size[1]);
 
         const canvas = document.createElement("canvas");
         canvas.width = w;
@@ -101,25 +115,8 @@ export class CpuImageProcessor implements IImageProcessor {
         const context = canvas.getContext("2d")!;
         context.imageSmoothingEnabled = true;
         context.imageSmoothingQuality = "high";
-        context.drawImage(image, 0, 0, w, h);
+        context.drawImage(sourceCanvas, 0, 0, w, h);
 
-        const pixels = context.getImageData(0, 0, w, h);
-        void pixels;
-
-        const resizedImage = new Image();
-        resizedImage.width = w;
-        resizedImage.height = h;
-        resizedImage.src = canvas.toDataURL("image/png");
-
-        const promise = new Promise<HTMLImageElement>((resolve, reject) => {
-            resizedImage.onload = () => {
-                resolve(resizedImage);
-            };
-            resizedImage.onerror = () => {
-                reject(new Error("Failed to load resized image."));
-            };
-        });
-
-        return promise;
+        return context.getImageData(0, 0, w, h).data;
     }
 }

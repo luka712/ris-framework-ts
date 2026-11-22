@@ -1,8 +1,8 @@
 import type { IOrthographicCamera } from "./IOrthographicCamera.ts";
 import type { IFramework } from "../IFramework.ts";
 import {vec3, mat4} from "gl-matrix";
-import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
-import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
+import type { IUniformBuffer } from "../gpu/buffers/IUniformBuffer.ts";
+import {BufferUsage} from "../gpu/buffers/BufferUsage.ts";
 import {GameTime} from "../time/GameTime.ts";
 import {TransformNode} from "../scene/node/TransformNode.ts";
 import {CameraAim, CameraTransformUtilities} from "./CameraTransformUtilities.ts";
@@ -91,7 +91,7 @@ export class OrthographicCamera implements IOrthographicCamera {
     private _projectionViewBuffer: IUniformBuffer = null!;
     private _positionBuffer: IUniformBuffer = null!;
     /** std140 vec3 world-space eye, padded to 4 floats. */
-    private readonly _positionData = [0, 0, 0, 0];
+    private readonly _positionData = new Float32Array(4);
 
     /**
      *
@@ -248,7 +248,7 @@ export class OrthographicCamera implements IOrthographicCamera {
     }
 
     /** Writes the transform's world position into the std140 position data. */
-    private _updatePositionData(): number[] {
+    private _updatePositionData(): Float32Array {
         const m = this.transform.modelMatrix;
         this._positionData[0] = m[12];
         this._positionData[1] = m[13];
@@ -295,10 +295,14 @@ export class OrthographicCamera implements IOrthographicCamera {
     /** @inheritDoc */
     public updateBuffers(): void {
         this._updateMatrices();
-        this.projectionBuffer.update(this.projectionMatrix);
-        this.viewBuffer.update(this.viewMatrix);
-        this.projectionViewBuffer.update(this.projectionViewMatrix);
-        this.positionBuffer.update(this._updatePositionData());
+        this.projectionBuffer.write(this.projectionMatrix as Float32Array);
+        this.projectionBuffer.update();
+        this.viewBuffer.write(this.viewMatrix as Float32Array);
+        this.viewBuffer.update();
+        this.projectionViewBuffer.write(this.projectionViewMatrix as Float32Array);
+        this.projectionViewBuffer.update();
+        this.positionBuffer.write(this._updatePositionData());
+        this.positionBuffer.update();
     }
 
     /** @inheritDoc */

@@ -7,7 +7,8 @@ export class GeometryUtilities {
     /**
      * Gets the stride of the geometry format.
      * @param geometryFormat The geometry format.
-     * @returns The stride.
+     * @returns The stride in bytes.
+     * @throws Error for an unknown geometry format.
      */
     public static stride(geometryFormat: GeometryFormat): number {
         switch (geometryFormat) {
@@ -16,7 +17,7 @@ export class GeometryUtilities {
             case GeometryFormat.POS3_COLOR4_TEXTURECOORDS2_NORMAL3:
                 return (3 + 4 + 2 + 3) * Float32Array.BYTES_PER_ELEMENT;
             default:
-                throw new Error("Unknown geometryFormat");
+                throw new Error(`GeometryUtilities.stride: Unknown geometryFormat ${geometryFormat}; expected POS3_COLOR4_TEXTURECOORDS2 or POS3_COLOR4_TEXTURECOORDS2_NORMAL3.`);
         }
     }
 }

@@ -17,7 +17,7 @@ const status = document.querySelector<HTMLParagraphElement>("#status")!;
 runWithBackendSwitcher("#game-canvas", ({canvas, backend, isCurrent}) => {
     const config: IFrameworkConfiguration = {
         canvas,
-        renderingBackend: backend,
+        gpuBackend: backend,
     };
 
     const framework: IFramework = new Framework(config);

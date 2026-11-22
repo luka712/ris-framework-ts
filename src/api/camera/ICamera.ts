@@ -1,6 +1,6 @@
 import type { IDisposable } from "../core/IDisposable.ts";
 import {mat4, vec3} from "gl-matrix"
-import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
+import type { IUniformBuffer } from "../gpu/buffers/IUniformBuffer.ts";
 import {GameTime} from "../time/GameTime.ts";
 import type {ISceneObject} from "../scene/ISceneObject.ts";
 

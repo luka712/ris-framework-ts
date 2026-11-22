@@ -1,6 +1,6 @@
 import type { IMesh } from "./IMesh.ts";
 import type { IMaterial } from "../material/IMaterial.ts";
-import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
+import type { IUniformBuffer } from "../gpu/buffers/IUniformBuffer.ts";
 import type {ISceneObject} from "../scene/ISceneObject.ts";
 
 /**

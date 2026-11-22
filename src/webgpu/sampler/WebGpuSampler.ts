@@ -1,8 +1,8 @@
 import {SamplerDescriptor} from "../../core/rendering/sampler/sampler-descriptor.ts";
 import {type ISampler, MipMapSamplerFilter} from "../../api/index.ts";
 import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
-import type {GpuSampler} from "../WebGpuTypes.ts";
 import {WebGpuConverter} from "../utilities/WebGpuConverter.ts";
+import {WebGpuUtilities} from "../utilities/WebGpuUtilities.ts";
 
 /**
  * The WebGPU sampler.
@@ -12,7 +12,8 @@ export class WebGpuSampler implements ISampler {
 
     private static _nextId = 0;
 
-    private _gpuSampler: GpuSampler | null;
+    private readonly _graphicsDevice: WebGpuGraphicsDevice;
+    private _gpuSampler: GPUSampler | null;
 
     /**
      * The constructor.
@@ -21,6 +22,7 @@ export class WebGpuSampler implements ISampler {
      */
     public constructor(graphicsDevice: WebGpuGraphicsDevice, descriptor?: SamplerDescriptor) {
         descriptor = descriptor ?? new SamplerDescriptor();
+        this._graphicsDevice = graphicsDevice;
         this.id = WebGpuSampler._nextId++;
         this.minFilter = descriptor.minFilter;
         this.magFilter = descriptor.magFilter;
@@ -29,7 +31,7 @@ export class WebGpuSampler implements ISampler {
         this.addressModeV = descriptor.addressModeV;
         this.addressModeW = descriptor.addressModeW;
 
-        this._gpuSampler = graphicsDevice.device.createSampler({
+        this._gpuSampler = WebGpuUtilities.sampler.create(graphicsDevice.device, {
             label: `WebGpuSampler ${this.id}`,
             minFilter: WebGpuConverter.convertFilter(this.minFilter),
             magFilter: WebGpuConverter.convertFilter(this.magFilter),
@@ -64,7 +66,7 @@ export class WebGpuSampler implements ISampler {
     public readonly addressModeW;
 
     /** The WebGPU sampler. */
-    public get gpuSampler(): GpuSampler {
+    public get gpuSampler(): GPUSampler {
         if (!this._gpuSampler) {
             throw new Error("WebGpuSampler: the sampler is disposed.");
         }
@@ -74,6 +76,18 @@ export class WebGpuSampler implements ISampler {
     /** @inheritDoc */
     public get handle(): any {
         return this._gpuSampler;
+    }
+
+    /**
+     * Queues {@link dispose} on the main command encoder, so the sampler is released after the current frame's submit.
+     * @inheritDoc
+     * @ai-generated
+     */
+    public queueDispose(): void {
+        if (!this._gpuSampler) {
+            return;
+        }
+        this._graphicsDevice.mainCommandEncoder.queueDispose(this);
     }
 
     /** @inheritDoc */

@@ -1,0 +1,150 @@
+import type { IDisposable } from "../core/IDisposable.ts";
+import type { IGPUInfo } from "./IGPUInfo.ts";
+import type { IGraphicsDeviceFeatures } from "./IGraphicsDeviceFeatures.ts";
+import type { ISampler } from "./sampler/ISampler.ts";
+import type { IBlendState } from "./rendering/blending/IBlendState.ts";
+import type { IPrimitiveState } from "./rendering/primitive/IPrimitiveState.ts";
+import type { IRenderPass } from "./rendering/renderpass/IRenderPass.ts";
+import type { ISwapChainDescriptor } from "./rendering/swapchain/ISwapChainDescriptor.ts";
+import type { ISwapChain } from "./rendering/swapchain/ISwapChain.ts";
+import { SamplerDescriptor } from "./sampler/SamplerDescriptor.ts";
+import type { IPrimitiveStateDescriptor } from "./rendering/primitive/IPrimitiveStateDescriptor.ts";
+import type { GpuBackend } from "./GpuBackend.ts";
+import type { IComputePass, IDeferredDisposable, State } from "../_export.ts";
+import type { GpuLimits } from "./GpuLimits.ts";
+import type { IGpuCommandEncoder } from "./IGpuCommandEncoder.ts";
+
+/**
+ * The interface for a graphics device.
+ */
+export interface IGraphicsDevice extends IDisposable {
+
+    /** The api used. */
+    readonly api: GpuBackend;
+
+    /** The life-cycle state of the graphics device. */
+    readonly state: State;
+
+    /** The info about the GPU.*/
+    readonly gpuInfo: IGPUInfo;
+
+    /** The features of the graphics device. */
+    readonly features: IGraphicsDeviceFeatures;
+
+    /**
+     * The GPU limits of this device, populated during {@link initializeAsync}.
+     * @throws Error when the device is not initialized.
+     */
+    readonly limits: GpuLimits;
+
+    /**
+     * Gets the default sampler for the graphics device.
+     */
+    readonly defaultTextureSampler: ISampler;
+
+    /**
+     * Gets the default blend state for the graphics device.
+     * All render pipelines will use this blend state by default.
+     */
+    readonly defaultBlendState: IBlendState;
+
+    /**
+     * Gets the default primitive state for the graphics device.
+     * All render pipelines will use this primitive state by default.
+     */
+    readonly defaultPrimitiveState: IPrimitiveState;
+
+    /**
+     * The main command encoder which runs each frame.
+     * It is recreated on each frame.
+     * @internal
+     */
+    readonly mainCommandEncoder: IGpuCommandEncoder;
+
+    /**
+     * The last compute pass that called beginPass method.
+     * Never defined for WebGL renderer.
+     * @internal
+     */
+    currentComputePass: IComputePass;
+
+    /**
+     * The last render pass that called beginPass method.
+     * @internal
+     */
+    currentRenderPass: IRenderPass;
+
+    /** Initializes the graphics device. */
+    initializeAsync(): Promise<void>;
+
+    /**
+     * Sets up the debug callback for the graphics device.
+     * This will enable the debug output if it is supported, and route debug messages to the device's debug callback.
+     */
+    setupDebugCallback(): void;
+
+    /**
+     * Called at each start of frame.
+     * Prepares the main command encoder.
+     * @internal 
+     */
+    frameStart(): void;
+
+    /**
+     * Called at the end of each frame to perform any necessary cleanup of resources that were used during the frame.
+     * Submits the main command encoder.
+     * @internal
+     */
+    frameEnd(): void;
+
+    /**
+     * Creates a command encoder.
+     * @param label The label.
+     * @internal 
+     */
+    createCommandEncoder(label?: string): IGpuCommandEncoder;
+
+    /**
+     * Create a sampler object.
+     * @param samplerDescriptor - The sampler descriptor.
+     * @returns The sampler.
+     */
+    createSampler(samplerDescriptor: SamplerDescriptor): ISampler;
+
+    /**
+     * Creates a primitive state for the graphics device.
+     * @param descriptor - The primitive state descriptor.
+     * @returns The created primitive state.
+     */
+    createPrimitiveState(descriptor?: IPrimitiveStateDescriptor): IPrimitiveState;
+
+    /**
+     * Creates a swap chain for the graphics device.
+     * The swap chain is used to present the rendered image to the screen.
+     * @param canvas The canvas to present to.
+     * @param swapChainDescription The swap chain descriptor.
+     * @returns The swap chain instance.
+     */
+    createSwapChain(canvas: HTMLCanvasElement, swapChainDescription: ISwapChainDescriptor): ISwapChain;
+
+    /**
+     * Pushes a debug group with the specified name onto the graphics device's debug stack.
+     * Note that this actions pushes only onto render stack.
+     * @param groupName - The name of the debug group.
+     */
+    pushDebugGroup(groupName: string): void;
+
+    /**
+     * Pops the current debug group from the graphics device's debug stack,
+     * ending the current debug group and returning to the previous one.
+     * Note that it only pops from the render stack.
+     */
+    popDebugGroup(): void;
+
+    /**
+     * Queues the item to be disposed at the end of the current frame, after the frame is submitted.
+     * @param disposable The disposable item.
+     */
+    queueDisposable(disposable: IDeferredDisposable) : void;
+
+}

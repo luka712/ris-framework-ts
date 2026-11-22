@@ -1,5 +1,5 @@
 import {vec3, mat4, vec2} from "gl-matrix";
-import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
+import type { IUniformBuffer } from "../gpu/buffers/IUniformBuffer.ts";
 import {PerspectiveCamera} from "./PerspectiveCamera.ts";
 import type { IInputManager } from "../input/IInputManager.ts";
 import {MathHelper} from "../utilities/MathHelper.ts";
@@ -180,6 +180,7 @@ export class OrbitCamera implements ICamera {
         this._coreCamera.setTarget(this._target);
     }
 
+    /** The underlying perspective camera this orbit camera drives. */
     public get coreCamera(): ICamera | undefined {
         return this._coreCamera;
     }
@@ -188,17 +189,18 @@ export class OrbitCamera implements ICamera {
      * Find a target from yaw and pitch.
      */
     private findTarget(): void {
-        throw new Error('Not implemented');
+        throw new Error("OrbitCamera.findTarget: Not implemented.");
     }
 
 
-    /** @inheritDoc */
+    /** Not implemented yet; always throws. */
     public initialize(): void {
-        throw new Error('Not implemented');
+        throw new Error("OrbitCamera.initialize: Not implemented.");
     }
 
+    /** Not implemented yet; always throws. */
     public updateBuffers(): void {
-        throw new Error('Not implemented');
+        throw new Error("OrbitCamera.updateBuffers: Not implemented.");
     }
 
     private _pitchClamp(value: number): number {

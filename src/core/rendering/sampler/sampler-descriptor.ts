@@ -1,5 +1,6 @@
 import {MipMapSamplerFilter, SamplerAddressMode, SamplerFilter} from "../../../api/index.ts";
 
+/** The sampler descriptor. Filters default to nearest. */
 export class SamplerDescriptor {
     /**
      * The minification filter.

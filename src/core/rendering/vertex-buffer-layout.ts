@@ -20,6 +20,12 @@ export class VertexBufferLayout implements IVertexBufferLayout {
      */
     attributes: VertexAttribute[] = [];
 
+    /**
+     * The constructor.
+     * @param arrayStride The stride in bytes (size of one vertex).
+     * @param stepMode How to step through the buffer (per vertex or per instance).
+     * @param attributes The vertex attributes.
+     */
     constructor(
         arrayStride: number,
         stepMode: VertexStepMode,

@@ -2,21 +2,31 @@ import {GameTime} from "./GameTime.ts";
 
 /**
  * The time manager interface.
+ * @public
  */
 export interface ITimeManager {
 
-    /**
+    /** 
      * Gets the time information.
-     */
+     * @public
+     **/
     readonly time: GameTime;
 
     /**
-     * Called once before the first frame starts to prepare the time.
+     * The current frame.
+     * @public
      */
+    readonly currentFrame: number;
+
+    /** 
+     * Called once before the first frame starts to prepare the time.
+     * @internal
+     **/
     prepareStart(): void;
 
-    /**
-     * Should be called at the start of the frame.
+    /** 
+     * Called internally at the start of the frame.
+     * @internal
      */
     frameStart(): void;
 }

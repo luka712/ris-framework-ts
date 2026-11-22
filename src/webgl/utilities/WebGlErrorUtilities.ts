@@ -1,3 +1,4 @@
+/** Helpers for WebGL2 error codes (`gl.getError()`). */
 export class WebGlErrorUtilities {
 
     private readonly _map: Record<number, string> = {

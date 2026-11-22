@@ -1,6 +1,5 @@
 import type {BlendStateDescriptor} from "../../core/rendering/blending/blend-state-descriptor.ts";
 import type {IBlendState} from "../../api/index.ts";
-import type {GpuBlendComponent} from "../WebGpuTypes.ts";
 import {WebGpuConverter} from "../utilities/WebGpuConverter.ts";
 
 /**
@@ -31,13 +30,13 @@ export class WebGpuBlendState implements IBlendState {
     public readonly blendingEnabled: boolean;
 
     /** The color blend component. */
-    public readonly color: GpuBlendComponent;
+    public readonly color: GPUBlendComponent;
 
     /** The alpha blend component. */
-    public readonly alpha: GpuBlendComponent;
+    public readonly alpha: GPUBlendComponent;
 
     /** The `GPUBlendState` for a color target, or undefined when blending is disabled. */
-    public get gpuBlendState(): { color: GpuBlendComponent; alpha: GpuBlendComponent } | undefined {
+    public get gpuBlendState(): { color: GPUBlendComponent; alpha: GPUBlendComponent } | undefined {
         return this.blendingEnabled ? {color: this.color, alpha: this.alpha} : undefined;
     }
 

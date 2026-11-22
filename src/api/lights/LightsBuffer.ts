@@ -1,7 +1,7 @@
 import type {AmbientLight} from "./AmbientLight.ts";
 import type {DirectionalLight} from "./DirectionalLight.ts";
 import type {PointLight} from "./PointLight.ts";
-import type {IUniformBuffer} from "../rendering/buffers/IUniformBuffer.ts";
+import type {IUniformBuffer} from "../gpu/buffers/IUniformBuffer.ts";
 import type {IDisposable} from "../core/IDisposable.ts";
 
 /** The number of directional lights the lights buffer and the Blinn-Phong shader hold by default. */
@@ -72,8 +72,7 @@ export interface LightsBuffer extends IDisposable {
     readonly maxPointLights: number;
 
     /**
-     * The uniform buffer holding the lights for shaders.
-     * NOTE: Intended to be used internally, never set this value manually.
+     * The uniform buffer holding the lights for shaders. Do not set this manually.
      */
     readonly buffer: IUniformBuffer;
 

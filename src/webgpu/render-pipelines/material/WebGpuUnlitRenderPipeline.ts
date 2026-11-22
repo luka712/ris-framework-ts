@@ -7,7 +7,6 @@ import {
 } from "../../../api/index.ts";
 import {VertexBufferLayout} from "../../../core/rendering/vertex-buffer-layout.ts";
 import {AWebGpuMeshRenderPipeline, type IWebGpuUniformGroup} from "./AWebGpuMeshRenderPipeline.ts";
-import {GpuShaderStage} from "../../WebGpuTypes.ts";
 
 /**
  * The WebGPU unlit pipeline (`unlit_material.wgsl`).
@@ -54,13 +53,13 @@ export class WebGpuUnlitRenderPipeline extends AWebGpuMeshRenderPipeline impleme
         return [
             {
                 group: 0, bindings: [
-                    {binding: 0, visibility: GpuShaderStage.VERTEX, buffer: () => this._projectionViewBuffer},
-                    {binding: 1, visibility: GpuShaderStage.VERTEX, buffer: () => this._modelBuffer},
+                    {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: () => this._projectionViewBuffer},
+                    {binding: 1, visibility: GPUShaderStage.VERTEX, buffer: () => this._modelBuffer},
                 ],
             },
             {
                 group: 2, bindings: [
-                    {binding: 2, visibility: GpuShaderStage.FRAGMENT, buffer: () => this._materialBuffer},
+                    {binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: () => this._materialBuffer},
                 ],
             },
         ];

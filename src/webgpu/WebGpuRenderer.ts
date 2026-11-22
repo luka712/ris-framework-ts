@@ -1,49 +1,28 @@
-import {ARenderer} from "../core/rendering/ARenderer.ts";
-import {type IFramework, type IGraphicsDevice, type IRendererConfiguration, RenderingBackend} from "../api/index.ts";
-import {WebGpuGraphicsDevice} from "./WebGpuGraphicsDevice.ts";
-import {getNavigatorGpu} from "./WebGpuTypes.ts";
+import { ARenderer } from "../core/rendering/ARenderer.ts";
+import { type IFramework, type IGraphicsDevice, type IRenderPass, type IRenderPassDescriptor, type IRendererConfiguration } from "../api/index.ts";
+import type { WebGpuGraphicsDevice } from "./WebGpuGraphicsDevice.ts";
+import { WebGpuRenderPass } from "./render-pass/WebGpuRenderPass.ts";
 
 /**
- * The WebGPU renderer. WebGPU hands out the adapter and device asynchronously, so call
- * {@link acquireDeviceAsync} (done by `Framework.initializeAsync()`) before {@link initialize}.
+ * The WebGPU renderer.
+ * The framework creates the {@link IGraphicsDevice} and initializes it before {@link initializeAsync}.
  * @internal
  */
 export class WebGpuRenderer extends ARenderer {
-
-    private _createdDevice: WebGpuGraphicsDevice | null = null;
 
     /**
      * The constructor.
      * @param framework The framework.
      * @param renderConfiguration The renderer configuration.
+     * @param graphicsDevice The graphics device.
      */
-    public constructor(framework: IFramework, renderConfiguration: IRendererConfiguration) {
-        super(framework, renderConfiguration);
-        this.backend = RenderingBackend.WEB_GPU;
+    public constructor(framework: IFramework, renderConfiguration: IRendererConfiguration, graphicsDevice: IGraphicsDevice) {
+        super(framework, renderConfiguration, graphicsDevice);
     }
 
-    /** Whether the browser exposes `navigator.gpu`. */
-    public static isSupported(): boolean {
-        return getNavigatorGpu() !== undefined;
-    }
-
-    /**
-     * Creates the graphics device, which requests its own adapter and device.
-     * Throws when WebGPU is unavailable or no adapter is found.
-     */
-    public async acquireDeviceAsync(): Promise<void> {
-        this._createdDevice = await WebGpuGraphicsDevice.createAsync(this._framework.windowManager, {
-            samplerFilteringPreset: this._renderConfiguration.textureFiltering,
-            alpha: this._renderConfiguration.alpha,
-            powerPreference: this._renderConfiguration.powerPreference,
-        });
-    }
-
-    /** @inheritDoc */
-    protected createGraphicsDevice(): IGraphicsDevice {
-        if (!this._createdDevice) {
-            throw new Error("WebGpuRenderer: the device is not created. Use Framework.initializeAsync() for WebGPU.");
-        }
-        return this._createdDevice;
+    /** @inheritdoc */
+    public createRenderPass(descriptor: IRenderPassDescriptor): IRenderPass {
+        const desc = descriptor ? { ...descriptor } : {};
+        return new WebGpuRenderPass(this.graphicsDevice as WebGpuGraphicsDevice, desc);
     }
 }

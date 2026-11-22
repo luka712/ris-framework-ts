@@ -14,9 +14,7 @@ export interface IImageLoader {
     loadAsync(path: string, cache?: boolean): Promise<RawImageData>;
 
     /**
-     * Disposes of the temporary cache.
-     *
-     * Used internally, call only if you know what you are doing.
+     * Disposes the temporary cache. Intended for framework use.
      */
     disposeOfTemporaryCache(): void;
 }

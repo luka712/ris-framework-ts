@@ -63,9 +63,7 @@ export class Color implements Iterable<number>{
         this._colors[2] = value;
     }
 
-    /**
-     * The alpha.
-     */
+    /** The alpha. */
     public get a() : number {
         return this._colors[3];
     }

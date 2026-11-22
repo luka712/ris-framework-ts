@@ -1,8 +1,12 @@
 
 /**
- * The WebGL implementation of a vertex attribute.
+ * A WebGL vertex attribute.
  */
 export class WebGLVertexAttribute {
+    /**
+     * The constructor.
+     * @param gl The WebGL2 rendering context.
+     */
     constructor(
         public gl: WebGL2RenderingContext,
     ) {

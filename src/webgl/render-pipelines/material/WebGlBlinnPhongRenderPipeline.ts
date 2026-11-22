@@ -1,5 +1,6 @@
 import {
     GeometryFormat,
+    State,
     type IFramework, type IPrimitiveState,
     type ISampler,
     type ITexture2D,
@@ -23,10 +24,11 @@ import {
 import type {WebGlSampler} from "../../sampler/webgl-sampler.ts";
 import type {
     IForwardBlinnPhongRenderPipeline
-} from "../../../api/rendering/render-pipelines/IForwardBlinnPhongRenderPipeline.ts";
+} from "../../../api/gpu/rendering/render-pipelines/IForwardBlinnPhongRenderPipeline.ts";
+import { WebGlTextureFactory } from "../../texture/WebGlTextureFactory.ts";
 
 /**
- * The WebGL implementation of Blinn-Phong with forward calculated lighting.
+ * WebGL forward Blinn-Phong lighting.
  * @internal
  **/
 export class WebGlForwardBlinnPhongRenderPipeline extends AWebGlRenderPipeline implements IForwardBlinnPhongRenderPipeline {
@@ -51,7 +53,6 @@ export class WebGlForwardBlinnPhongRenderPipeline extends AWebGlRenderPipeline i
     private _cameraPositionBlockIndex = -1;
     private _maxDirectionalLights = DEFAULT_DIRECTIONAL_LIGHTS_COUNT;
     private _maxPointLights = DEFAULT_POINT_LIGHTS_COUNT;
-    private _initialized = false;
     private _buffersArray: WebGLBuffer[] = [null!];
     private _lastVertexBuffer: WebGlVertexBuffer | null = null;
 
@@ -148,7 +149,7 @@ export class WebGlForwardBlinnPhongRenderPipeline extends AWebGlRenderPipeline i
         }
         this._maxDirectionalLights = maxDirectionalLights;
         this._maxPointLights = maxPointLights;
-        if (this._initialized) {
+        if (this._state == State.INITIALIZED) {
             // The vertex array object only depends on the vertex layout, so only the program and block bindings change.
             this._loadProgram();
         }
@@ -189,7 +190,7 @@ export class WebGlForwardBlinnPhongRenderPipeline extends AWebGlRenderPipeline i
         this._loadProgram();
         this.vertexBufferLayouts = [VertexBufferLayout.createFloat3Float4Float2Float3Layout()];
         super.initialize();
-        this._initialized = true;
+        this._state = State.INITIALIZED;
     }
 
     /** Loads the shader variant for the current light counts (cached per counts by the shader loader). */
@@ -204,7 +205,7 @@ export class WebGlForwardBlinnPhongRenderPipeline extends AWebGlRenderPipeline i
 
     private _createResources(): void {
         {
-            this._texture = WebGlTexture2D.getOrCreateDefault(this._framework);
+            this._texture = (this._framework.textureFactory as WebGlTextureFactory).getOrCreateDefaultTexture2D();
 
             this._cameraBlockIndex = this._gl.getUniformBlockIndex(this._program, "CameraBuffer");
             this._gl.uniformBlockBinding(this._program, this._cameraBlockIndex, WebGlForwardBlinnPhongRenderPipeline.CAMERA_BINDING_POINT);
@@ -237,7 +238,7 @@ export class WebGlForwardBlinnPhongRenderPipeline extends AWebGlRenderPipeline i
     /** @inheritdoc */
     public render(vertexBuffer: IVertexBuffer, indexBuffer: IIndexBuffer, indicesCount: number = -1, indicesOffset: number = 0): void {
 
-        if (indicesCount == 0) {
+        if (indicesCount == 0 || this._state != State.INITIALIZED) {
             return;
         }
 

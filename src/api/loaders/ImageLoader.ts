@@ -1,6 +1,6 @@
 import type { IImageLoader } from "./IImageLoader.ts";
 import type { IFramework } from "../IFramework.ts";
-import {TextureFormat} from "../rendering/texture/TextureFormat.ts";
+import {TextureFormat} from "../gpu/texture/TextureFormat.ts";
 import {RawImageData} from "../image/RawImageData.ts";
 
 /**
@@ -44,7 +44,8 @@ export class ImageLoader implements IImageLoader {
         return new Promise((resolve, reject) => {
             const image = new Image();
             image.onload = () => {
-                resolve(new RawImageData([image], image.width, image.height, 4));
+                const bytes = this._framework.imageProcessor.getBytesFromHtmlImage(image);
+                resolve(new RawImageData([bytes], image.width, image.height, 4));
             };
             image.onerror = (e) => {
                 console.error("failed to load", image.src, e);

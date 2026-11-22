@@ -1,12 +1,13 @@
-import {RenderingBackend} from "./rendering/RenderingBackend.ts";
+import {GpuBackend} from "./gpu/GpuBackend.ts";
 import type { ISpriteBatch } from "./sprites/ISpriteBatch.ts";
-import type { IRenderer } from "./rendering/IRenderer.ts";
-import type { IGraphicsDevice } from "./rendering/IGraphicsDevice.ts";
-import type { IRenderPipelineFactory } from "./rendering/render-pipelines/IRenderPipelineFactory.ts";
-import type { IBufferFactory } from "./rendering/buffers/IBufferFactory.ts";
+import type { IRenderer } from "./gpu/rendering/IRenderer.ts";
+import type { IGraphicsDevice } from "./gpu/IGraphicsDevice.ts";
+import type { IComputeContext } from "./gpu/compute/IComputeContext.ts";
+import type { IRenderPipelineFactory } from "./gpu/rendering/render-pipelines/IRenderPipelineFactory.ts";
+import type { IBufferFactory } from "./gpu/buffers/IBufferFactory.ts";
 import type { IGeometryBuilder } from "./geometry/IGeometryBuilder.ts";
 import type { ICameraFactory } from "./camera/ICameraFactory.ts";
-import type { ITextureFactory } from "./rendering/texture/ITextureFactory.ts";
+import type { ITextureFactory } from "./gpu/texture/ITextureFactory.ts";
 import type { ObjLoader } from "./loaders/ObjLoader.ts";
 import type { IContentManager } from "./content/IContentManager.ts";
 import type { IImageLoader } from "./loaders/IImageLoader.ts";
@@ -15,15 +16,18 @@ import type { IMaterialFactory } from "./material/IMaterialFactory.ts";
 import type { AmbientLightFactory } from "./lights/LightFactory.ts";
 import type { ITimeManager } from "./time/ITimeManager.ts";
 import type { IInputManager } from "./input/IInputManager.ts";
-import type { IWindowManager } from "./window/IWindowManager.ts";
+import type { ICanvasManager } from "./canvas/ICanvasManager.ts";
 import {GameTime} from "./time/GameTime.ts";
 import type { IImageProcessor } from "./image/IImageProcessor.ts";
 import type { IKtx2Factory } from "ris-ktx2";
 import type { IDisposable } from "./core/IDisposable.ts";
 import type {vec2} from "gl-matrix";
 import type {TextureSamplerFilteringPreset} from "../core/rendering/enums.ts";
-import type {PowerPreferenceType} from "./rendering/PowerPreference.ts";
-import type {ColorSpace} from "./rendering/enums.ts";
+import type {PowerPreferenceType} from "./gpu/PowerPreference.ts";
+import type {OutputColorSpace} from "./gpu/rendering/enums.ts";
+import type { IComputePipelineFactory } from "./gpu/compute/pipelines/IComputePipelineFactory.ts";
+import type { IDispatcher } from "./dispatcher/IDispatcher.ts";
+import type { State } from "./data/State.ts";
 
 
 /**
@@ -41,8 +45,11 @@ export class IFrameworkConfiguration {
     /** The texture filtering to configure */
     textureFiltering?: TextureSamplerFilteringPreset;
 
-    /** The texture color space to use by default. By default, it is {@link ColorSpace.LINEAR}. */
-     textureColorSpace?: ColorSpace;
+    /**
+     * The renderer's output color space. By default, {@link OutputColorSpace.NONE}: no color management, values are written to the screen as-is.
+     * Use {@link OutputColorSpace.SRGB} to encode linear shader output to sRGB once at present. Material shaders never convert gamma in either mode.
+     */
+    outputColorSpace?: OutputColorSpace;
 
      /**
      * The HTMLCanvasElement to use for rendering.
@@ -57,40 +64,37 @@ export class IFrameworkConfiguration {
     powerPreference ?: PowerPreferenceType;
 
     /**
-     * The rendering backend. Defaults to WebGL.
-     * WebGPU requires `Framework.initializeAsync()`; when `navigator.gpu` is missing or no device is available,
-     * the framework falls back to WebGL with a warning.
+     * The GPU backend. Defaults to WebGL.
+     * WebGPU requires `Framework.initializeAsync()`. There is no fallback: when `navigator.gpu` is missing
+     * or no device is available, initialization throws.
      */
-    renderingBackend?: RenderingBackend;
+    gpuBackend?: GpuBackend;
 }
 
 /** The framework interface. */
 export interface IFramework extends IDisposable {
 
-    /**
-     * The image loader.
-     */
+    /** The lifecycle state. */
+    readonly state: State;
+
+    /** The image loader. */
     readonly imageLoader: IImageLoader;
 
-    /**
-     * The used rendering backend.
-     */
-    readonly renderingBackend: RenderingBackend;
-
-    /**
-     * The sprite batches.
-     */
+    /** The sprite batches. */
     readonly spriteBatch: ISpriteBatch;
 
-    /**
-     * The renderer used by the framework.
-     */
+    /** The renderer used by the framework. */
     readonly renderer: IRenderer;
 
     /**
-     * The graphics device used by the framework.
+     * The graphics device.
      */
     readonly graphicsDevice: IGraphicsDevice;
+
+    /**
+     * The compute context. null on WebGL (compute not supported).
+     */
+    readonly computeContext: IComputeContext | null;
 
     /**
      * The pipeline factory.
@@ -99,6 +103,12 @@ export interface IFramework extends IDisposable {
      * and can be thought of as a material or renderer.
      */
     readonly renderPipelineFactory: IRenderPipelineFactory;
+
+    /**
+     * The compute pipeline factory.
+     * <code>null</code> if rendering API does not support compute shaders.
+     */
+    readonly computePipelineFactory?: IComputePipelineFactory;
 
     /**
      * The buffer factory, responsible for creating GPU memory buffers.
@@ -146,19 +156,20 @@ export interface IFramework extends IDisposable {
      */
     readonly lightsFactory: AmbientLightFactory;
 
-    /**
-     * The time manager.
-     */
+    /** The time manager. */
     readonly timeManager: ITimeManager;
 
     /** The input manager. */
     readonly input: IInputManager;
 
     /** The window manager. */
-    readonly windowManager: IWindowManager;
+    readonly canvasManager: ICanvasManager;
 
     /** The image processor. */
     readonly imageProcessor: IImageProcessor;
+
+    /** The dispatcher which can schedule actions to execute in future frames. */
+    readonly dispatcher: IDispatcher;
 
     /**
      * Called right after the framework is initialized and before the render loop starts.
@@ -178,14 +189,10 @@ export interface IFramework extends IDisposable {
     /** Called when the framework is initialized.*/
     removeOnInitializedListener(event: () => void): void;
 
-    /**
-     * Called when framework is updated.
-     */
+    /** Called when framework is updated.*/
     addOnUpdateListener(event: (gameTime: GameTime) => void): void;
 
-    /**
-     * Called when framework is updated.
-     */
+    /** Called when framework is updated.  */
     removeOnUpdateListener(event: (gameTime: GameTime) => void): void;
 
     /**
@@ -198,13 +205,7 @@ export interface IFramework extends IDisposable {
      */
     removeOnRenderListener(event: () => void): void;
 
-    /** Initializes the framework. */
-    initialize(): void;
-
-    /**
-     * Initializes the framework asynchronously and starts the event loop.
-     * Required for the WebGPU backend; for WebGL it behaves like {@link initialize}.
-     */
+    /** Initializes the framework asynchronously and starts the event loop. */
     initializeAsync(): Promise<void>;
 
 }

@@ -38,7 +38,7 @@ export class SpriteBatchMesh extends Mesh {
         this._spriteMaterial = material;
         this._maxInstances = numberOfInstances;
 
-        this._vertexData = new Array(this.maxInstances * SpriteBatchMesh.TOTAL_FLOATS_IN_SPRITE);
+        this._vertexData = new Float32Array(this.maxInstances * SpriteBatchMesh.TOTAL_FLOATS_IN_SPRITE);
 
         this._setupIndices();
     }
@@ -96,7 +96,7 @@ export class SpriteBatchMesh extends Mesh {
         this._maxInstances = newSize;
 
         // Create new data.
-        const newData = new Array(this._maxInstances * SpriteBatchMesh.TOTAL_FLOATS_IN_SPRITE); // 36 due to 9(xyz rgba uv) * 4 vertices.
+        const newData = new Float32Array(this._maxInstances * SpriteBatchMesh.TOTAL_FLOATS_IN_SPRITE); // 36 due to 9(xyz rgba uv) * 4 vertices.
 
         // Copy the existing vertices into the start of the new data.
         const oldData = this._vertexData ?? [];

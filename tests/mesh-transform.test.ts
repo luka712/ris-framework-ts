@@ -6,11 +6,11 @@ import type { IMaterial } from "../src/api/material/IMaterial.ts";
 
 const framework = {} as IFramework;
 
-type FakeBuffer = { data: number[]; update: ReturnType<typeof vi.fn>; dispose: ReturnType<typeof vi.fn> };
+type FakeBuffer = { data: number[]; write: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn>; dispose: ReturnType<typeof vi.fn> };
 function bufferFramework() {
     const buffers: FakeBuffer[] = [];
     const createUniformBuffer = vi.fn((data: ArrayLike<number>) => {
-        const buffer: FakeBuffer = { data: Array.from(data), update: vi.fn(), dispose: vi.fn() };
+        const buffer: FakeBuffer = { data: Array.from(data), write: vi.fn(), update: vi.fn(), dispose: vi.fn() };
         buffers.push(buffer);
         return buffer;
     });
@@ -70,11 +70,13 @@ describe("RenderableMesh transform", () => {
         expect(m.renderMesh).toHaveBeenCalledWith(mesh);
 
         mesh.render();
+        expect(buffers[0].write).not.toHaveBeenCalled();
         expect(buffers[0].update).not.toHaveBeenCalled();
         mesh.transform.position[0] = 5;
         mesh.render();
+        expect(buffers[0].write).toHaveBeenCalledOnce();
         expect(buffers[0].update).toHaveBeenCalledOnce();
-        expect(Array.from(buffers[0].update.mock.calls[0][0] as number[])[12]).toBe(5);
+        expect(Array.from(buffers[0].write.mock.calls[0][0] as number[])[12]).toBe(5);
 
         mesh.dispose();
         expect(buffers[0].dispose).toHaveBeenCalledOnce();

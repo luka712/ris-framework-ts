@@ -1,56 +1,89 @@
-import type {ITempRenderer} from "../../api/rendering/renderer-interface.ts";
-import type {vec2} from "gl-matrix";
-import type {RenderingLimits} from "../../api/rendering/rendering-limits.ts";
+import { vec2 } from "gl-matrix";
 import {
     Color,
+    type ICanvasManager,
     type IFramework,
     type IGraphicsDevice,
-    type IMainRenderTargetRenderPipeline, type IRendererConfiguration,
+    type IMainRenderTargetRenderPipeline,
+    type IRenderer,
+    type IRendererConfiguration,
     type IRenderPass,
+    type IRenderPassDescriptor,
     type ISwapChain,
+    type ISwapChainDescriptor,
     type ITexture2D,
-    type IWindowManager,
-    RenderingBackend,
+    OutputColorSpace,
     RenderPassColorAttachment,
     RenderPassDepthStencilAttachment,
-    RenderPassDescriptor,
-    SwapChainDescriptor,
+    State,
     TextureFormat,
     TextureUsage
-} from "../../api/index.ts";
-import {ColorSpace} from "../../api/rendering/enums.ts";
+} from "../../api";
 
-export abstract class ARenderer implements ITempRenderer {
+/** The base renderer shared by the WebGL and WebGPU backends. */
+export abstract class ARenderer implements IRenderer {
 
+    // Dependencies.
     protected readonly _framework: IFramework;
+    private readonly _canvasManager: ICanvasManager;
+    private readonly _graphicsDevice: IGraphicsDevice;
 
-    /**
-     * The resize listeners.
-     */
-    protected _resizeListeners: ((sender: any, size: vec2) => void)[] = [];
-
-    private readonly _windowManager: IWindowManager;
-    private _graphicsDevice: IGraphicsDevice = null!;
-    private _preferredDepthStencilFormat: TextureFormat = TextureFormat.DEPTH_24_STENCIL_8;
-    private readonly _currentBackBufferSize: vec2 = [0, 0];
-    private _swapChainRequiresResize: boolean = false;
-    private _mainRenderPassDirty = true;
+    // Configuration and state.
+    protected _renderConfiguration: IRendererConfiguration;
+    protected _outputColorSpace: OutputColorSpace;
+    protected _state = State.CREATED;
+    private _preferredDepthStencilFormat: TextureFormat = TextureFormat.DEPTH24_PLUS_STENCIL8;
     private _clearColor: Color = Color.lightPink();
-    private _colorSpace: ColorSpace;
 
+    // Size and dirty flags.
+    private readonly _currentBackBufferSize: vec2 = [0, 0];
+    private _mainRenderPassDirty = true;
     protected _mainRenderTargetRequiresResize: boolean = false;
+
+    // GPU resources.
     protected _swapChain: ISwapChain = null!;
     protected _mainRenderTarget: ITexture2D = null!;
     protected _depthStencilBuffer: ITexture2D = null!;
     protected _swapChainRenderPass: IRenderPass = null!;
     protected _mainRenderTargetRenderPass?: IRenderPass;
     protected _mainRenderTargetPipeline?: IMainRenderTargetRenderPipeline;
-    protected _renderConfiguration: IRendererConfiguration;
 
+    /**
+     * The resize listeners.
+     */
+    protected _resizeListeners: ((sender: any, size: vec2) => void)[] = [];
+
+    private _backBufferMatchesSwapChain = false;
+
+    /**
+     * The constructor.
+     * @param framework The framework.
+     * @param configuration The renderer configuration.
+     * @param graphicsDevice The graphics device.
+     */
+    protected constructor(framework: IFramework, configuration: IRendererConfiguration, graphicsDevice: IGraphicsDevice) {
+        this._framework = framework;
+        this._renderConfiguration = configuration;
+        this._graphicsDevice = graphicsDevice;
+        this._canvasManager = framework.canvasManager;
+        this._currentBackBufferSize[0] = this._canvasManager.canvas.width;
+        this._currentBackBufferSize[1] = this._canvasManager.canvas.height;
+        this._outputColorSpace = configuration.outputColorSpace;
+    }
+
+    /** @readonly */
+    public get state(): State {
+        return this._state;
+    }
 
     /** @inheritdoc */
     public get graphicsDevice(): IGraphicsDevice {
         return this._graphicsDevice;
+    }
+
+    /** @inheritdoc */
+    public get mainRenderPass(): IRenderPass {
+        return this._mainRenderTargetRenderPass!;
     }
 
     /** @inheritdoc */
@@ -64,36 +97,38 @@ export abstract class ARenderer implements ITempRenderer {
         this._mainRenderPassDirty = true;
     }
 
-    public get limits(): RenderingLimits | null {
-        throw new Error("Method not implemented.");
-    }
-
     /** @inheritdoc */
     public get preferredTextureFormat(): TextureFormat {
-        return this._colorSpace == ColorSpace.SRGB ? TextureFormat.RGBA_8_UNORM_SRGB : TextureFormat.RGBA_8_UNORM;
-    }
-
-    /** @inheritDoc */
-    public get colorSpace(): ColorSpace {
-        return this._colorSpace;
-    }
-
-    /** @inheritDoc */
-    public set colorSpace(colorSpace: ColorSpace) {
-        if (colorSpace == this._colorSpace) {
-            return;
-        }
-        this._colorSpace = colorSpace;
-        if (this._mainRenderTargetPipeline) {
-            this._mainRenderTargetPipeline.colorSpace = colorSpace;
-            // The main render target's format follows the color space, so recreate it on the next frame.
-            this._mainRenderTargetRequiresResize = true;
-        }
+        return this._outputColorSpace == OutputColorSpace.SRGB ? TextureFormat.RGBA8_UNORM_SRGB : TextureFormat.RGBA8_UNORM;
     }
 
     /** @inheritdoc */
     public get preferredDepthStencilFormat(): TextureFormat {
         return this._preferredDepthStencilFormat;
+    }
+
+    /** @inheritDoc */
+    public get outputColorSpace(): OutputColorSpace {
+        return this._outputColorSpace;
+    }
+
+    /**
+     * Switches the output color space without recreating the main render target.
+     * The main render target stays {@link TextureFormat.RGBA8_UNORM} (linear); the blit pipeline encodes to sRGB in the
+     * shader when this is {@link OutputColorSpace.SRGB} (see {@link IMainRenderTargetRenderPipeline.outputColorSpace}).
+     * {@link preferredTextureFormat} still follows this value for content loading.
+     * @inheritDoc
+     */
+    public set outputColorSpace(colorSpace: OutputColorSpace) {
+        if (colorSpace == this._outputColorSpace) {
+            return;
+        }
+        this._outputColorSpace = colorSpace;
+
+        // Before afterInitialize there is nothing to switch yet; _setupMainRenderPass uses the new value.
+        if (this._mainRenderTargetPipeline) {
+            this._mainRenderTargetPipeline.outputColorSpace = colorSpace;
+        }
     }
 
     /** @inheritdoc */
@@ -110,30 +145,29 @@ export abstract class ARenderer implements ITempRenderer {
             this._currentBackBufferSize[0] = size[0];
             this._currentBackBufferSize[1] = size[1];
             this._mainRenderTargetRequiresResize = true;
-
-            // TODO: should we resize swapchain as well?
-            this._swapChainRequiresResize = true;
         }
     }
 
-    /** @inheritdoc */
-    public backBufferMatchesSwapChain: boolean = false;
-
     /**
-     * The constructor.
-     * @param framework The framework.
-     * @param configuration The renderer configuration.
+     * Whether the back buffer size follows the swap chain size. When true, the main render target is resized
+     * whenever the canvas (and so the swap chain) is resized. By default, false.
+     * @ai-generated
      */
-    protected constructor(framework: IFramework, configuration: IRendererConfiguration) {
-        this._framework = framework;
-        this._renderConfiguration = configuration;
-        this._windowManager = framework.windowManager;
-        this._currentBackBufferSize[0] = this._windowManager.canvas.width;
-        this._currentBackBufferSize[1] = this._windowManager.canvas.height;
-        this._colorSpace = configuration.textureColorSpace;
+    public get backBufferMatchesSwapChain(): boolean {
+        return this._backBufferMatchesSwapChain;
     }
 
-     backend: RenderingBackend = RenderingBackend.WEB_GL;
+    /**
+     * Sets whether the back buffer size follows the swap chain size. Turning it on after initialization
+     * takes the current swap chain size on the next frame.
+     * @ai-generated
+     */
+    public set backBufferMatchesSwapChain(value: boolean) {
+        this._backBufferMatchesSwapChain = value;
+        if (value && this._swapChain) {
+            this._matchSwapChainSize();
+        }
+    }
 
     /** @inheritDoc */
     public addOnResizedListener(event: (sender: any, e: vec2) => void): void {
@@ -147,29 +181,38 @@ export abstract class ARenderer implements ITempRenderer {
             this._resizeListeners.splice(index, 1);
         }
     }
-    beginComputePass(): void {
-        throw new Error("Method not implemented.");
-    }
-    endComputePass(): void {
-        throw new Error("Method not implemented.");
-    }
 
     /**
-     * Creates the graphics device for the renderer.
-     *  This is an abstract method that must be implemented by subclasses to provide the specific graphics device implementation for the renderer.
-     * @returns The graphics device for the renderer.
+     * Creates the swap chain. The graphics device must already have been initialized by the framework.
+     * @inheritdoc
      */
-    protected abstract createGraphicsDevice(): IGraphicsDevice;
+    public async initializeAsync(): Promise<void> {
+        if (this._graphicsDevice.state != State.INITIALIZED) {
+            throw new Error(`ARenderer.initializeAsync: the graphics device is ${State[this._graphicsDevice.state]}; ` +
+                `Framework must initialize the device before the renderer.`);
+        }
 
-    /** @inheritdoc */
-    public initialize(): void {
-        this._graphicsDevice = this.createGraphicsDevice();
-        this._graphicsDevice.initialize();
+        const swapchainDescriptor: ISwapChainDescriptor = {
+            desiredOutputColorSpace: this._outputColorSpace,
+        };
+
         this._swapChain = this._graphicsDevice.createSwapChain(
-            this._windowManager.canvas,
-            new SwapChainDescriptor());
-        // TODO: RESIZE EVENT
+            this._canvasManager.canvas,
+            swapchainDescriptor);
+        
+        this._canvasManager.addOnResizeListener((_canvasManager, newSize) => {
 
+            this._swapChain.resize(newSize);
+            if (this._backBufferMatchesSwapChain) {
+                this._matchSwapChainSize();
+            }
+        });
+
+        if (this._backBufferMatchesSwapChain) {
+            this._matchSwapChainSize();
+        }
+
+        this._state = State.INITIALIZED;
     }
 
     /** @inheritdoc */
@@ -178,79 +221,16 @@ export abstract class ARenderer implements ITempRenderer {
         let colorAttachment = new RenderPassColorAttachment();
         colorAttachment.swapChain = this._swapChain;
         colorAttachment.clearColor = Color.transparent();
-        this._swapChainRenderPass = this._graphicsDevice.createRenderPass({
+        this._swapChainRenderPass = this.createRenderPass({
             colorAttachments: [colorAttachment],
+            label: "Swapchain Pass"
         });
 
         this._setupMainRenderPass();
     }
 
-    private _setupMainRenderPass(): void {
-
-        this._mainRenderTargetPipeline?.dispose();
-        this._depthStencilBuffer?.dispose();
-        this._mainRenderTarget?.dispose();
-
-        // Create a main frame buffer.
-        this._mainRenderTarget = this._framework.textureFactory.createEmpty(
-            this.backBufferSize[0], this.backBufferSize[1],
-            Color.transparent(),
-            TextureUsage.TEXTURE_BINDING | TextureUsage.RENDER_ATTACHMENT,
-            this.preferredTextureFormat
-        );
-
-        this._depthStencilBuffer = this._framework.textureFactory.createEmpty(
-            this.backBufferSize[0], this.backBufferSize[1],
-            undefined,
-            TextureUsage.RENDER_ATTACHMENT,
-            this.preferredDepthStencilFormat);
-
-        // Create main frame buffer pipeline.
-        this._mainRenderTargetPipeline = this._framework
-            .renderPipelineFactory
-            .createMainFrameBufferPipeline(this._mainRenderTarget);
-        this._mainRenderTargetPipeline.colorSpace = this._colorSpace;
-
-        this._createMainRenderPass();
-        this._mainRenderTargetRequiresResize = false;
-    }
-
-    private _createMainRenderPass(): void {
-        this._mainRenderTargetRenderPass?.dispose();
-        const renderPassDesc = new RenderPassDescriptor();
-        const colorAttachment = new RenderPassColorAttachment();
-        colorAttachment.texture = this._mainRenderTarget;
-        colorAttachment.clearColor = this._clearColor;
-        renderPassDesc.colorAttachments = [colorAttachment];
-        renderPassDesc.depthStencilAttachment = new RenderPassDepthStencilAttachment();
-        renderPassDesc.depthStencilAttachment.texture = this._depthStencilBuffer;
-        this._mainRenderTargetRenderPass = this._graphicsDevice.createRenderPass(renderPassDesc);
-        this._mainRenderPassDirty = false;
-    }
-
-    private _handleResizing(): void {
-        // If back buffer size is set to match swap chain size, then main render target needs
-        // to be resized whenever swap chain needs to be resized.
-        // If back buffer size is not set to match swap chain size,
-        // then main render target only needs to be resized when back buffer size is changed.
-        if ((this.backBufferMatchesSwapChain && this._swapChainRequiresResize) || this._mainRenderTargetRequiresResize) {
-            this._setupMainRenderPass();
-
-            for(const listener of this._resizeListeners){
-                listener(this, this.backBufferSize);
-            }
-        }
-
-        if (!this._swapChainRequiresResize) {
-            return;
-        }
-
-        // Note: surface texture and surface texture view must be released before trying to resize.
-        this._swapChain.resize(this.backBufferSize[0], this.backBufferSize[1]);
-
-        // ConfigureDepthStencil();
-        this._swapChainRequiresResize = false;
-    }
+    /** @inheritdoc */
+    public abstract createRenderPass(descriptor: IRenderPassDescriptor): IRenderPass;
 
     /** @inheritdoc */
     public beginRenderPass(): void {
@@ -262,7 +242,6 @@ export abstract class ARenderer implements ITempRenderer {
         this._mainRenderTargetRenderPass!.endPass();
 
         this._handleResizing();
-
         this._swapChainRenderPass!.beginPass();
         this._mainRenderTargetPipeline!.render();
         this._swapChainRenderPass!.endPass();
@@ -270,9 +249,116 @@ export abstract class ARenderer implements ITempRenderer {
         this._swapChain.present();
 
         // For example, clear color change.
-        if(this._mainRenderPassDirty) {
+        if (this._mainRenderPassDirty) {
             this._createMainRenderPass();
         }
     }
 
+    /**
+     * @inheritDoc
+     * @ai-generated
+     */
+    public dispose(): void {
+        if (this._state == State.DISPOSED) {
+            return;
+        }
+
+        this._mainRenderTargetRenderPass?.dispose();
+        this._swapChainRenderPass?.dispose();
+        this._mainRenderTargetPipeline?.dispose();
+        this._depthStencilBuffer?.dispose();
+        this._mainRenderTarget?.dispose();
+        this._swapChain?.dispose();
+        this._resizeListeners.length = 0;
+
+        this._state = State.DISPOSED;
+    }
+
+    private _setupMainRenderPass(): void {
+
+        // The blit has not run yet this frame, so the old pipeline can go now.
+        // The old targets were used by this frame's main pass, so they are disposed after submit.
+        this._mainRenderTargetPipeline?.dispose();
+        this._depthStencilBuffer?.queueDispose();
+        this._mainRenderTarget?.queueDispose();
+
+        // Main frame buffer stays linear (RGBA8_UNORM). Encoding to sRGB (when outputColorSpace is SRGB) is done in
+        // the blit shader on both backends, so the canvas / swap chain never needs an sRGB view for output.
+        this._mainRenderTarget = this._framework.textureFactory.createEmpty(
+            this.backBufferSize,
+            undefined,
+            TextureUsage.TEXTURE_BINDING | TextureUsage.RENDER_ATTACHMENT,
+            TextureFormat.RGBA8_UNORM,
+            "Renderer_MainRenderTarget",
+            false,
+        );
+
+        this._depthStencilBuffer = this._framework.textureFactory.createEmpty(
+            this.backBufferSize,
+            undefined,
+            TextureUsage.RENDER_ATTACHMENT,
+            this.preferredDepthStencilFormat);
+
+        // Create main frame buffer pipeline.
+        this._mainRenderTargetPipeline = this._framework
+            .renderPipelineFactory
+            .createMainFrameBufferPipeline(this._mainRenderTarget);
+        this._mainRenderTargetPipeline.outputColorSpace = this._outputColorSpace;
+
+        this._createMainRenderPass();
+        this._mainRenderTargetRequiresResize = false;
+    }
+
+    /**
+     * The main render pass color attachment for the linear main render target.
+     * When {@link IGraphicsDeviceFeatures.supportsTextureView} is true (WebGPU), the default linear view is set;
+     * on WebGL2 textures are attached directly (views are not supported).
+     */
+    private _createMainColorAttachment(): RenderPassColorAttachment {
+        const colorAttachment = new RenderPassColorAttachment();
+        colorAttachment.texture = this._mainRenderTarget;
+        if (this._graphicsDevice.features.supportsTextureView) {
+            colorAttachment.view = this._mainRenderTarget.defaultTextureView;
+        }
+        colorAttachment.clearColor = this._clearColor;
+        return colorAttachment;
+    }
+
+    private _createMainRenderPass(): void {
+        this._mainRenderTargetRenderPass?.dispose();
+        const depthStencilAttachment = new RenderPassDepthStencilAttachment();
+        depthStencilAttachment.texture = this._depthStencilBuffer;
+        const renderPassDesc: IRenderPassDescriptor = {
+            colorAttachments: [this._createMainColorAttachment()],
+            depthStencilAttachment,
+            label: "Main Render Pass"
+        };
+        this._mainRenderTargetRenderPass = this.createRenderPass(renderPassDesc);
+        this._mainRenderPassDirty = false;
+    }
+
+    /**
+     * Copies the swap chain size into the back buffer size and marks the main render target for a resize.
+     * @ai-generated
+     */
+    private _matchSwapChainSize(): void {
+        vec2.copy(this._currentBackBufferSize, this._swapChain.backBufferSize);
+        this._mainRenderTargetRequiresResize = true;
+    }
+
+    /**
+     * Recreates the main render target at {@link backBufferSize} when it was marked for a resize,
+     * then raises the resized listeners. The swap chain follows the canvas and is resized by the canvas resize listener.
+     */
+    private _handleResizing(): void {
+        if (!this._mainRenderTargetRequiresResize) {
+            return;
+        }
+
+        this._setupMainRenderPass();
+
+        for (const listener of this._resizeListeners) {
+            listener(this, this.backBufferSize);
+        }
+    }
 }

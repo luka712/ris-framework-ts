@@ -1,32 +1,58 @@
-import mainRenderTargetFlipYVS from "../../../shaders/glsl/main_render_target_flip_y_vs.glsl?raw";
-import mainRenderTargetFlipYFS from "../../../shaders/glsl/main_render_target_flip_y_fs.glsl?raw";
+import mainRenderTargetVS from "../../../shaders/glsl/main_render_target_vs.glsl?raw";
+import mainRenderTargetFS from "../../../shaders/glsl/main_render_target_fs.glsl?raw";
 import spriteVS from "../../../shaders/glsl/sprite_vs.glsl?raw";
 import spriteFS from "../../../shaders/glsl/sprite_fs.glsl?raw";
-import inspectTextureMipsVS from "../../../shaders/glsl/inspect_texture_mips_vs.glsl?raw";
-import inspectTextureMipsFS from "../../../shaders/glsl/inspect_texture_mips_fs.glsl?raw";
+import inspectTextureMipsVS from "../../../shaders/glsl/inspect/inspect_texture_mips_vs.glsl?raw";
+import inspectTextureMipsFS from "../../../shaders/glsl/inspect/inspect_texture_mips_fs.glsl?raw";
+import inspectTextureArrayVS from "../../../shaders/glsl/inspect/inspect_texture_array_vs.glsl?raw";
+import inspectTextureArrayFS from "../../../shaders/glsl/inspect/inspect_texture_array_fs.glsl?raw";
 import unlitMaterialVS from "../../../shaders/glsl/unlit_material_vs.glsl?raw";
 import unlitMaterialFS from "../../../shaders/glsl/unlit_material_fs.glsl?raw";
+import unlitTextureArrayMaterialFS from "../../../shaders/glsl/unlit_texture_array_material_fs.glsl?raw";
 import forwardBlinnPhongVS from "../../../shaders/glsl/forward_blinn_phong_material_vs.glsl?raw";
 import forwardBlinnPhongFS from "../../../shaders/glsl/forward_blinn_phong_material_fs.glsl?raw";
+import colorConversion from "../../../shaders/glsl/modules/color_conversion.glsl?raw";
 
 
 /**
- * The api should look something like this for internal ones.
- * export const ShaderContent = {
- *     "example_shader": {
- *         "shader": "{combined_shader}", // WebGPU
- *         "vertex": "{some_vertex_code}", // WebGL
- *         "fragment": "{some_fragment_code}", // WebGL
- *         "reflection": "{reflection_object}", // Both
- *     }
+ * One built-in GLSL or WGSL shader registry entry.
+ * `path` is set only for an importable module. By default, absent, and the entry is a program.
+ * `vertex` and `fragment` are WebGL sources. By default, absent.
+ * `shader` is a WGSL render program (vertex and fragment entry points) or a module body pulled in with `#include`. By default, absent.
+ * `compute` is a WGSL compute program. By default, absent.
+ * `reflection` is reserved. By default, absent. Built-in GLSL entries set `{}`.
  */
+export interface InternalShader {
 
+    /** The path to the shader module. By default, absent. */
+    path?: string;
 
-export const ShaderModuleContent : {[id: string]: any} = {
+    /** The vertex shader. Used by WebGL2 shaders. By default, absent. */
+    vertex?: string;
 
-    "main_render_target_flip_y": {
-        "vertex": mainRenderTargetFlipYVS,
-        "fragment": mainRenderTargetFlipYFS,
+    /** The fragment shader. Used by WebGL2 shaders. By default, absent. */
+    fragment?: string;
+
+    /** The compute shader. Used by WebGPU compute programs. By default, absent. */
+    compute?: string;
+
+    /** The WGSL render program, or a module body (GLSL or WGSL) pulled in with `#include`. By default, absent. */
+    shader?: string;
+
+    /** The reflection data. By default, absent. Built-in GLSL entries set `{}`. */
+    reflection?: any; // This will be type in the future.
+}
+
+/**
+ * Built-in GLSL programs and modules keyed by shader id.
+ * Programs set `vertex` and `fragment`; modules set `path` and `shader` and are pulled in with `#include "<path>"`.
+ * @internal
+ */
+export const GlslShaderModuleContent : {[id: string]: InternalShader} = {
+
+    "main_render_target": {
+        "vertex": mainRenderTargetVS,
+        "fragment": mainRenderTargetFS,
         "reflection": {}
     },
 
@@ -36,10 +62,16 @@ export const ShaderModuleContent : {[id: string]: any} = {
         "reflection": {}
     },
 
-    "inspect_texture_mips": {
-        "vertex": inspectTextureMipsVS,
-        "fragment": inspectTextureMipsFS,
-        "reflection": {}
+    inspect_texture_mips: {
+        vertex: inspectTextureMipsVS,
+        fragment: inspectTextureMipsFS,
+        reflection: {}
+    },
+
+    inspect_texture_array: {
+        vertex: inspectTextureArrayVS,
+        fragment: inspectTextureArrayFS,
+        reflection: {}
     },
 
     "unlit_material": {
@@ -48,9 +80,73 @@ export const ShaderModuleContent : {[id: string]: any} = {
         "reflection": {}
     },
 
+    // Shares the unlit vertex shader; the fragment shader samples a sampler2DArray.
+    unlit_texture_array_material: {
+        vertex: unlitMaterialVS,
+        fragment: unlitTextureArrayMaterialFS,
+        reflection: {}
+    },
+
     "forward_blinn_phong_material": {
         "vertex": forwardBlinnPhongVS,
         "fragment": forwardBlinnPhongFS,
         "reflection": {}
+    },
+
+    color_conversion: {
+        path: "modules/color_conversion.glsl",
+        shader: colorConversion,
+        reflection: {}
     }
 }
+
+import mainFrameBuffer from "../../../shaders/wgsl/main_frame_buffer.wgsl?raw";
+import unlitMaterial from "../../../shaders/wgsl/unlit_material.wgsl?raw";
+import unlitTextureArrayMaterial from "../../../shaders/wgsl/unlit_texture_array_material.wgsl?raw";
+import meshVertexWgsl from "../../../shaders/wgsl/modules/mesh_vertex.wgsl?raw";
+import forwardBlinnPhongMaterial from "../../../shaders/wgsl/forward_blinn_phong_material.wgsl?raw";
+import sprite from "../../../shaders/wgsl/sprite.wgsl?raw";
+import inspectTextureMips from "../../../shaders/wgsl/inspect/inspect_texture_mips.wgsl?raw";
+import inspectTextureArrayWgsl from "../../../shaders/wgsl/inspect/inspect_texture_array.wgsl?raw";
+import colorConversionWgsl from "../../../shaders/wgsl/modules/color_conversion.wgsl?raw";
+import resizeWgsl from "../../../shaders/wgsl/modules/resize.wgsl?raw";
+import downsampleTextureWgsl from "../../../shaders/wgsl/utilities/downsample_texture.wgsl?raw";
+
+/**
+ * The framework's built-in WGSL programs and modules, keyed by the same ids the WebGL backend uses where one exists.
+ * Render programs set `shader` (`main_vs` and `main_fs` entry points). Compute programs set `compute`.
+ * Modules also set `path` and are pulled in with `#include "<path>"`. `vertex` and `fragment` are absent on these entries.
+ * @internal
+ */
+export const WgslShaderModuleContent: { [id: string]: InternalShader } = {
+    main_frame_buffer: {
+        shader: mainFrameBuffer
+    },
+    unlit_material: {
+        shader: unlitMaterial
+    },
+    unlit_texture_array_material: { shader: unlitTextureArrayMaterial },
+    forward_blinn_phong_material: { shader: forwardBlinnPhongMaterial },
+    sprite: { shader: sprite },
+    inspect_texture_mips: { shader: inspectTextureMips },
+    inspect_texture_array: { shader: inspectTextureArrayWgsl },
+    color_conversion: {
+        path: "modules/color_conversion.wgsl",
+        shader: colorConversionWgsl,
+        reflection: {}
+    },
+    mesh_vertex: {
+        path: "modules/mesh_vertex.wgsl",
+        shader: meshVertexWgsl,
+        reflection: {}
+    },
+    resize: {
+        path: "modules/resize.wgsl",
+        shader: resizeWgsl,
+        reflection: {}
+    },
+    downsample_texture: {
+        compute: downsampleTextureWgsl,
+    },
+
+};

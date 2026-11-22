@@ -3,7 +3,7 @@ import type {IRenderableMesh} from "../meshes/IRenderableMesh.ts";
 import type {IMaterial} from "../material/IMaterial.ts";
 
 /**
- * A renderable mesh held by a scene (C# `SceneMesh`): `new SceneMesh(renderableMesh)`.
+ * A renderable mesh held by a scene: `new SceneMesh(renderableMesh)`.
  * It covers the mesh and all its sub meshes, and owns their materials:
  * disposing it disposes the mesh (buffers once) and each distinct material once.
  * @public

@@ -3,6 +3,7 @@ import type {
     IForwardBlinnPhongRenderPipeline,
     IFramework,
     IInspectTextureMipsRenderPipeline,
+    IInspectTextureArrayRenderPipeline,
     IMainRenderTargetRenderPipeline,
     IPrimitiveState,
     IRenderPipelineFactory,
@@ -10,12 +11,17 @@ import type {
     ITexture2D,
     IUniformBuffer,
     IUnlitRenderPipeline,
+    IUnlitTextureArrayRenderPipeline,
 } from "../../api/index.ts";
 import {WebGpuMainRenderTargetRenderPipeline} from "./WebGpuMainRenderTargetRenderPipeline.ts";
 import {WebGpuUnlitRenderPipeline} from "./material/WebGpuUnlitRenderPipeline.ts";
+import {WebGpuUnlitTextureArrayRenderPipeline} from "./material/WebGpuUnlitTextureArrayRenderPipeline.ts";
+import {WebGpuSpriteRenderPipeline} from "./sprite/WebGpuSpriteRenderPipeline.ts";
+import {WebGpuInspectTextureArrayRenderPipeline} from "./inspect/WebGpuInspectTextureArrayRenderPipeline.ts";
+import {WebGpuInspectTextureMipsRenderPipeline} from "./inspect/WebGpuInspectTextureMipsRenderPipeline.ts";
 
 /**
- * The WebGPU render pipeline factory. Slice 1 implements the main render target and unlit pipelines.
+ * The WebGPU render pipeline factory. Implements the main render target, unlit, unlit texture array, sprite, inspect texture mips and inspect texture array pipelines.
  * @internal
  */
 export class WebGpuRenderPipelineFactory implements IRenderPipelineFactory {
@@ -50,17 +56,41 @@ export class WebGpuRenderPipelineFactory implements IRenderPipelineFactory {
     }
 
     /** @inheritDoc */
-    public createSpriteRenderPipeline(_projectionViewBuffer: IUniformBuffer): ISpriteRenderPipeline {
-        throw new Error("The sprite render pipeline is not implemented for WebGPU.");
+    public createUnlitTextureArrayRenderPipeline(projectionViewBuffer: IUniformBuffer,
+                                                 modelBuffer: IUniformBuffer,
+                                                 materialBuffer: IUniformBuffer,
+                                                 primitiveState?: IPrimitiveState): IUnlitTextureArrayRenderPipeline {
+        const pipeline = new WebGpuUnlitTextureArrayRenderPipeline(this._framework, projectionViewBuffer, modelBuffer, materialBuffer, primitiveState);
+        pipeline.initialize();
+        return pipeline;
     }
 
     /** @inheritDoc */
-    public createInspectTextureMipsRenderPipeline(_projectionViewBuffer: IUniformBuffer, _modelBuffer: IUniformBuffer, _textureConstantsBuffer: IUniformBuffer): IInspectTextureMipsRenderPipeline {
-        throw new Error("The inspect texture mips render pipeline is not implemented for WebGPU.");
+    public createSpriteRenderPipeline(projectionViewBuffer: IUniformBuffer): ISpriteRenderPipeline {
+        const pipeline = new WebGpuSpriteRenderPipeline(this._framework, projectionViewBuffer);
+        pipeline.initialize();
+        return pipeline;
     }
 
     /** @inheritDoc */
+    public createInspectTextureMipsRenderPipeline(projectionViewBuffer: IUniformBuffer, modelBuffer: IUniformBuffer, fragmentDataBuffer: IUniformBuffer): IInspectTextureMipsRenderPipeline {
+        const pipeline = new WebGpuInspectTextureMipsRenderPipeline(this._framework, projectionViewBuffer, modelBuffer, fragmentDataBuffer);
+        pipeline.initialize();
+        return pipeline;
+    }
+
+    /** @inheritDoc */
+    public createInspectTextureArrayRenderPipeline(projectionViewBuffer: IUniformBuffer, modelBuffer: IUniformBuffer, fragmentDataBuffer: IUniformBuffer): IInspectTextureArrayRenderPipeline {
+        const pipeline = new WebGpuInspectTextureArrayRenderPipeline(this._framework, projectionViewBuffer, modelBuffer, fragmentDataBuffer);
+        pipeline.initialize();
+        return pipeline;
+    }
+
+    /**
+     * Not implemented for WebGPU yet; always throws.
+     * @inheritDoc
+     */
     public createForwardBlinnPhongRenderPipeline(_descriptor: ForwardBlinnPhongRenderPipelineDescriptor): IForwardBlinnPhongRenderPipeline {
-        throw new Error("The forward Blinn-Phong render pipeline is not implemented for WebGPU.");
+        throw new Error("WebGpuRenderPipelineFactory.createForwardBlinnPhongRenderPipeline: the forward Blinn-Phong render pipeline is not implemented for WebGPU yet.");
     }
 }

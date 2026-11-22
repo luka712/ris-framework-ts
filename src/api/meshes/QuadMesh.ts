@@ -2,7 +2,7 @@ import {RenderableMesh} from "./RenderableMesh.ts";
 import {Rect} from "../data/Rect.ts";
 import type { IFramework } from "../IFramework.ts";
 import {vec2} from "gl-matrix";
-import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
+import {BufferUsage} from "../gpu/buffers/BufferUsage.ts";
 import type {IMaterial} from "../material/IMaterial.ts";
 
 /**
@@ -75,7 +75,7 @@ export class QuadMesh extends RenderableMesh {
     public applyChanges(): void {
         if (!this._isUpdatable)
         {
-            throw new Error("This mesh is not updatable.");
+            throw new Error("QuadMesh.applyChanges: This mesh is not updatable. Create it with isUpdatable = true to change it after creation.");
         }
 
         this._vertexBuffer!.update(this._vertexData!);

@@ -45,12 +45,20 @@ describe("CpuImageProcessor", () => {
             .rejects.toThrow("Invalid image data");
     });
 
-    it("does not resize raw byte buffers", async () => {
+    it("rejects raw byte buffers that are not RGBA", async () => {
         const processor = new CpuImageProcessor();
-        const image = new RawImageData([new Uint8Array([1, 2, 3, 4])], 1, 1, 4);
+        const image = new RawImageData([new Uint8Array([1, 2, 3])], 1, 1, 3);
 
         await expect(processor.resizeAsync(image, vec2.fromValues(2, 2)))
-            .rejects.toThrow("Not implemented.");
+            .rejects.toThrow("only 4 channel (RGBA) raw bytes can be resized");
+    });
+
+    it("rejects raw byte buffers whose length does not match the size", async () => {
+        const processor = new CpuImageProcessor();
+        const image = new RawImageData([new Uint8Array([1, 2, 3, 4])], 2, 2, 4);
+
+        await expect(processor.resizeAsync(image, vec2.fromValues(1, 1)))
+            .rejects.toThrow("expected 16 bytes for 2x2 RGBA; got 4.");
     });
 
     it("returns the base level when a 1x1 image has no smaller mip", async () => {
@@ -81,11 +89,11 @@ describe("CpuImageProcessor", () => {
         expect(result.getData(0)).toBe(pixels);
     });
 
-    it("does not build mip chains from raw byte buffers", async () => {
+    it("rejects raw byte mip chains whose length does not match the size", async () => {
         const processor = new CpuImageProcessor();
-        const image = new RawImageData([new Uint8Array(4 * 4 * 4)], 4, 4, 4);
+        const image = new RawImageData([new Uint8Array(4)], 4, 4, 4);
 
-        await expect(processor.generateMipmapsAsync(image)).rejects.toThrow("Not implemented.");
-        await expect(processor.generateMipmapsAsync(image, 1)).rejects.toThrow("Not implemented.");
+        await expect(processor.generateMipmapsAsync(image)).rejects.toThrow("expected 64 bytes for 4x4 RGBA; got 4.");
+        await expect(processor.generateMipmapsAsync(image, 1)).rejects.toThrow("expected 64 bytes for 4x4 RGBA; got 4.");
     });
 });

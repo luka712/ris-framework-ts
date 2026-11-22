@@ -8,7 +8,7 @@
     "outDir": "dist",
     "rootDir": "src",
     "rewriteRelativeImportExtensions": true,
-    "types": []
+    "types": ["@webgpu/types"]
   },
   "include": [
     "src"

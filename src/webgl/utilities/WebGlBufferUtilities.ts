@@ -18,7 +18,7 @@ export class WebGlBufferUtilities {
     public createVertexBuffer(gl: WebGL2RenderingContext, dataOrByteSize: Float32Array | number, usage: BufferUsage): WebGLBuffer {
         const buffer = gl.createBuffer();
         if (!buffer) {
-            throw new Error("Failed to create vertex buffer.");
+            throw new Error("WebGlBufferUtilities.createVertexBuffer: gl.createBuffer() returned null (the WebGL context may be lost).");
         }
 
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -47,7 +47,7 @@ export class WebGlBufferUtilities {
     ): WebGLBuffer {
         const buffer = gl.createBuffer();
         if (!buffer) {
-            throw new Error("Failed to create index buffer.");
+            throw new Error(`WebGlBufferUtilities.createIndexBuffer: gl.createBuffer() returned null for '${label ?? "unlabeled"}' (the WebGL context may be lost).`);
         }
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
@@ -75,12 +75,12 @@ export class WebGlBufferUtilities {
      * @param dataOrByteSize The data to upload to the uniform buffer, typically an ArrayBuffer or a TypedArray containing uniform data, or a number representing the byte size of the buffer to create.
      * @param usage The intended usage of the buffer, which can affect how the buffer is created and optimized by the graphics API. For example, a uniform buffer may be optimized for use as a uniform buffer in rendering operations.
      * @param label An optional label for the buffer, which can be used for debugging purposes to identify the buffer in graphics debugging tools. 
-    * @returns The created WebGLBuffer object that represents the uniform buffer in WebGL.
+     * @returns The created WebGLBuffer object that represents the uniform buffer in WebGL.
      */
     public createUniformBuffer(gl: WebGL2RenderingContext, dataOrByteSize: ArrayBuffer | ArrayBufferView | number, usage: BufferUsage, label?: string): WebGLBuffer {
         const buffer = gl.createBuffer();
         if (!buffer) {
-            throw new Error("Failed to create uniform buffer.");
+            throw new Error(`WebGlBufferUtilities.createUniformBuffer: gl.createBuffer() returned null for '${label ?? "unlabeled"}' (the WebGL context may be lost).`);
         }
 
         if(label) {

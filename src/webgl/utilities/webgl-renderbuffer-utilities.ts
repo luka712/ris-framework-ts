@@ -1,5 +1,5 @@
 import type { TextureFormat } from "../../api/index.ts";
-import { SpectorJSUtilities } from "./spector-js-utilities";
+import { SpectorJSUtilities } from "./SpectorJsUtilities.ts";
 import { WebGlConverter } from "./WebGlConverter.ts";
 
 /**

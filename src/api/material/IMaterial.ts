@@ -1,9 +1,9 @@
 import type { IDisposable } from "../core/IDisposable.ts";
 import {GeometryFormat} from "../geometry/GeometryFormat.ts";
 import type { IRenderableMesh } from "../meshes/IRenderableMesh.ts";
-import type { IVertexBuffer } from "../rendering/buffers/IVertexBuffer.ts";
-import type { IIndexBuffer } from "../rendering/buffers/IIndexBuffer.ts";
-import type { IUniformBuffer } from "../rendering/buffers/IUniformBuffer.ts";
+import type { IVertexBuffer } from "../gpu/buffers/IVertexBuffer.ts";
+import type { IIndexBuffer } from "../gpu/buffers/IIndexBuffer.ts";
+import type { IUniformBuffer } from "../gpu/buffers/IUniformBuffer.ts";
 import type {ICamera} from "../camera/ICamera.ts";
 
 /**

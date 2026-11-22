@@ -1,7 +1,6 @@
 import {type BufferUsage, type IFramework, type IUniformBuffer} from "../../api/index.ts";
 import type {WebGpuGraphicsDevice} from "../WebGpuGraphicsDevice.ts";
-import {GpuBufferUsage, type GpuBuffer} from "../WebGpuTypes.ts";
-import {WebGpuConverter} from "../utilities/WebGpuConverter.ts";
+import { WebGpuUtilities } from "../utilities/WebGpuUtilities.ts";
 
 /**
  * The WebGPU uniform buffer. The size is aligned to 16 bytes and the buffer always has UNIFORM | COPY_DST.
@@ -12,9 +11,9 @@ export class WebGpuUniformBuffer implements IUniformBuffer {
     private static _nextId = 1;
 
     private readonly _graphicsDevice: WebGpuGraphicsDevice;
-    private readonly _data: Float32Array;
+    private _data: Float32Array;
     private readonly _byteSize: number;
-    private _gpuBuffer: GpuBuffer | null = null;
+    private _gpuBuffer: GPUBuffer | null = null;
 
     /**
      * The constructor.
@@ -24,7 +23,7 @@ export class WebGpuUniformBuffer implements IUniformBuffer {
      * @param label The label.
      */
     public constructor(framework: IFramework, dataOrFloatCount: ArrayLike<number> | number, bufferUsage: BufferUsage, label?: string) {
-        this._graphicsDevice = framework.renderer.graphicsDevice as WebGpuGraphicsDevice;
+        this._graphicsDevice = framework.graphicsDevice as WebGpuGraphicsDevice;
         this.usage = bufferUsage;
         this.label = label;
         this.id = WebGpuUniformBuffer._nextId++;
@@ -52,8 +51,16 @@ export class WebGpuUniformBuffer implements IUniformBuffer {
         return this._byteSize;
     }
 
+    /**
+     * @inheritDoc
+     * @ai-generated
+     */
+    public get nativeObject(): GPUBuffer {
+        return this.gpuBuffer;
+    }
+
     /** The WebGPU buffer. */
-    public get gpuBuffer(): GpuBuffer {
+    public get gpuBuffer(): GPUBuffer {
         if (!this._gpuBuffer) {
             throw new Error("WebGpuUniformBuffer: the buffer is not initialized or is disposed.");
         }
@@ -62,36 +69,31 @@ export class WebGpuUniformBuffer implements IUniformBuffer {
 
     /** @inheritDoc */
     public initialize(): void {
-        const device = this._graphicsDevice.device;
-        this._gpuBuffer = device.createBuffer({
-            label: this.label,
-            size: this._byteSize,
-            usage: WebGpuConverter.convertBufferUsage(this.usage) | GpuBufferUsage.UNIFORM | GpuBufferUsage.COPY_DST,
-        });
-        device.queue.writeBuffer(this._gpuBuffer, 0, this._data.buffer, this._data.byteOffset, this._data.byteLength);
+        this._gpuBuffer = WebGpuUtilities.buffer.createUniformBufferAsync(this._graphicsDevice.device, this._data, this.usage, this.label);
+    }
+
+    /** @inheritDoc */
+    public write(data: Float32Array, offset: number = 0, length: number = 0): void {
+        const count = length > 0 ? length : data.length - offset;
+        this._data.set(data.subarray(offset, offset + count), offset);
     }
 
     /**
-     * Updates the buffer. Only the data's length is written.
-     * @param data The float data.
-     * @param offset The first float to write.
-     * @param length The number of floats to write; defaults to the data's length after the offset.
+     * Writes a single float into the CPU-side data.
+     * @param value The value.
+     * @param offset The offset in floats.
+     * @ai-generated
      */
-    public update(data: ArrayLike<number>, offset: number = 0, length?: number): void {
-        let count = length ?? data.length - offset;
-        count = Math.min(count, this._data.length - offset, data.length - offset);
-        if (count <= 0) {
-            return;
-        }
-        for (let i = 0; i < count; i++) {
-            this._data[offset + i] = data[offset + i];
-        }
-        this._graphicsDevice.device.queue.writeBuffer(
-            this.gpuBuffer,
-            offset * Float32Array.BYTES_PER_ELEMENT,
-            this._data.buffer,
-            this._data.byteOffset + offset * Float32Array.BYTES_PER_ELEMENT,
-            count * Float32Array.BYTES_PER_ELEMENT);
+    public writeSingle(value: number, offset: number): void {
+        this._data[offset] = value;
+    }
+
+    /**
+     * Uploads the CPU-side data to the GPU buffer.
+     * @ai-generated
+     */
+    public update(): void {
+        WebGpuUtilities.buffer.writeBuffer(this._graphicsDevice.device.queue, this.gpuBuffer, this._data);
     }
 
     /** @inheritDoc */

@@ -1,8 +1,8 @@
-import {type IGPUInfo, RenderingBackend, TextureFormat} from "../api/index.ts";
+import {type IGPUInfo, GpuBackend, TextureFormat, TextureUtilities} from "../api/index.ts";
 import type {WebGlGraphicsDevice} from "./WebGlGraphicsDevice.ts";
 
 /**
- * The WebGL implementation of IGPUInfo
+ * WebGL GPU info.
  */
 export class WebGlGpuInfo implements IGPUInfo {
 
@@ -26,37 +26,20 @@ export class WebGlGpuInfo implements IGPUInfo {
         }
 
         this.apiVersion = gl.getParameter(gl.VERSION);
-        this.api = RenderingBackend.WEB_GL;
+        this.api = GpuBackend.WEB_GL;
 
         // This info is hidden, therefore default.
-        this.underlyingBackend = RenderingBackend.DEFAULT;
+        this.underlyingBackend = GpuBackend.DEFAULT;
 
-        const supportedCompressedTextureFormats = [];
-
-        if(graphicsDevice.features.supportsTextureCompressionASTC){
-            supportedCompressedTextureFormats.push(TextureFormat.ASTC_4X4_RGBA_UNORM)
-        }
-
-        if(graphicsDevice.features.supportsTextureCompressionS3TC) {
-            supportedCompressedTextureFormats.push(TextureFormat.BC3_RGBA_UNORM)
-        }
-
-        if(graphicsDevice.features.supportsTextureCompressionETC2) {
-            supportedCompressedTextureFormats.push(TextureFormat.ETC2_RGBA8_UNORM);
-        }
-
-        if(graphicsDevice.features.supportsTextureCompressionBC) {
-            supportedCompressedTextureFormats.push(TextureFormat.BC7_RGBA_UNORM);
-        }
-
-        // TODO: PVRC
+        const supportedCompressedTextureFormats = graphicsDevice.features.supportedTextureFormats
+            .filter(f => TextureUtilities.isCompressedTextureFormat(f));
 
         this.supportedCompressedTextureFormats = supportedCompressedTextureFormats;
 
     }
 
     /** @inheritDoc */
-    readonly api: RenderingBackend;
+    readonly api: GpuBackend;
 
     /** @inheritDoc */
     readonly apiVersion: string;
@@ -68,7 +51,7 @@ export class WebGlGpuInfo implements IGPUInfo {
     readonly supportedCompressedTextureFormats: TextureFormat[];
 
     /** @inheritDoc */
-    readonly underlyingBackend: RenderingBackend;
+    readonly underlyingBackend: GpuBackend;
 
     /** @inheritDoc */
     readonly vendor: string;

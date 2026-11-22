@@ -4,6 +4,52 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 An unreleased version is dated `{{YYYY-MM-DD}}`; the publish pipeline fills in the date when it is merged to `main`.
 
+## [0.4.0] - {{YYYY-MM-DD}}
+
+Compared with 0.3.0.
+
+### Breaking changes
+
+- `WindowManager` is now `CanvasManager`, and `WindowBounds` is now `CanvasBounds`.
+- `framework.initialize()` is removed; use `initializeAsync()`.
+- WebGPU no longer falls back to WebGL.
+- Textures use `size: vec2` instead of `width` and `height`; the byte count is now `vramSize`.
+- `textureColorSpace` and `renderer.colorSpace` are replaced by `outputColorSpace`. See [`guides/color-output.md`](guides/color-output.md).
+- `TextureFormat` members use wgpu-style names, for example `RGBA8_UNORM`.
+- `ITextureView` is now `ITextureView2D`; `SwapChainDescriptor` is now `ISwapChainDescriptor`.
+- `RenderingBackend` is now `GpuBackend`; `renderer.backend` and `renderer.limits` move to `graphicsDevice.api` and `graphicsDevice.limits`.
+- `createRenderPass` moves from the graphics device to the renderer.
+- `IUniformBuffer.update(data)` is split into `write` / `writeSingle` and `update()`.
+- KTX2 texture factories default `generateMipmaps` to false.
+
+### Added
+
+- 2D texture arrays on WebGL and WebGPU, including compressed formats on WebGL2.
+- Mipmap generation for RGBA8 textures and texture arrays.
+- Compute support on WebGPU: `framework.computeContext`, compute passes and `computePipelineFactory`.
+- Main and custom render passes, and command encoders on the graphics device.
+- Texture views of a single mip or layer.
+- `copyTextureToTexture` on the command encoder (WebGPU only).
+- Deferred disposal with `queueDispose()`. See [`guides/disposing.md`](guides/disposing.md).
+- Canvas resize listeners. See [`guides/resizing.md`](guides/resizing.md).
+- `graphicsDevice.limits`, `graphicsDevice.state` and supported texture formats.
+- `CpuImageProcessor` resizes and generates mips from raw RGBA8 bytes.
+- `#include` in GLSL and WGSL shaders.
+- New materials and the `texture_array_2d` and `inspect_texture_mips` examples.
+
+### Changed
+
+- Updated `ris-ktx2` from 0.2.0 to 0.3.0.
+- KTX2 textures use the file's color space unless one is passed.
+- Clearer texture validation errors.
+
+### Fixed
+
+- Examples hanging after switching backends.
+- Event loop starting twice or skipping a frame.
+- WebGL rendering with a 0×0 viewport.
+- Wrong mip levels in `CpuImageProcessor.generateMipmapsAsync`.
+
 ## [0.3.0] - 2026-11-01
 
 Compared with 0.2.0.

@@ -2,18 +2,18 @@
  * The mesh is a building class for a world shape.
  */
 import {State} from "../data/State.ts";
-import type {IVertexBuffer} from "../rendering/buffers/IVertexBuffer.ts";
-import type {IIndexBuffer} from "../rendering/buffers/IIndexBuffer.ts";
+import type {IVertexBuffer} from "../gpu/buffers/IVertexBuffer.ts";
+import type {IIndexBuffer} from "../gpu/buffers/IIndexBuffer.ts";
 import type {IFramework} from "../IFramework.ts";
 import type {IMesh} from "./IMesh.ts";
-import {BufferUsage} from "../rendering/buffers/BufferUsage.ts";
+import {BufferUsage} from "../gpu/buffers/BufferUsage.ts";
 import type {IGeometry} from "../geometry/IGeometry.ts";
 import {MeshParameters} from "./MeshParameters.ts";
 import {GeometryUtilities} from "../utilities/GeometryUtilities.ts";
 import type {GeometryFormat} from "../geometry/GeometryFormat.ts";
 
 /**
- * The base mesh: geometry and the vertex and index buffers created from it (C# `BaseMesh`).
+ * The base mesh: geometry and the vertex and index buffers created from it.
  * No material and no transform; {@link RenderableMesh} adds those.
  * @public
  */
@@ -21,7 +21,7 @@ export class Mesh implements IMesh {
 
     protected _bufferUsage = BufferUsage.VERTEX;
     protected _state = State.CREATED;
-    protected _vertexData?: number[];
+    protected _vertexData?: Float32Array;
     protected _positions?: number[];
     protected _indices?: number[];
     protected _colors?: number[];
@@ -114,7 +114,7 @@ export class Mesh implements IMesh {
     private _fillColors(index: { vertexDataIndex: number, colorIndex: number }, colors: number[]): void {
 
         if (!this._vertexData) {
-            throw new Error("Vertex data is not initialized");
+            throw new Error("Mesh._fillColors: vertex data is not initialized; it is allocated when the buffers are created.");
         }
 
         let v = index.vertexDataIndex;
@@ -152,7 +152,7 @@ export class Mesh implements IMesh {
 
         // 3 for vertex, 4 for color and 2 for uvs.
         const stride = (3 + 4 + 2) * Float32Array.BYTES_PER_ELEMENT;
-        this._vertexData = new Array((3 + 4 + 2) * vertexCount);
+        this._vertexData = new Float32Array((3 + 4 + 2) * vertexCount);
 
         let vertexIndex = 0;
         let positionsIndex = 0;

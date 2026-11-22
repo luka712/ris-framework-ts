@@ -1,9 +1,12 @@
-# development: publish <package.json version>-dev.<run> on the npm "next" dist-tag.
-# main: publish <package.json version> on "latest" when that version is not already
-# on npm, then create git tag v<version> and a GitHub release.
-# Neither job commits the version change back to the repository.
-# main: CHANGELOG headings dated {{YYYY-MM-DD}} get today's UTC date before publishing; the change is
-# committed back to main as github-actions[bot] with [skip ci] when branch protection allows the push.
+# The release version comes from CHANGELOG.md: the topmost "## [X.Y.Z]" heading not yet on npm
+# (.github/scripts/release-version.sh). The version in the repository's package.json does not matter for
+# publishing; CI sets it with `npm version` before publishing.
+# development: publish X.Y.Z-dev.N on the npm "next" dist-tag, N being the next free number for X.Y.Z on npm.
+#   Nothing is committed back.
+# main: when X.Y.Z is unpublished, fill in every {{YYYY-MM-DD}} heading with today's UTC date, set package.json
+#   to X.Y.Z, build, test, publish on "latest", and create tag/release vX.Y.Z. The date and version are committed
+#   back as github-actions[bot] with [skip ci] when branch protection allows it. Older unpublished headings below
+#   X.Y.Z get the same date but are not published separately. If every heading is on npm, nothing is published.
 
 name: Publish
 
@@ -45,21 +48,15 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
-          VERSION=$(node -p "require('./package.json').version")
-          case "$VERSION" in
-            *-*)
-              echo "package.json version must be a release version with no prerelease suffix (got ${VERSION})."
-              exit 1
-              ;;
-          esac
-          if [ "${GITHUB_RUN_ATTEMPT}" = "1" ]; then
-            PUBLISH_VERSION="${VERSION}-dev.${GITHUB_RUN_NUMBER}"
-          else
-            PUBLISH_VERSION="${VERSION}-dev.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+          BASE=$(.github/scripts/release-version.sh pick)
+          if [ -z "$BASE" ]; then
+            echo "Every CHANGELOG version is already on npm. Add a new heading to publish a preview."
+            exit 0
           fi
-          npm version "${PUBLISH_VERSION}" --no-git-tag-version
+          PUBLISH_VERSION=$(.github/scripts/release-version.sh dev "$BASE")
+          npm version "${PUBLISH_VERSION}" --no-git-tag-version --allow-same-version
           npm publish --provenance --tag next
-          echo "Published ${PUBLISH_VERSION} on dist-tag next. The version bump was not committed."
+          echo "Published ${PUBLISH_VERSION} on dist-tag next. Nothing was committed."
 
   latest:
     if: github.ref == 'refs/heads/main'
@@ -83,58 +80,57 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: npm
 
+      - name: Pick release version
+        id: version
+        run: |
+          set -euo pipefail
+          VERSION=$(.github/scripts/release-version.sh pick)
+          if [ -z "$VERSION" ]; then
+            echo "Every CHANGELOG version is already on npm. Skipping publish."
+          else
+            echo "Releasing ${VERSION}."
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
       - name: Install
+        if: steps.version.outputs.version != ''
         run: npm ci
 
+      - name: Set version and CHANGELOG dates
+        if: steps.version.outputs.version != ''
+        run: |
+          set -euo pipefail
+          npm version "${{ steps.version.outputs.version }}" --no-git-tag-version --allow-same-version
+          .github/scripts/release-version.sh date
+          grep -E '^## \[' CHANGELOG.md | head -n 3
+
       - name: Build
+        if: steps.version.outputs.version != ''
         run: npm run build
 
       - name: Test
+        if: steps.version.outputs.version != ''
         run: npm test
 
-      - name: Fill in CHANGELOG release dates
-        run: |
-          set -euo pipefail
-          PATTERN='^(## \[[^]]+\] - )\{\{YYYY-MM-DD\}\}$'
-          if ! grep -Eq "$PATTERN" CHANGELOG.md; then
-            echo "No undated CHANGELOG headings. Nothing to do."
-            exit 0
-          fi
-          DATE=$(date -u +%F)
-          sed -E -i "s/${PATTERN}/\1${DATE}/" CHANGELOG.md
-          grep -E '^## \[' CHANGELOG.md | head -n 3
-          git config user.name "github-actions[bot]"
-          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git commit -am "Set CHANGELOG release date ${DATE} [skip ci]"
-          # Branch protection may reject this push; the published package still carries the date.
-          if git push origin "HEAD:${GITHUB_REF_NAME}"; then
-            echo "Pushed the dated CHANGELOG to ${GITHUB_REF_NAME}."
-          else
-            echo "::warning::Could not push the dated CHANGELOG to ${GITHUB_REF_NAME}. The npm package still includes the date."
-          fi
-
       - name: Publish release to latest
+        if: steps.version.outputs.version != ''
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
-          NAME=$(node -p "require('./package.json').name")
-          VERSION=$(node -p "require('./package.json').version")
-          case "$VERSION" in
-            *-*)
-              echo "package.json version must be a release version with no prerelease suffix (got ${VERSION})."
-              exit 1
-              ;;
-          esac
-          PUBLISHED=$(npm view "${NAME}@${VERSION}" version 2>/dev/null || true)
-          if [ "$PUBLISHED" = "$VERSION" ]; then
-            echo "${NAME}@${VERSION} is already on npm. Skipping publish, tag, and GitHub release."
-            exit 0
-          fi
           npm publish --provenance --tag latest
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet; then
+            git commit -am "Release ${VERSION}: set version and CHANGELOG date [skip ci]"
+            # Branch protection may reject this push; the published package already carries the date and version.
+            git push origin "HEAD:${GITHUB_REF_NAME}" \
+              || echo "::warning::Could not push the release commit to ${GITHUB_REF_NAME}."
+          fi
           gh release create "v${VERSION}" \
             --target "$(git rev-parse HEAD)" \
             --title "v${VERSION}" \
             --generate-notes
-          echo "Published ${NAME}@${VERSION} on dist-tag latest and created v${VERSION}."
+          echo "Published ${VERSION} on dist-tag latest and created v${VERSION}."

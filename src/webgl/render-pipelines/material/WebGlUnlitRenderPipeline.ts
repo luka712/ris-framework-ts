@@ -1,5 +1,6 @@
 import {
     GeometryFormat,
+    State,
     type IFramework, type IPrimitiveState,
     type ISampler,
     type ITexture2D,
@@ -16,9 +17,10 @@ import {AWebGlRenderPipeline} from "../AWebGlRenderPipeline.ts";
 import type {WebGLIndexBuffer} from "../../buffers/webgl-index-buffer";
 import {type IIndexBuffer, IndexBufferType} from "../../../api/index.ts";
 import type {WebGlSampler} from "../../sampler/webgl-sampler.ts";
+import { WebGlTextureFactory } from "../../texture/WebGlTextureFactory.ts";
 
 /**
- * The WebGL implementation of the sprite render pipeline.
+ * A WebGL unlit render pipeline.
  */
 export class WebGlUnlitRenderPipeline extends AWebGlRenderPipeline implements IUnlitRenderPipeline {
 
@@ -124,11 +126,12 @@ export class WebGlUnlitRenderPipeline extends AWebGlRenderPipeline implements IU
         this._createResources();
         this.vertexBufferLayouts = [VertexBufferLayout.createFloat3Float4Float2Layout()];
         super.initialize();
+        this._state = State.INITIALIZED;
     }
 
     private _createResources(): void {
         {
-            this._texture = WebGlTexture2D.getOrCreateDefault(this._framework);
+            this._texture = (this._framework.textureFactory as WebGlTextureFactory).getOrCreateDefaultTexture2D();
 
             this._cameraBlockIndex = this._gl.getUniformBlockIndex(this._program, "CameraBuffer");
             this._gl.uniformBlockBinding(this._program, this._cameraBlockIndex, WebGlUnlitRenderPipeline.CAMERA_BINDING_POINT);
@@ -155,7 +158,7 @@ export class WebGlUnlitRenderPipeline extends AWebGlRenderPipeline implements IU
     /** @inheritdoc */
     public render(vertexBuffer: IVertexBuffer, indexBuffer: IIndexBuffer, indicesCount: number = -1, indicesOffset: number = 0): void {
 
-        if (indicesCount == 0) {
+        if (indicesCount == 0 || this._state != State.INITIALIZED) {
             return;
         }
 
