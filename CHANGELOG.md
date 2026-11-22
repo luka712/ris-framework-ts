@@ -50,7 +50,7 @@ Compared with 0.3.0.
 
 ### Changed
 
-- Requires `ris-ktx2` ^0.3.0-dev.18.
+- Updated `ris-ktx2` to 0.3.0.
 - KTX2 textures use the color space stored in the file unless one is passed.
 - Texture factories validate data sizes and give clearer error messages.
 - `textureFactory.create` defaults the usage to `TEXTURE_BINDING | COPY_DST`. On WebGPU, uploading an `HTMLImageElement` also needs `RENDER_ATTACHMENT`, which the caller has to pass.
