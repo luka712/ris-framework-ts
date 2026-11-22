@@ -7,9 +7,11 @@
 //            binding 1 = destination mip (rgba8unorm storage 2d view of one layer and one level),
 //            binding 2 = DownsampleParams uniform.
 //
-// sRGB: rgba8unorm-srgb cannot be a storage texture, so both views are rgba8unorm (raw stored bytes).
-// When params.srgb is 1, samples are decoded with srgbToLinear and the result is
-// encoded with linearToSrgb before textureStore, so the downsample happens in linear space.
+// sRGB: rgba8unorm-srgb cannot be a storage texture, so the destination is always an
+// rgba8unorm storage view (raw stored bytes). The source view may be rgba8unorm-srgb;
+// textureLoad then returns linear values, and the 2x2 average is already in linear space.
+// When params.srgb is 1, the filtered linear color is encoded with linearToSrgb before
+// textureStore, so the bytes copied into the sRGB texture are sRGB-encoded.
 
 #include "modules/color_conversion.wgsl"
 #include "modules/resize.wgsl"
@@ -56,7 +58,7 @@ fn main(
     }
 
     if (params.srgb >= 0.5) {
-        color = vec4<f32>(srgbToLinear(color.rgb), color.a);
+        color = vec4<f32>(linearToSrgb(color.rgb), color.a);
     }
 
     textureStore(
